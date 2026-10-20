@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
-import { COURSE_PRODUCT } from '@/lib/products'
+import { COURSE_PRODUCT, EXTENSION_PRODUCT } from '@/lib/products'
 
 export async function POST(request: Request) {
   try {
     const body = await request.json()
     const email = typeof body.email === 'string' ? body.email.trim() : ''
+    const product = body.productId === EXTENSION_PRODUCT.id ? EXTENSION_PRODUCT : COURSE_PRODUCT
     if (!email || !email.includes('@')) return NextResponse.json({ error: 'Ingresa un correo válido.' }, { status: 400 })
 
     const secretKey = process.env.STRIPE_SECRET_KEY
@@ -16,10 +17,10 @@ export async function POST(request: Request) {
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
       customer_email: email,
-      line_items: [{ price_data: { currency: 'mxn', product_data: { name: COURSE_PRODUCT.name, description: COURSE_PRODUCT.description }, unit_amount: COURSE_PRODUCT.priceInCents }, quantity: 1 }],
+      line_items: [{ price_data: { currency: 'mxn', product_data: { name: product.name, description: product.description }, unit_amount: product.priceInCents }, quantity: 1 }],
       success_url: `${origin}/?checkout=success`,
       cancel_url: `${origin}/?checkout=cancelled`,
-      metadata: { productId: COURSE_PRODUCT.id },
+      metadata: { productId: product.id },
       integration_identifier: `playandgo_${Math.random().toString(36).slice(2, 10)}`,
     })
 
