@@ -21,7 +21,7 @@ export async function POST(request: Request) {
   const apiKey = process.env.API_KEY
   if (!apiKey) return NextResponse.json({ song, warning: 'Falta configurar API_KEY del proveedor musical.' })
   try {
-    const response = await fetch(process.env.SUNO_API_URL || 'https://api.sunoapi.org/api/v1/generate', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` }, body: JSON.stringify({ prompt, customMode: true, instrumental: Boolean(body.instrumental), model: 'V4', callBackUrl: `${new URL(request.url).origin}/api/generate/callback` }) })
+    const response = await fetch(process.env.SUNO_API_URL || 'https://api.sunoapi.org/api/v1/generate', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` }, body: JSON.stringify({ prompt, customMode: true, instrumental: Boolean(body.instrumental), model: 'V4', callBackUrl: `${new URL(request.url).origin}/api/generate/callback?songId=${encodeURIComponent(song.id)}` }) })
     const result = await response.json()
     if (!response.ok) throw new Error('provider error')
     if (!isAdmin) await supabase.from('entitlements').update({ used_today: used + 1, reset_date: today }).eq('user_id', user.id)
