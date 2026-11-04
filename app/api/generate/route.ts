@@ -16,12 +16,12 @@ export async function POST(request: Request) {
   const today = new Date().toISOString().slice(0, 10)
   const used = entitlement?.reset_date === today ? entitlement.used_today : 0
   if (!isAdmin && (!entitlement?.active || !entitlement.daily_limit || used >= entitlement.daily_limit)) return NextResponse.json({ error: 'Tu cupo diario está agotado. Activa tu inscripción o una extensión.' }, { status: 402 })
+  const apiKey = process.env.API_KEY
+  if (!apiKey) return NextResponse.json({ error: 'El proveedor musical no está configurado.' }, { status: 503 })
   const { data: song, error } = await supabase.from('songs').insert({ user_id: user.id, title, prompt, genre: body.genre, tempo: Number(body.tempo) || null, vocal_style: body.vocalStyle, instrumentation: body.instrumentation, status: 'generating' }).select('id,title,status,created_at').single()
   if (error) return NextResponse.json({ error: 'No se pudo guardar tu proyecto.' }, { status: 500 })
-  const apiKey = process.env.API_KEY
-  if (!apiKey) return NextResponse.json({ song, warning: 'Falta configurar API_KEY del proveedor musical.' })
   try {
-    const response = await fetch(process.env.SUNO_API_URL || 'https://api.sunoapi.org/api/v1/generate', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` }, body: JSON.stringify({ prompt, customMode: true, instrumental: Boolean(body.instrumental), model: 'V4', callBackUrl: `${new URL(request.url).origin}/api/generate/callback?songId=${encodeURIComponent(song.id)}` }) })
+    const response = await fetch(process.env.SUNO_API_URL || 'https://api.sunoapi.org/api/v1/generate', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` }, signal: AbortSignal.timeout(30000), body: JSON.stringify({ prompt, customMode: true, instrumental: Boolean(body.instrumental), model: 'V4', callBackUrl: `${new URL(request.url).origin}/api/generate/callback?songId=${encodeURIComponent(song.id)}` }) })
     const result = await response.json()
     if (!response.ok) throw new Error('provider error')
     if (!isAdmin) await supabase.from('entitlements').update({ used_today: used + 1, reset_date: today }).eq('user_id', user.id)

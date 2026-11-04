@@ -1,13 +1,17 @@
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { COURSE_PRODUCT, EXTENSION_PRODUCT } from '@/lib/products'
+import { createClient } from '@/lib/supabase/server'
 
 export async function POST(request: Request) {
   try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user?.email) return NextResponse.json({ error: 'Inicia sesión para inscribirte.' }, { status: 401 })
     const body = await request.json()
-    const email = typeof body.email === 'string' ? body.email.trim() : ''
-    const product = body.productId === EXTENSION_PRODUCT.id ? EXTENSION_PRODUCT : COURSE_PRODUCT
-    if (!email || !email.includes('@')) return NextResponse.json({ error: 'Ingresa un correo válido.' }, { status: 400 })
+    const email = user.email
+    const product = body.productId === EXTENSION_PRODUCT.id ? EXTENSION_PRODUCT : body.productId === COURSE_PRODUCT.id ? COURSE_PRODUCT : null
+    if (!product) return NextResponse.json({ error: 'Producto no válido.' }, { status: 400 })
 
     const secretKey = process.env.STRIPE_SECRET_KEY
     if (!secretKey) return NextResponse.json({ error: 'Stripe aún no está configurado en este entorno.' }, { status: 503 })
