@@ -1,0 +1,14 @@
+# Configuración oficial de financiación para el repositorio
+# Documentación: https://docs.github.com/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/displaying-a-sponsor-button-in-your-repository
+
+github:
+  - OsoPanda1
+  - AnubisVillasenor1
+
+buy_me_a_coffee: anubisvillasenor
+
+custom:
+  - "https://github.com/sponsors/OsoPanda1"
+  - "https://isabella-ai.org"
+  - "https://isabella-ai.org/foundation"
+  - "https://isabella-ai.org/partners"
