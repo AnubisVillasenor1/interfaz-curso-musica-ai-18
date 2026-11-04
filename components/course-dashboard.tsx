@@ -1,108 +1,120 @@
 'use client'
 
 import { useState } from 'react'
-import {
-  ArrowRight,
-  BookOpen,
-  Check,
-  ChevronDown,
-  Clock3,
-  FileText,
-  Headphones,
-  Layers3,
-  LayoutDashboard,
-  LockKeyhole,
-  Menu,
-  Music2,
-  Play,
-  Search,
-  Sparkles,
-  Target,
-  Trophy,
-  Video,
-  X,
-  Zap,
-} from 'lucide-react'
+import { ArrowRight, Award, BadgeCheck, BookOpen, Check, ChevronRight, Clock3, Headphones, LockKeyhole, Menu, MessageCircle, Music2, Play, Send, Sparkles, Star, Trophy, Video, X, Zap } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { createClient } from '@/lib/supabase/client'
+
+const heroImage = 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Gemini_Generated_Image_nq28qfnq28qfnq28-uGgydZgJRGge0I1MlI2zT51Y8Cvt4T.jpeg'
+const logoImage = 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Gemini_Generated_Image_2nv6uv2nv6uv2nv6-RcQzcHF3Frxdi7PUzmCGA8yLCO5eEF.jpeg'
 
 const modules = [
-  { number: '01', title: 'El mapa de la música con IA', lessons: 3, duration: '42 min', status: 'done' },
-  { number: '02', title: 'Tu primer prompt musical', lessons: 4, duration: '1 h 15 min', status: 'current' },
-  { number: '03', title: 'Voces, letras y emoción', lessons: 3, duration: '58 min', status: 'locked' },
-  { number: '04', title: 'Géneros, instrumentación y tempo', lessons: 3, duration: '1 h 08 min', status: 'locked' },
-  { number: '05', title: 'Producción: de idea a canción', lessons: 3, duration: '1 h 20 min', status: 'locked' },
+  ['01', 'Fundamentos de música con IA', '3 lecciones · 42 min', 'done'],
+  ['02', 'Tu primer prompt musical', '4 lecciones · 1 h 15 min', 'current'],
+  ['03', 'Voces, letras y emoción', '3 lecciones · 58 min', 'locked'],
+  ['04', 'Géneros, instrumentación y tempo', '3 lecciones · 1 h 08 min', 'locked'],
+  ['05', 'Producción: de idea a canción', '3 lecciones · 1 h 20 min', 'locked'],
 ]
 
-const promptTemplates = [
-  { title: 'Pop cinematográfico', tag: 'Voz + emoción', color: 'coral', prompt: 'Pop alternativo cinematográfico, 96 BPM, voz femenina íntima y aireada, versos minimalistas con piano felt, pre-coro ascendente, coro amplio con cuerdas y batería orgánica...' },
-  { title: 'Reggaetón nocturno', tag: 'Ritmo + groove', color: 'violet', prompt: 'Reggaetón oscuro y elegante, 92 BPM, voz masculina suave con flow conversado, dembow profundo, synth bass cálido, percusión seca, atmósfera nocturna...' },
-  { title: 'Lo-fi para estudiar', tag: 'Instrumental', color: 'amber', prompt: 'Lo-fi hip hop instrumental, 78 BPM, acordes de jazz en Rhodes, batería con swing humano, textura de vinilo, bajo redondo, ambiente de cafetería...' },
+const prompts = [
+  ['Pop cinematográfico', '96 BPM · voz femenina íntima · piano felt · cuerdas amplias', 'Pop alternativo cinematográfico, 96 BPM, voz femenina íntima y aireada, versos minimalistas con piano felt, pre-coro ascendente, coro amplio con cuerdas y batería orgánica, mezcla cálida y dinámica.'],
+  ['Reggaetón nocturno', '92 BPM · voz masculina suave · dembow profundo', 'Reggaetón oscuro y elegante, 92 BPM, voz masculina suave con flow conversado, dembow profundo, synth bass cálido, percusión seca, atmósfera nocturna y hook memorable.'],
+  ['Lo-fi para estudiar', '78 BPM · instrumental · Rhodes · swing humano', 'Lo-fi hip hop instrumental, 78 BPM, acordes de jazz en Rhodes, batería con swing humano, textura de vinilo, bajo redondo, ambiente de cafetería y dinámica relajada.'],
+]
+
+const curriculum = [
+  { module: 'Módulo 01', title: 'El mapa sonoro', duration: '42 min', objective: 'Entender el lenguaje mínimo para dirigir una generación musical con intención.', lessons: ['Sesión 01 · Qué es la música generativa y cómo pensar como director', 'Sesión 02 · BPM, tonalidad, energía y estructura sin tecnicismos', 'Sesión 03 · Ejercicio: describe una escena en cinco decisiones musicales'], deliverable: 'Brief de una canción con emoción, referencia, energía y estructura.' },
+  { module: 'Módulo 02', title: 'Prompting musical', duration: '1 h 15 min', objective: 'Construir instrucciones reproducibles que puedas comparar, iterar y mejorar.', lessons: ['Sesión 04 · La anatomía de un prompt reproducible', 'Sesión 05 · Voz, género, instrumentación, tempo y mezcla en una sola dirección', 'Sesión 06 · Cómo iterar: una variable a la vez y escucha crítica', 'Sesión 07 · Ejercicio: tres versiones del mismo hook y checklist de calidad'], deliverable: 'Tres generaciones documentadas y una versión seleccionada con justificación.' },
+  { module: 'Módulo 03', title: 'Voz, letra y emoción', duration: '58 min', objective: 'Dirigir una interpretación vocal coherente con el mensaje y la audiencia.', lessons: ['Sesión 08 · Registro, textura, articulación y acento de voz', 'Sesión 09 · Escribir versos, pre-coro, coro y puente con métrica funcional', 'Sesión 10 · Ejercicio: dirección vocal para una interpretación real'], deliverable: 'Letra completa con anotaciones de interpretación y dinámica.' },
+  { module: 'Módulo 04', title: 'Género y producción', duration: '1 h 08 min', objective: 'Elegir capas sonoras que sostengan el groove sin saturar la producción.', lessons: ['Sesión 11 · Instrumentación por género y función de cada capa', 'Sesión 12 · Tempo, groove, dinámica, tonalidad y referencias', 'Sesión 13 · Ejercicio: transformar una idea pop en tres géneros'], deliverable: 'Matriz comparativa con tres arreglos y el prompt final de producción.' },
+  { module: 'Módulo 05', title: 'De idea a release', duration: '1 h 20 min', objective: 'Pasar de una generación prometedora a una entrega presentable y trazable.', lessons: ['Sesión 14 · Selección, edición y control de versiones', 'Sesión 15 · Brief profesional para colaborar y publicar', 'Sesión 16 · Proyecto final: produce dos canciones y presenta tu portafolio'], deliverable: 'Portafolio final con dos canciones, prompts, decisiones y reflexión de aprendizaje.' },
 ]
 
 export function CourseDashboard() {
-  const [activeNav, setActiveNav] = useState('Inicio')
-  const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [activeTemplate, setActiveTemplate] = useState<string | null>(null)
-  const [showAllModules, setShowAllModules] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [prompt, setPrompt] = useState<string | null>(null)
+  const [showRegister, setShowRegister] = useState(false)
+  const [email, setEmail] = useState('')
+  const [status, setStatus] = useState('')
+  const [playing, setPlaying] = useState(false)
+  const [user, setUser] = useState<{ email?: string } | null>(null)
+  const [studioOpen, setStudioOpen] = useState(false)
+  const [songTitle, setSongTitle] = useState('')
+  const [songPrompt, setSongPrompt] = useState('')
+  const [songStatus, setSongStatus] = useState('')
+  const [chatOpen, setChatOpen] = useState(false)
+  const [chatInput, setChatInput] = useState('')
+  const [chatMessages, setChatMessages] = useState([{ from: 'bot', text: 'Hola, soy el guía de Play and Go. Pregúntame por el curso, precio, pagos, contenidos o tu ruta de aprendizaje.' }])
 
-  const navItems = [
-    { label: 'Inicio', icon: LayoutDashboard },
-    { label: 'Mi ruta', icon: BookOpen },
-    { label: 'Biblioteca de prompts', icon: Sparkles },
-    { label: 'Recursos', icon: Layers3 },
-  ]
+  function askCourseBot(text: string) {
+    const query = text.toLowerCase()
+    if (query.includes('precio') || query.includes('vale') || query.includes('costo')) return 'La inscripción cuesta $500 MXN e incluye el curso completo, estudio con 2 canciones diarias, prompts, ejercicios, audio, video e insignias. La extensión para crear más canciones cuesta $229 MXN.'
+    if (query.includes('pago') || query.includes('stripe')) return 'Puedes pagar con tarjeta desde el botón de inscripción. Stripe procesa el cobro de forma segura y, al confirmarse, se activa tu acceso Pro.'
+    if (query.includes('aprendo') || query.includes('contenido') || query.includes('curso')) return 'Aprendes música con IA desde cero hasta un flujo profesional: fundamentos, prompting, voces y letras, géneros, tempo, instrumentación, producción y un proyecto final.'
+    if (query.includes('sirve') || query.includes('hace')) return 'Sirve para convertir ideas musicales en canciones dirigidas por ti. Practicas con prompts claros, comparas resultados y construyes un portafolio real.'
+    if (query.includes('cancion') || query.includes('diaria')) return 'Con la inscripción activa puedes crear hasta 2 canciones al día en el estudio. La extensión de $229 MXN amplía tu capacidad de creación.'
+    return 'Puedo orientarte sobre qué es el curso, qué incluye, precio ($500 MXN), extensión ($229 MXN), pagos, canciones diarias y habilidades que vas a aprender.'
+  }
 
-  return (
-    <div className="min-h-screen bg-[#0d0d12] text-[#f7f3ee]">
-      <div className="flex min-h-screen">
-        {sidebarOpen && <button aria-label="Cerrar menú" className="fixed inset-0 z-30 bg-black/60 lg:hidden" onClick={() => setSidebarOpen(false)} />}
-        <aside className={`fixed inset-y-0 left-0 z-40 flex w-[250px] flex-col border-r border-white/8 bg-[#121218] transition-transform duration-200 lg:static lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-          <div className="flex h-[84px] items-center justify-between px-7">
-            <div className="flex items-center gap-3">
-              <div className="flex size-9 items-center justify-center rounded-xl bg-[#ef725f] text-[#211319]"><Music2 size={20} strokeWidth={2.5} /></div>
-              <div><div className="font-semibold tracking-[-0.03em]">Sonora <span className="text-[#ef725f]">IA</span></div><div className="text-[10px] uppercase tracking-[0.2em] text-white/35">Academia musical</div></div>
-            </div>
-            <button className="text-white/50 lg:hidden" onClick={() => setSidebarOpen(false)} aria-label="Cerrar menú"><X size={19} /></button>
-          </div>
-          <div className="px-4 pt-8">
-            <p className="px-3 pb-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/25">Aprende</p>
-            <nav className="flex flex-col gap-1">
-              {navItems.map(({ label, icon: Icon }) => <button key={label} onClick={() => { setActiveNav(label); setSidebarOpen(false) }} className={`flex items-center gap-3 rounded-xl px-3 py-3 text-sm transition ${activeNav === label ? 'bg-[#ef725f]/12 font-medium text-[#ff907d]' : 'text-white/50 hover:bg-white/5 hover:text-white/80'}`}><Icon size={17} /><span>{label}</span>{label === 'Biblioteca de prompts' && <span className="ml-auto rounded-full bg-[#ef725f]/15 px-1.5 py-0.5 text-[9px] text-[#ff907d]">12</span>}</button>)}
-            </nav>
-          </div>
-          <div className="mt-auto p-4">
-            <div className="rounded-2xl border border-white/8 bg-[#1a1a22] p-4">
-              <div className="mb-3 flex items-center justify-between"><span className="text-[11px] font-medium text-white/50">Tu progreso</span><span className="text-xs font-semibold text-[#ff907d]">24%</span></div>
-              <div className="mb-3 h-1.5 overflow-hidden rounded-full bg-white/8"><div className="h-full w-[24%] rounded-full bg-[#ef725f]" /></div>
-              <p className="text-[11px] leading-relaxed text-white/40">Vas muy bien. Completa una lección más para desbloquear tu próxima insignia.</p>
-            </div>
-            <div className="mt-5 flex items-center gap-3 border-t border-white/8 pt-5"><div className="flex size-8 items-center justify-center rounded-full bg-[#d9a671] text-xs font-semibold text-[#31201a]">AV</div><div className="min-w-0"><p className="truncate text-xs font-medium">Anubis Villaseñor</p><p className="text-[10px] text-white/35">Estudiante Pro</p></div><ChevronDown className="ml-auto text-white/30" size={15} /></div>
-          </div>
-        </aside>
+  function sendChat(event: React.FormEvent) {
+    event.preventDefault()
+    const text = chatInput.trim()
+    if (!text) return
+    setChatMessages(messages => [...messages, { from: 'user', text }, { from: 'bot', text: askCourseBot(text) }])
+    setChatInput('')
+  }
 
-        <main className="min-w-0 flex-1">
-          <header className="flex h-[84px] items-center justify-between border-b border-white/8 px-5 sm:px-8 lg:px-12">
-            <button className="text-white/60 lg:hidden" onClick={() => setSidebarOpen(true)} aria-label="Abrir menú"><Menu size={21} /></button>
-            <div className="relative hidden max-w-[310px] flex-1 sm:block"><Search className="absolute left-3 top-1/2 -translate-y-1/2 text-white/25" size={16} /><input aria-label="Buscar en el curso" placeholder="Buscar una lección, tema o prompt..." className="h-10 w-full rounded-xl border border-white/8 bg-white/[0.03] pl-10 pr-4 text-xs text-white outline-none placeholder:text-white/25 focus:border-[#ef725f]/60" /></div>
-            <div className="ml-auto flex items-center gap-3 sm:gap-5"><button className="relative text-white/50 hover:text-white" aria-label="Notificaciones"><Zap size={18} /><span className="absolute -right-1 -top-1 size-1.5 rounded-full bg-[#ef725f]" /></button><div className="hidden h-5 w-px bg-white/10 sm:block" /><span className="text-xs text-white/45">Nivel 1</span><div className="flex size-8 items-center justify-center rounded-full bg-[#d9a671] text-[10px] font-semibold text-[#31201a]">AV</div></div>
-          </header>
+  async function openStudio() {
+    const supabase = createClient()
+    const { data } = await supabase.auth.getUser()
+    if (!data.user) { window.location.href = '/auth'; return }
+    setUser(data.user); setStudioOpen(true)
+  }
 
-          <div className="mx-auto max-w-[1260px] px-5 py-9 sm:px-8 lg:px-12 lg:py-12">
-            <section className="mb-10 flex flex-col justify-between gap-6 md:flex-row md:items-end"><div><p className="mb-3 text-xs font-medium uppercase tracking-[0.18em] text-[#ef725f]">Martes, 20 de octubre</p><h1 className="text-3xl font-semibold tracking-[-0.04em] sm:text-[38px]">Buenas tardes, Anubis <span className="text-[#ef725f]">↗</span></h1><p className="mt-3 text-sm text-white/45">Continúa construyendo tu sonido. Hoy es un buen día para crear.</p></div><Button onClick={() => setActiveNav('Mi ruta')} className="w-fit rounded-xl bg-[#ef725f] px-5 text-sm font-semibold text-[#281418] hover:bg-[#ff8b76]">Continuar aprendiendo <ArrowRight data-icon="inline-end" /></Button></section>
+  async function generateSong(event: React.FormEvent) {
+    event.preventDefault(); setSongStatus('Guardando y enviando al motor musical...')
+    const response = await fetch('/api/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: songTitle, prompt: songPrompt, genre: 'Pop alternativo', tempo: 96, vocalStyle: 'Voz íntima y aireada', instrumentation: 'Piano, cuerdas y batería orgánica' }) })
+    const result = await response.json(); setSongStatus(result.error || result.warning || 'Proyecto enviado. Revisa tu biblioteca en unos instantes.')
+  }
 
-            <section className="mb-10 grid gap-4 md:grid-cols-[1.55fr_1fr_1fr]">
-              <div className="relative overflow-hidden rounded-2xl border border-[#ef725f]/25 bg-gradient-to-br from-[#342229] to-[#1b171f] p-6 sm:p-7"><div className="absolute -right-8 -top-10 size-40 rounded-full bg-[#ef725f]/15 blur-3xl" /><div className="relative"><div className="mb-8 flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.16em] text-[#ff9788]"><Play size={12} fill="currentColor" /> En curso</div><h2 className="max-w-[300px] text-[22px] font-semibold leading-tight tracking-[-0.03em]">Tu primer prompt musical</h2><p className="mt-2 text-xs text-white/45">Módulo 02 · Lección 2 de 4</p><div className="mt-7 flex items-center gap-3"><div className="h-1.5 w-32 overflow-hidden rounded-full bg-white/10"><div className="h-full w-[50%] rounded-full bg-[#ef725f]" /></div><span className="text-[11px] text-white/45">50% completado</span></div></div></div>
-              <div className="rounded-2xl border border-white/8 bg-[#15151c] p-6"><div className="mb-8 flex size-9 items-center justify-center rounded-xl bg-[#d9a671]/12 text-[#e5b47d]"><Trophy size={18} /></div><p className="text-3xl font-semibold tracking-[-0.04em]">24%</p><p className="mt-1 text-xs text-white/40">Progreso total</p><div className="mt-5 text-[11px] text-white/30">2 de 9 módulos</div></div>
-              <div className="rounded-2xl border border-white/8 bg-[#15151c] p-6"><div className="mb-8 flex size-9 items-center justify-center rounded-xl bg-[#9b8ce7]/12 text-[#b7aef5]"><Clock3 size={18} /></div><p className="text-3xl font-semibold tracking-[-0.04em]">3.5h</p><p className="mt-1 text-xs text-white/40">Tiempo aprendido</p><div className="mt-5 text-[11px] text-[#9b8ce7]">+45 min esta semana</div></div>
-            </section>
+  async function startCheckout(event: React.FormEvent) {
+    event.preventDefault(); setStatus('Preparando tu acceso...')
+    const response = await fetch('/api/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) })
+    const data = await response.json()
+    if (data.url) window.location.href = data.url
+    else setStatus(data.error ?? 'Revisa tus datos e intenta de nuevo.')
+  }
 
-            <section className="mb-12"><div className="mb-5 flex items-end justify-between"><div><p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/30">Tu camino</p><h2 className="text-xl font-semibold tracking-[-0.03em]">Ruta de aprendizaje</h2></div><button onClick={() => setShowAllModules(!showAllModules)} className="flex items-center gap-1 text-xs text-[#ff907d] hover:text-[#ffad9e]">{showAllModules ? 'Ver menos' : 'Ver todos'} <ArrowRight size={13} /></button></div><div className="grid gap-2"><div className="mb-1 flex items-center gap-2"><div className="h-px flex-1 bg-[#ef725f]/25" /><span className="text-[10px] text-[#ef725f]">EN PROGRESO</span><div className="h-px flex-1 bg-[#ef725f]/25" /></div>{modules.slice(0, showAllModules ? modules.length : 4).map((module) => <button key={module.number} onClick={() => module.status !== 'locked' && setActiveNav('Mi ruta')} className={`group flex items-center gap-4 rounded-2xl border p-4 text-left transition ${module.status === 'current' ? 'border-[#ef725f]/35 bg-[#ef725f]/[0.06]' : 'border-white/7 bg-[#15151c] hover:border-white/15'} ${module.status === 'locked' ? 'cursor-default opacity-60' : ''}`}><div className={`flex size-10 shrink-0 items-center justify-center rounded-xl text-xs font-semibold ${module.status === 'done' ? 'bg-[#8bbd9c]/15 text-[#9ed7ae]' : module.status === 'current' ? 'bg-[#ef725f] text-[#2a1617]' : 'bg-white/6 text-white/30'}`}>{module.status === 'done' ? <Check size={17} /> : module.status === 'locked' ? <LockKeyhole size={15} /> : module.number}</div><div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{module.title}</p><div className="mt-1 flex gap-3 text-[11px] text-white/35"><span>{module.lessons} lecciones</span><span>·</span><span>{module.duration}</span></div></div>{module.status === 'current' && <span className="hidden rounded-full bg-[#ef725f]/12 px-2.5 py-1 text-[10px] text-[#ff907d] sm:block">Siguiente</span>}<ArrowRight className="text-white/20 transition group-hover:translate-x-0.5 group-hover:text-white/50" size={16} /></button>)}</div></section>
+  return <main className="min-h-screen overflow-hidden bg-[#07121f] text-[#edfaff] selection:bg-[#6feaff]/30">
+    <div className="fixed inset-0 -z-0 bg-[radial-gradient(circle_at_75%_5%,rgba(88,213,230,.18),transparent_30%),radial-gradient(circle_at_15%_80%,rgba(155,92,226,.16),transparent_32%)]" />
+    <header className="relative z-20 mx-auto flex max-w-7xl items-center justify-between px-5 py-5 lg:px-10">
+      <div className="flex items-center gap-3"><img src={logoImage} alt="Play and Go by TAMV ONLINE" className="size-11 rounded-xl object-cover object-center" /><div><p className="font-semibold tracking-tight">PLAY <span className="text-[#75e9f2]">AND GO</span></p><p className="text-[9px] uppercase tracking-[.24em] text-[#9fb8c7]">by TAMV ONLINE</p></div></div>
+      <nav className="hidden items-center gap-8 text-sm text-[#a9c0ca] md:flex"><a href="#ruta">Ruta</a><a href="#prompts">Prompts</a><a href="#logros">Logros</a><Button onClick={openStudio} className="rounded-full bg-[#75e9f2] px-5 text-[#06131e] hover:bg-[#a0f4f9]">Entrar al estudio</Button></nav>
+      <button className="md:hidden" aria-label="Abrir menú" onClick={() => setMenuOpen(!menuOpen)}>{menuOpen ? <X /> : <Menu />}</button>
+    </header>
+    {menuOpen && <nav className="relative z-20 flex flex-col gap-4 border-y border-white/10 bg-[#0a1b2b] px-5 py-5 text-sm md:hidden"><a href="#ruta">Ruta de aprendizaje</a><a href="#prompts">Biblioteca de prompts</a><Button onClick={() => setShowRegister(true)} className="rounded-full bg-[#75e9f2] text-[#06131e]">Inscribirme</Button></nav>}
 
-            <section><div className="mb-5 flex items-end justify-between"><div><p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/30">Para inspirarte</p><h2 className="text-xl font-semibold tracking-[-0.03em]">Plantillas de prompts</h2></div><button onClick={() => setActiveNav('Biblioteca de prompts')} className="flex items-center gap-1 text-xs text-[#ff907d] hover:text-[#ffad9e]">Explorar biblioteca <ArrowRight size={13} /></button></div><div className="grid gap-4 lg:grid-cols-3">{promptTemplates.map((template) => <button key={template.title} onClick={() => setActiveTemplate(template.title)} className="group overflow-hidden rounded-2xl border border-white/8 bg-[#15151c] text-left transition hover:-translate-y-0.5 hover:border-white/20"><div className={`relative h-28 overflow-hidden ${template.color === 'coral' ? 'bg-gradient-to-br from-[#49302d] via-[#8c5045] to-[#22202c]' : template.color === 'violet' ? 'bg-gradient-to-br from-[#28223d] via-[#514479] to-[#171723]' : 'bg-gradient-to-br from-[#493b2b] via-[#91734e] to-[#242027]'}`}><div className="absolute inset-0 opacity-40" style={{ backgroundImage: 'radial-gradient(ellipse at 20% 80%, transparent 20%, rgba(10,8,14,.6) 70%), repeating-radial-gradient(ellipse at 80% 30%, transparent 0 8px, rgba(255,255,255,.12) 9px 10px)' }} /><span className="absolute left-4 top-4 rounded-full border border-white/15 bg-black/15 px-2.5 py-1 text-[9px] font-medium uppercase tracking-[0.12em] text-white/75">{template.tag}</span><Music2 className="absolute bottom-4 right-5 text-white/25" size={31} /></div><div className="p-4"><h3 className="text-sm font-medium">{template.title}</h3><p className="mt-2 line-clamp-2 text-[11px] leading-relaxed text-white/35">{template.prompt}</p><div className="mt-4 flex items-center gap-1.5 text-[10px] text-[#ff907d]">Usar plantilla <ArrowRight size={12} /></div></div></button>)}</div></section>
-          </div>
-        </main>
-      </div>
-      {activeTemplate && <div role="dialog" aria-modal="true" className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={() => setActiveTemplate(null)}><div className="w-full max-w-lg rounded-2xl border border-white/10 bg-[#1a1a22] p-6 shadow-2xl" onClick={(event) => event.stopPropagation()}><div className="mb-5 flex items-start justify-between"><div><p className="mb-2 text-[10px] uppercase tracking-[0.18em] text-[#ef725f]">Plantilla de prompt</p><h2 className="text-xl font-semibold">{activeTemplate}</h2></div><button onClick={() => setActiveTemplate(null)} className="text-white/40 hover:text-white" aria-label="Cerrar"><X size={18} /></button></div><p className="rounded-xl border border-white/8 bg-black/15 p-4 text-sm leading-relaxed text-white/65">{promptTemplates.find((item) => item.title === activeTemplate)?.prompt}</p><Button onClick={() => setActiveTemplate(null)} className="mt-5 w-full rounded-xl bg-[#ef725f] text-[#281418] hover:bg-[#ff8b76]">Copiar y personalizar <FileText data-icon="inline-end" /></Button></div></div>}
-    </div>
-  )
+    <section className="relative z-10 mx-auto grid max-w-7xl items-center gap-12 px-5 pb-16 pt-8 lg:grid-cols-[1.05fr_.95fr] lg:px-10 lg:pb-24 lg:pt-20">
+      <div><div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#75e9f2]/30 bg-[#75e9f2]/10 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[.2em] text-[#8cecf3]"><Sparkles size={13} /> Música aumentada por IA</div><h1 className="max-w-2xl text-5xl font-semibold leading-[.95] tracking-[-.065em] sm:text-7xl">Convierte tus ideas en <span className="bg-gradient-to-r from-[#78eaf0] via-[#b4a5ff] to-[#ff9eea] bg-clip-text text-transparent">canciones.</span></h1><p className="mt-7 max-w-xl text-base leading-7 text-[#aac3ce]">Aprende desde cero a crear música con inteligencia artificial y desarrolla un criterio profesional para dirigir voces, géneros, tempos e instrumentaciones.</p><div className="mt-8 flex flex-wrap gap-3"><Button onClick={() => setShowRegister(true)} className="rounded-full bg-[#75e9f2] px-6 py-6 font-semibold text-[#06131e] hover:bg-[#a0f4f9]">Comenzar la ruta <ArrowRight data-icon="inline-end" /></Button><a href="#ruta" className="flex items-center gap-2 rounded-full border border-white/15 px-6 py-3 text-sm text-[#c4d8df] hover:bg-white/5">Explorar programa</a></div><div className="mt-10 flex items-center gap-6 text-xs text-[#7f9aa7]"><span className="flex items-center gap-2"><BadgeCheck className="text-[#75e9f2]" /> Certificado final</span><span className="flex items-center gap-2"><Headphones className="text-[#c09eff]" /> Audio + video</span></div></div>
+      <div className="relative"><div className="absolute -inset-6 rounded-[2rem] bg-[#75e9f2]/10 blur-3xl" /><div className="relative overflow-hidden rounded-[2rem] border border-[#75e9f2]/25 bg-[#0c2432] p-2 shadow-2xl shadow-[#55d4ee]/10"><img src={heroImage} alt="Productor explorando música con inteligencia artificial" className="aspect-[4/3] w-full rounded-[1.5rem] object-cover" /><div className="absolute bottom-7 left-7 right-7 flex items-center justify-between rounded-2xl border border-white/15 bg-[#071522]/80 p-4 backdrop-blur-xl"><div><p className="text-[10px] uppercase tracking-[.2em] text-[#75e9f2]">Ahora sonando</p><p className="mt-1 text-sm font-medium">Diseña tu primer universo sonoro</p></div><button aria-label="Reproducir muestra" onClick={() => setPlaying(!playing)} className="flex size-10 items-center justify-center rounded-full bg-[#75e9f2] text-[#06131e]">{playing ? <span className="text-xs">||</span> : <Play size={16} fill="currentColor" />}</button></div></div><div className="equalizer absolute -bottom-5 -right-5 flex h-16 items-end gap-1 rounded-xl border border-white/10 bg-[#0d2030]/90 p-3">{[3,7,5,9,4,8,6,10,5,7].map((height, i) => <span key={i} className={`w-1 rounded-full bg-gradient-to-t from-[#9a72e8] to-[#73edf1] ${playing ? 'animate-pulse' : ''}`} style={{ height: `${height * 4}px`, animationDelay: `${i * 80}ms` }} />)}</div></div>
+    </section>
+
+    <section id="ruta" className="relative z-10 mx-auto max-w-7xl px-5 py-16 lg:px-10"><div className="mb-8 flex flex-wrap items-end justify-between gap-4"><div><p className="text-[10px] uppercase tracking-[.24em] text-[#75e9f2]">Tu recorrido</p><h2 className="mt-2 text-3xl font-semibold tracking-tight">De la primera idea al release</h2></div><div className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs text-[#a9c0ca]">24% completado · nivel 1</div></div><div className="grid gap-3">{modules.map(([number, title, meta, state]) => <button key={number} className={`group flex items-center gap-4 rounded-2xl border p-4 text-left transition hover:-translate-y-0.5 ${state === 'current' ? 'border-[#75e9f2]/50 bg-[#75e9f2]/[.08]' : 'border-white/10 bg-white/[.035] hover:border-white/20'}`}><span className={`flex size-11 shrink-0 items-center justify-center rounded-xl text-sm font-semibold ${state === 'done' ? 'bg-[#83d7b4]/15 text-[#83d7b4]' : state === 'current' ? 'bg-[#75e9f2] text-[#06131e]' : 'bg-white/10 text-white/40'}`}>{state === 'done' ? <Check /> : state === 'locked' ? <LockKeyhole size={17} /> : number}</span><span className="min-w-0 flex-1"><strong className="block text-sm">{title}</strong><small className="mt-1 block text-xs text-[#7f9aa7]">{meta}</small></span>{state === 'current' && <span className="hidden rounded-full bg-[#75e9f2]/15 px-3 py-1 text-[10px] text-[#8cecf3] sm:block">Siguiente</span>}<ChevronRight className="text-[#6f8995]" size={18} /></button>)}</div></section>
+
+    <section id="sesiones" className="relative z-10 mx-auto max-w-7xl px-5 py-16 lg:px-10"><div className="mb-8"><p className="text-[10px] uppercase tracking-[.24em] text-[#75e9f2]">Programa completo · 5 módulos</p><h2 className="mt-2 text-3xl font-semibold tracking-tight">Cada sesión termina en una práctica.</h2><p className="mt-3 max-w-2xl text-sm leading-6 text-[#8fa9b5]">Lecciones breves, ejemplos guiados y ejercicios con entregables para pasar de explorar herramientas a tomar decisiones de productor.</p></div><div className="grid gap-4 lg:grid-cols-2">{curriculum.map((item, index) => <details key={item.module} className="group rounded-2xl border border-white/10 bg-white/[.035] p-5 open:border-[#75e9f2]/40 open:bg-[#75e9f2]/[.05]"><summary className="flex cursor-pointer list-none items-start gap-4"><span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[#c09eff]/15 text-xs font-semibold text-[#d4c7ff]">0{index + 1}</span><span className="flex-1"><span className="text-[10px] uppercase tracking-[.18em] text-[#ff9eea]">{item.module} · {item.duration}</span><strong className="mt-1 block text-lg">{item.title}</strong><span className="mt-2 block text-xs leading-5 text-[#8fa9b5]">{item.objective}</span></span><ChevronRight className="mt-2 text-[#75e9f2] transition group-open:rotate-90" /></summary><ol className="mt-5 flex flex-col gap-3 border-l border-[#75e9f2]/20 pl-14">{item.lessons.map((lesson, lessonIndex) => <li key={lesson} className="text-sm leading-6 text-[#b5cbd4]"><span className="mr-2 text-xs text-[#75e9f2]">{lessonIndex + 1}.</span>{lesson}</li>)}</ol><div className="mt-5 rounded-xl border border-[#ffcf72]/20 bg-[#ffcf72]/5 p-3 text-xs leading-5 text-[#d8c99d]"><strong className="text-[#ffcf72]">Entregable:</strong> {item.deliverable}</div></details>)}</div></section>
+
+    <section id="prompts" className="relative z-10 mx-auto max-w-7xl px-5 py-16 lg:px-10"><div className="mb-8"><p className="text-[10px] uppercase tracking-[.24em] text-[#ff9eea]">Laboratorio creativo</p><h2 className="mt-2 text-3xl font-semibold tracking-tight">Prompts que sí producen resultados</h2><p className="mt-3 max-w-xl text-sm text-[#8fa9b5]">Plantillas con dirección de voz, BPM, instrumentación, dinámica y mezcla para dejar de improvisar.</p></div><div className="grid gap-4 lg:grid-cols-3">{prompts.map(([name, meta, copy]) => <button key={name} onClick={() => setPrompt(copy)} className="group rounded-2xl border border-white/10 bg-white/[.035] p-5 text-left transition hover:-translate-y-1 hover:border-[#75e9f2]/40"><div className="mb-8 flex items-center justify-between"><span className="rounded-full border border-[#c09eff]/25 bg-[#c09eff]/10 px-2.5 py-1 text-[9px] uppercase tracking-wider text-[#d4c7ff]">Plantilla pro</span><Music2 className="text-[#75e9f2]" size={20} /></div><h3 className="font-medium">{name}</h3><p className="mt-2 text-xs text-[#75e9f2]">{meta}</p><p className="mt-4 line-clamp-2 text-xs leading-5 text-[#829ca8]">{copy}</p><span className="mt-5 flex items-center gap-1 text-xs text-[#ffb1ed]">Usar plantilla <ArrowRight size={13} /></span></button>)}</div></section>
+
+    <section id="estudio" className="relative z-10 mx-auto max-w-7xl px-5 py-16 lg:px-10"><div className="overflow-hidden rounded-[2rem] border border-[#75e9f2]/30 bg-[#0b1f2e] p-6 shadow-2xl shadow-[#75e9f2]/10 sm:p-10"><div className="flex flex-wrap items-start justify-between gap-5"><div><p className="text-[10px] uppercase tracking-[.24em] text-[#75e9f2]">Estudio Play and Go</p><h2 className="mt-2 text-3xl font-semibold tracking-tight">Pon a prueba lo aprendido</h2><p className="mt-3 max-w-xl text-sm leading-6 text-[#9fb8c7]">Crea hasta 2 canciones diarias con tu inscripción activa. El motor recibe tu dirección de voz, tempo, género e instrumentación para convertirla en una producción real.</p></div><div className="rounded-2xl border border-[#ffcf72]/25 bg-[#ffcf72]/10 px-4 py-3 text-center"><p className="text-2xl font-semibold text-[#ffcf72]">2 / día</p><p className="text-[10px] uppercase tracking-wider text-[#cdbd8a]">Inscripción Pro</p></div></div><Button onClick={openStudio} className="mt-7 rounded-full bg-[#75e9f2] px-6 py-5 font-semibold text-[#06131e]">Abrir compositor <Music2 data-icon="inline-start" /></Button></div></section>
+
+    <section id="logros" className="relative z-10 mx-auto max-w-7xl px-5 py-16 lg:px-10"><div className="rounded-[2rem] border border-[#c09eff]/20 bg-gradient-to-br from-[#171b39] to-[#0e2130] p-6 sm:p-10"><div className="grid gap-10 lg:grid-cols-[.8fr_1.2fr] lg:items-center"><div><p className="text-[10px] uppercase tracking-[.24em] text-[#ffcf72]">Progreso visible</p><h2 className="mt-3 text-3xl font-semibold tracking-tight">Cada práctica desbloquea una nueva frecuencia.</h2><p className="mt-4 text-sm leading-6 text-[#a6bbc5]">Colecciona insignias, construye tu portafolio y demuestra que puedes dirigir una producción completa.</p></div><div className="grid grid-cols-3 gap-3">{[['Primer beat', Zap, 'Completado'], ['Oído crítico', Award, 'Desbloqueada'], ['Productor IA', Trophy, '24%']].map(([label, Icon, state]) => <div key={label as string} className="rounded-2xl border border-white/10 bg-white/5 p-4 text-center"><div className="mx-auto flex size-12 items-center justify-center rounded-2xl bg-[#ffcf72]/15 text-[#ffcf72]"><Icon /></div><p className="mt-3 text-xs font-medium">{label as string}</p><p className="mt-1 text-[10px] text-[#7f9aa7]">{state as string}</p></div>)}</div></div></div></section>
+    <footer className="relative z-10 border-t border-white/10 px-5 py-8 text-center text-xs text-[#78919d]">Play and Go by TAMV ONLINE <span className="mx-2 text-[#75e9f2]">•</span> Orgullosamente Realmontenses</footer>
+
+    <button aria-label="Abrir asistente del curso" onClick={() => setChatOpen(!chatOpen)} className="fixed bottom-5 right-5 z-40 flex size-14 items-center justify-center rounded-full border border-[#75e9f2]/60 bg-[#0b2635] text-[#75e9f2] shadow-2xl shadow-[#75e9f2]/20 transition hover:scale-105"><MessageCircle /></button>
+    {chatOpen && <aside className="fixed bottom-24 right-5 z-40 flex w-[min(92vw,380px)] flex-col overflow-hidden rounded-3xl border border-[#75e9f2]/35 bg-[#0b1d2b]/95 shadow-2xl shadow-[#75e9f2]/15 backdrop-blur-xl"><div className="flex items-center justify-between border-b border-white/10 p-4"><div><p className="text-[10px] uppercase tracking-[.2em] text-[#75e9f2]">Guía Play and Go</p><h2 className="mt-1 font-semibold">Asistente del curso</h2></div><button aria-label="Cerrar asistente" onClick={() => setChatOpen(false)}><X size={18} /></button></div><div className="flex max-h-80 flex-col gap-3 overflow-y-auto p-4">{chatMessages.map((message, index) => <div key={index} className={`max-w-[88%] rounded-2xl px-3 py-2 text-xs leading-5 ${message.from === 'user' ? 'self-end bg-[#75e9f2] text-[#06131e]' : 'self-start border border-white/10 bg-white/5 text-[#c5d8df]'}`}>{message.text}</div>)}</div><form onSubmit={sendChat} className="flex gap-2 border-t border-white/10 p-3"><input aria-label="Pregunta al asistente" value={chatInput} onChange={event => setChatInput(event.target.value)} placeholder="¿Qué quieres saber?" className="min-w-0 flex-1 rounded-xl border border-white/10 bg-black/20 px-3 text-xs outline-none focus:border-[#75e9f2]" /><Button type="submit" aria-label="Enviar pregunta" className="size-10 shrink-0 rounded-xl bg-[#75e9f2] p-0 text-[#06131e]"><Send size={16} /></Button></form></aside>}
+
+    {prompt && <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#02080e]/80 p-4 backdrop-blur-sm" onClick={() => setPrompt(null)}><div className="w-full max-w-lg rounded-3xl border border-[#75e9f2]/30 bg-[#0d2230] p-6 shadow-2xl" onClick={e => e.stopPropagation()}><div className="flex items-start justify-between"><div><p className="text-[10px] uppercase tracking-[.2em] text-[#75e9f2]">Prompt listo para adaptar</p><h2 className="mt-2 text-xl font-semibold">Biblioteca Play and Go</h2></div><button aria-label="Cerrar prompt" onClick={() => setPrompt(null)}><X className="text-[#8fa9b5]" /></button></div><p className="mt-6 rounded-2xl border border-white/10 bg-black/20 p-5 text-sm leading-6 text-[#c5d8df]">{prompt}</p><Button className="mt-5 w-full rounded-full bg-[#75e9f2] text-[#06131e]" onClick={() => setPrompt(null)}>Copiar y personalizar <Sparkles data-icon="inline-end" /></Button></div></div>}
+    {studioOpen && <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#02080e]/85 p-4 backdrop-blur-sm" onClick={() => setStudioOpen(false)}><div className="w-full max-w-2xl rounded-3xl border border-[#75e9f2]/30 bg-[#0d2230] p-6 shadow-2xl" onClick={e => e.stopPropagation()}><div className="flex items-start justify-between"><div><p className="text-[10px] uppercase tracking-[.2em] text-[#75e9f2]">{user?.email}</p><h2 className="mt-2 text-2xl font-semibold">Nuevo universo sonoro</h2></div><button aria-label="Cerrar compositor" onClick={() => setStudioOpen(false)}><X className="text-[#8fa9b5]" /></button></div><form onSubmit={generateSong} className="mt-6 flex flex-col gap-4"><input required value={songTitle} onChange={e => setSongTitle(e.target.value)} placeholder="Título de la canción" className="h-12 rounded-xl border border-white/10 bg-black/20 px-4 text-sm outline-none focus:border-[#75e9f2]" /><textarea required value={songPrompt} onChange={e => setSongPrompt(e.target.value)} placeholder="Describe la canción: género, emoción, estructura, voz, tempo e instrumentos..." className="min-h-36 rounded-2xl border border-white/10 bg-black/20 p-4 text-sm leading-6 outline-none focus:border-[#75e9f2]" /><div className="grid gap-3 sm:grid-cols-3"><div className="rounded-xl border border-white/10 bg-white/5 p-3 text-xs"><span className="text-[#75e9f2]">96 BPM</span><p className="mt-1 text-[#8fa9b5]">Tempo sugerido</p></div><div className="rounded-xl border border-white/10 bg-white/5 p-3 text-xs"><span className="text-[#ff9eea]">Voz aireada</span><p className="mt-1 text-[#8fa9b5]">Perfil vocal</p></div><div className="rounded-xl border border-white/10 bg-white/5 p-3 text-xs"><span className="text-[#ffcf72]">Piano + cuerdas</span><p className="mt-1 text-[#8fa9b5]">Instrumentación</p></div></div><Button type="submit" className="h-12 rounded-full bg-[#75e9f2] font-semibold text-[#06131e]">Generar canción <Sparkles data-icon="inline-end" /></Button>{songStatus && <p className="rounded-xl bg-[#75e9f2]/10 p-3 text-center text-xs text-[#8cecf3]">{songStatus}</p>}</form></div></div>}
+    {showRegister && <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#02080e]/80 p-4 backdrop-blur-sm" onClick={() => setShowRegister(false)}><div className="w-full max-w-md rounded-3xl border border-[#75e9f2]/30 bg-[#0d2230] p-6 shadow-2xl" onClick={e => e.stopPropagation()}><div className="flex items-start justify-between"><div><p className="text-[10px] uppercase tracking-[.2em] text-[#75e9f2]">Inscripción segura</p><h2 className="mt-2 text-2xl font-semibold">Activa tu acceso Pro</h2></div><button aria-label="Cerrar registro" onClick={() => setShowRegister(false)}><X className="text-[#8fa9b5]" /></button></div><div className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-4"><div className="flex items-center justify-between"><span className="text-sm">Curso completo</span><strong className="text-xl">$490 MXN</strong></div><p className="mt-2 text-xs text-[#8fa9b5]">Acceso a lecciones, prompts, ejercicios, audio, video e insignias.</p></div><form onSubmit={startCheckout} className="mt-5 flex flex-col gap-3"><label className="text-xs text-[#a9c0ca]" htmlFor="email">Tu correo electrónico</label><input id="email" type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="tu@correo.com" className="h-12 rounded-xl border border-white/10 bg-black/20 px-4 text-sm outline-none placeholder:text-[#58717e] focus:border-[#75e9f2]" /><Button type="submit" className="h-12 rounded-full bg-[#75e9f2] font-semibold text-[#06131e] hover:bg-[#a0f4f9]">Continuar al pago <ArrowRight data-icon="inline-end" /></Button>{status && <p className="text-center text-xs text-[#ffcf72]">{status}</p>}</form><p className="mt-4 text-center text-[10px] text-[#6f8995]">Pago procesado de forma segura por Stripe.</p></div></div>}
+  </main>
 }
