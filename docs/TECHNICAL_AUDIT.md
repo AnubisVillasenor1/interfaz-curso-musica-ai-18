@@ -12,13 +12,14 @@ Fecha de revisión: 2026-11-04. Alcance: inspección estática de los archivos v
 - `components/course-dashboard.tsx`: landing, autenticación, checkout, chat y estudio están mezclados en un componente cliente grande; el asistente principal usa respuestas deterministas, no un agente/modelo. El flujo de generación solo reporta texto al usuario y no muestra una biblioteca persistente.
 - `package.json`: nombre genérico `my-project`; solo scripts visibles son dev/build/start, no hay scripts de chequeo o pruebas.
 
-## Mejoras añadidas en esta rama
+## Mejoras añadidas en la rama del agente
 
-- Ruta `/studio` con un flujo funcional sin servicios de pago: agente local basado en reglas, integración opcional con Ollama configurado por el operador y exportación procedural de archivo MIDI (melodía y acordes).
-- API `POST /api/agent` con validación de longitud, timeout y fallback local si Ollama está ausente o no responde.
-- API `POST /api/music/compose` con validación de tempo/tonalidad y descarga MIDI; no presenta MIDI como audio generado.
-- API `GET /api/music/search` agrega búsqueda de Internet Archive y Jamendo opcional (`JAMENDO_CLIENT_ID`), con límite de resultados, timeout y aviso de licencias.
-- UI en español, estados de operación, validaciones de formulario y descargo responsable de resultados externos.
+- Ruta `/studio` con un planificador determinista de reglas, integración opcional con Ollama local y exportación procedural de archivo MIDI.
+- API `POST /api/agent` con límites de prompt, timeout y fallback si Ollama no está configurado o falla.
+- API `POST /api/music/compose` para descargar MIDI; no presenta ese archivo como audio renderizado.
+- API `GET /api/music/search` para buscar en Internet Archive y opcionalmente Jamendo; cada obra conserva enlace a su ficha y aviso de licencias.
+- Nuevo módulo `RealAudioStudio` integrado en `/studio`: carga local/URL directa, reproducción HTML5, FFT mediante `AnalyserNode`, visualización en barras/línea y descarga CSV de bins.
+- Gestión de ciclo de vida de audio: reutiliza un elemento reproductor estable, libera object URLs y cierra AudioContext al desmontar.
 
 ## Riesgos pendientes antes de producción
 
@@ -28,7 +29,4 @@ Fecha de revisión: 2026-11-04. Alcance: inspección estática de los archivos v
 4. Instalar/configurar lint, pruebas unitarias/integración/E2E, CI, logging estructurado, métricas y alertas; ejecutar `pnpm build` y `pnpm exec tsc --noEmit` en un entorno con dependencias.
 5. Revisar por separado las licencias y derechos de cada modelo, dataset, grabación y resultado antes de despliegues comerciales. “Open source” y “gratis” no implican automáticamente uso comercial libre.
 6. El MIDI es composición procedural útil como boceto, no una inferencia de modelo de audio. Para renderizar audio de alta fidelidad hace falta desplegar un modelo/servicio compatible con el hardware y sus licencias.
-
-## Fuentes de datos
-
-Internet Archive y Jamendo son catálogos externos. Los resultados no se copian ni se alojan; la app enlaza a su ficha original y presenta la licencia que expone el proveedor. Sin `JAMENDO_CLIENT_ID`, la búsqueda de Internet Archive sigue disponible.
+7. Para analizar audio de URL cross-origin, el navegador requiere que el host exponga una política CORS que permita el origen de la aplicación.
