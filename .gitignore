@@ -14,3 +14,7 @@ __v0_jsx-dev-runtime.ts
 node_modules
 .next/
 .DS_Store
+
+# Build artefacts y lockfiles ajenos al gestor del proyecto (pnpm)
+tsconfig.tsbuildinfo
+package-lock.json
