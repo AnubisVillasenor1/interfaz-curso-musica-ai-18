@@ -25,10 +25,10 @@ interface Props {
   autoAdvance?: boolean
 }
 
-const FOCUSABLE = 'button:not([disabled]), [href], input, [tabindex]:not([tabindex="-1"])'
+const FOCUSABLE_SELECTOR = 'button:not([disabled]), [href], input, [tabindex]:not([tabindex="-1"])'
 
-/** Variables CSS por elemento, sin pelearse con el tipo de `style` de React. */
-const cssVars = (vars: Record<string, string>): CSSProperties => vars as unknown as CSSProperties
+/** Utilidad tipada para inyección de CSS Custom Properties sin romper el tipado de React. */
+const cssVars = (vars: Record<string, string | number>): CSSProperties => vars as unknown as CSSProperties
 
 export default function CinematicIntro({ onComplete, onSkip, autoAdvance = true }: Props) {
   const [capabilities, setCapabilities] = useState<{ webgl: boolean; reduced: boolean; tier: QualityTier } | null>(null)
@@ -37,34 +37,58 @@ export default function CinematicIntro({ onComplete, onSkip, autoAdvance = true 
   const [bedState, setBedState] = useState<BedState>('idle')
   const [progressKey, setProgressKey] = useState(0)
 
+  // Referencias estables para evitar closures obsoletas (stale closures) y re-renders innecesarios
+  const actRef = useRef(act)
+  actRef.current = act
+
   const env = useRef<CinematicEnv>(createEnv())
   const shellRef = useRef<HTMLDivElement>(null)
   const restoreFocus = useRef<Element | null>(null)
   const bedRef = useRef<SoundBed | null>(null)
+  const timeoutIds = useRef<number[]>([])
 
-  /* --- capacidades: se miden después del montaje, nunca durante el render --- */
-  useEffect(() => {
-    setCapabilities({ webgl: hasWebGL(), reduced: prefersReducedMotion(), tier: detectTier() })
+  // Gestor seguro de timeouts con autolimpieza al desmontar
+  const safeTimeout = useCallback((callback: () => void, delay: number) => {
+    const id = window.setTimeout(callback, delay)
+    timeoutIds.current.push(id)
+    return id
   }, [])
 
-  /* --- diálogo modal: scroll bloqueado y foco al entrar -------------------- */
   useEffect(() => {
-    restoreFocus.current = document.activeElement
-    const previous = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    const timer = window.setTimeout(() => {
-      shellRef.current?.querySelector<HTMLElement>('[data-first-control]')?.focus()
-    }, 80)
     return () => {
-      window.clearTimeout(timer)
-      document.body.style.overflow = previous
+      timeoutIds.current.forEach(window.clearTimeout)
+      timeoutIds.current = []
     }
   }, [])
 
-  /* --- audio: pista recortada a la duración de la presentación ----------- */
+  /* --- Detección inicial de capacidades del cliente --- */
+  useEffect(() => {
+    setCapabilities({
+      webgl: hasWebGL(),
+      reduced: prefersReducedMotion(),
+      tier: detectTier(),
+    })
+  }, [])
+
+  /* --- Bloqueo de scroll y gestión de foco modal accesible --- */
+  useEffect(() => {
+    restoreFocus.current = document.activeElement
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
+    const timer = safeTimeout(() => {
+      shellRef.current?.querySelector<HTMLElement>('[data-first-control]')?.focus()
+    }, 80)
+
+    return () => {
+      window.clearTimeout(timer)
+      document.body.style.overflow = previousOverflow
+    }
+  }, [safeTimeout])
+
+  /* --- Inicialización y ciclo de vida del motor de audio (SoundBed) --- */
   useEffect(() => {
     const bed = new SoundBed(INTRO_TRACK, {
-      // Eco pedido: 0.11 s exactos, réplica baja y oscurecida.
       delaySeconds: 0.11,
       wet: 0.3,
       feedback: 0.26,
@@ -76,32 +100,26 @@ export default function CinematicIntro({ onComplete, onSkip, autoAdvance = true 
     bed.prime()
     const unsubscribe = bed.onState(setBedState)
 
-    // El navegador exige un gesto antes de dejar sonar nada: se intenta ya y
-    // se reintenta en el primer toque/tecla, sin molestar con un modal.
     void bed.enable()
+
+    const controller = new AbortController()
     const retry = () => {
       if (bed.playState !== 'playing') void bed.enable()
     }
-    window.addEventListener('pointerdown', retry, { passive: true })
-    window.addEventListener('keydown', retry)
+
+    window.addEventListener('pointerdown', retry, { passive: true, signal: controller.signal })
+    window.addEventListener('keydown', retry, { signal: controller.signal })
 
     return () => {
       unsubscribe()
-      window.removeEventListener('pointerdown', retry)
-      window.removeEventListener('keydown', retry)
+      controller.abort()
       bed.dispose()
       bedRef.current = null
     }
   }, [])
 
-  useEffect(() => () => {
-    bedRef.current?.dispose()
-    bedRef.current = null
-  }, [])
-
   const finish = useCallback((skipped: boolean) => {
     markIntroSeen()
-    // Fundido de salida de 0.5 s: el eco de 0.11 s se apaga con la música.
     bedRef.current?.disable()
     const target = skipped ? onSkip : onComplete
     target?.()
@@ -109,33 +127,42 @@ export default function CinematicIntro({ onComplete, onSkip, autoAdvance = true 
     element?.focus?.({ preventScroll: true })
   }, [onComplete, onSkip])
 
-  /* --- transición entre actos: warp en GPU, no opacity+setTimeout hack ----- */
+  /* --- Transición fluida entre actos con efecto Warp en GPU --- */
   const goTo = useCallback((index: number) => {
-    if (index === act || warping) return
+    if (index === actRef.current || warping) return
     setWarping(true)
     env.current.warp = 1
-    window.setTimeout(() => {
+
+    safeTimeout(() => {
       setAct(index)
       setProgressKey((key) => key + 1)
       env.current.warp = 0.12
-      window.setTimeout(() => setWarping(false), 260)
+      safeTimeout(() => setWarping(false), 260)
     }, 520)
-  }, [act, warping])
+  }, [warping, safeTimeout])
 
   const advance = useCallback(() => {
-    if (act < CINEMATIC_ACTS.length - 1) goTo(act + 1)
-    else finish(false)
-  }, [act, finish, goTo])
+    if (actRef.current < CINEMATIC_ACTS.length - 1) {
+      goTo(actRef.current + 1)
+    } else {
+      finish(false)
+    }
+  }, [finish, goTo])
 
-  /* --- línea de tiempo automática ------------------------------------------ */
+  /* --- Automatización de la línea de tiempo temporal --- */
   useEffect(() => {
     if (!autoAdvance || warping || !capabilities || capabilities.reduced) return
-    const id = window.setTimeout(advance, actAt(act).duration * 1000)
-    return () => window.clearTimeout(id)
-  }, [act, advance, autoAdvance, capabilities, progressKey, warping])
+    const durationMs = actAt(act).duration * 1000
+    const id = safeTimeout(advance, durationMs)
+    return () => {
+      window.clearTimeout(id)
+    }
+  }, [act, advance, autoAdvance, capabilities, progressKey, warping, safeTimeout])
 
-  /* --- teclado + trampa de foco -------------------------------------------- */
+  /* --- Gestión de teclado y trampa de foco (Focus Trap) con AbortController --- */
   useEffect(() => {
+    const controller = new AbortController()
+
     function onKeyDown(event: KeyboardEvent) {
       const tag = (event.target as HTMLElement | null)?.tagName
       if (event.key === 'Escape') {
@@ -146,9 +173,9 @@ export default function CinematicIntro({ onComplete, onSkip, autoAdvance = true 
         advance()
       } else if (event.key === 'ArrowLeft') {
         event.preventDefault()
-        if (act > 0) goTo(act - 1)
+        if (actRef.current > 0) goTo(actRef.current - 1)
       } else if (event.key === 'Tab') {
-        const nodes = shellRef.current?.querySelectorAll<HTMLElement>(FOCUSABLE)
+        const nodes = shellRef.current?.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)
         if (!nodes?.length) return
         const list = Array.from(nodes).filter((node) => node.offsetParent !== null)
         const first = list[0]
@@ -163,14 +190,16 @@ export default function CinematicIntro({ onComplete, onSkip, autoAdvance = true 
         }
       }
     }
-    window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
-  }, [act, advance, finish, goTo])
 
-  /* --- nivel visual: la canción real manda; si no hay audio, respira solo --- */
+    window.addEventListener('keydown', onKeyDown, { signal: controller.signal })
+    return () => controller.abort()
+  }, [advance, finish, goTo])
+
+  /* --- Loop visual reactivo acoplado a la frecuencia de audio / rAF --- */
   useEffect(() => {
     let frame = 0
     let cancelled = false
+
     const tick = () => {
       if (cancelled) return
       const bed = bedRef.current
@@ -181,21 +210,21 @@ export default function CinematicIntro({ onComplete, onSkip, autoAdvance = true 
         env.current.treble = bands.high
       } else {
         const t = performance.now() / 1000
-        const density = actAt(act).density
+        const density = actAt(actRef.current).density
         env.current.target = Math.max(0, (0.12 + 0.1 * Math.sin(t * 0.7) + 0.05 * Math.sin(t * 2.3)) * (0.5 + density))
         env.current.bass = Math.max(0, 0.1 + 0.09 * Math.sin(t * 0.9))
         env.current.treble = Math.max(0, 0.08 + 0.07 * Math.sin(t * 1.7 + 1.2))
       }
       frame = requestAnimationFrame(tick)
     }
+
     frame = requestAnimationFrame(tick)
     return () => {
       cancelled = true
       cancelAnimationFrame(frame)
     }
-  }, [act])
+  }, [])
 
-  /* --- el botón sólo hace falta si el navegador bloqueó el autoplay --------- */
   const toggleAudio = useCallback(() => {
     const bed = bedRef.current
     if (!bed) return
@@ -222,7 +251,7 @@ export default function CinematicIntro({ onComplete, onSkip, autoAdvance = true 
       aria-label="Intro cinemática de Play and Go"
       className="intro-shell"
     >
-      {/* Capa WebGL */}
+      {/* Capa WebGL / Respaldo de Aurora */}
       <div className="absolute inset-0" aria-hidden="true">
         {ready && capabilities?.webgl ? (
           <Canvas
@@ -254,7 +283,7 @@ export default function CinematicIntro({ onComplete, onSkip, autoAdvance = true 
         )}
       </div>
 
-      {/* Profundidad óptica: halos de pantalla, grano y marcas de encuadre */}
+      {/* Capas de profundidad óptica y grano */}
       <div className="intro-veil" aria-hidden="true" />
       <div className="intro-grain" aria-hidden="true" />
       <div className="intro-marks" aria-hidden="true">
@@ -262,9 +291,8 @@ export default function CinematicIntro({ onComplete, onSkip, autoAdvance = true 
       </div>
       <div className="intro-flash" data-on={warping} aria-hidden="true" />
 
-      {/* Composición: cabecera / bloque editorial + riel / línea de tiempo */}
+      {/* Interfaz de usuario principal */}
       <div className="relative z-20 flex h-full flex-col justify-between px-7 py-8 sm:px-12 sm:py-10 lg:px-20 lg:py-14">
-
         <header className="flex items-start justify-between gap-6">
           <div className="intro-monogram intro-fade" style={cssVars({ animationDelay: '120ms' })}>
             <i aria-hidden="true">TAMV</i>
@@ -293,7 +321,6 @@ export default function CinematicIntro({ onComplete, onSkip, autoAdvance = true 
         </header>
 
         <div className="flex items-end justify-between gap-10">
-          {/* Tipografía en DOM: texto real, seleccionable, accesible e indexable */}
           <div key={current.id} aria-live="polite" className="intro-copy">
             <p className="intro-kicker">{current.kicker}</p>
             <h1 className="intro-title mt-6">
@@ -301,7 +328,7 @@ export default function CinematicIntro({ onComplete, onSkip, autoAdvance = true 
                 <span
                   key={line}
                   className="intro-line"
-                  style={cssVars({ '--line': String(index) })}
+                  style={cssVars({ '--line': index })}
                 >
                   <span className="shimmer-text">{line}</span>
                 </span>
@@ -315,7 +342,6 @@ export default function CinematicIntro({ onComplete, onSkip, autoAdvance = true 
             </p>
           </div>
 
-          {/* Riel de capítulos: jerarquía tipográfica en lugar de puntitos */}
           <nav aria-label="Capítulos de la intro" className="intro-rail hidden md:block">
             {rail.map((item) => {
               const isCurrent = item.index === act
