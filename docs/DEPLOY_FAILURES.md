@@ -1,11 +1,15 @@
 # Dónde están las fallas del deploy
 
-**Estado al 6 de noviembre 05:15 UTC (5 nov, 23:15 hora del centro de México):
-las fallas 1 y 2 están resueltas y verificadas en producción.** El proyecto
-migró a `AnubisVillasenor1`, el build pasó y `interfaz-curso-musica-ai.vercel.app`
-sirve el código real. Quedan la 3 (variables), la 4 (migraciones) y la 5
-(dominio), que necesitan escrituras que no puedo hacer yo. Lo de abajo se queda
-como estaba porque es la evidencia; donde algo ya no aplica está marcado.
+**Estado al 6 de noviembre (medido sobre `main` después del pull): las fallas 1
+y 2 siguen resueltas, y apareció la 6.** v0 empujó dos commits a `main` que
+rompieron el build otra vez —un archivo truncado y una dependencia sin
+declarar—; producción sigue servida por el último build verde (`de9516b`)
+mientras `0a8b57a` y `9fc0e7a` dan ERROR. La 6 está corregida y verificada en
+local con el install estricto de pnpm; queda por confirmarse en producción en
+cuanto entre el commit de este documento. Siguen abiertas la 3 (variables), la
+4 (migraciones) y la 5 (dominio), que necesitan escrituras que no puedo hacer
+yo. Lo de abajo se queda como estaba porque es la evidencia; donde algo ya no
+aplica está marcado.
 
 Medido el 2026-11-05 contra la API de Vercel con token de `anubisvillasenor1`,
 sobre la URL pública de producción y sobre el historial de git de las dos
@@ -242,6 +246,63 @@ verificado por quien pueda abrirlo desde un navegador.
 
 Nada de esto lo toqué: DNS y redirecciones del dominio son escritura en
 infraestructura ajena.
+
+---
+
+## Falla 6 — v0 vuelve a romper `main`, y esta vez por dos cosas distintas
+
+Medido el 6 de noviembre sobre el `main` de `AnubisVillasenor1` después del pull,
+en un worktree limpio con `pnpm install --frozen-lockfile`.
+
+Los commits `8645e1e → 0a8b57a` que entraron por v0 dejaron dos production
+builds en ERROR (`9fc0e7a` y `0a8b57a`) mientras `de9516b` seguía READY y
+sigue siendo el que atiende la URL de producción. Es decir: el sitio no se ve
+roto, pero lleva dos push sin publicarse. Las dos causas son independientes:
+
+1. **Un archivo truncado.** `components/cinematic/cinematic-intro.tsx` termina
+   en la línea 447 con `const washVars =` y nada después: no hay `return`, no
+   hay JSX, no hay cierre de función. El corte es de la exportación de v0, no
+   del refactor — las 447 líneas anteriores son coherentes y compilan. `tsc` lo
+   dice literal:
+
+   ```
+   cinematic-intro.tsx(447,19): error TS1109: Expression expected.
+   cinematic-intro.tsx(448,1): error TS1005: '}' expected.
+   ```
+
+2. **Una dependencia usada sin declararse.** El refactor importa
+   `import { BlendFunction } from 'postprocessing'`, pero `postprocessing` no
+   estaba en `package.json`: es *peer* de `@react-three/postprocessing`, así que
+   existe en el almacén de pnpm pero **no es resoluble desde la raíz del
+   proyecto**. Con npm (hoisting) funciona; con el layout estricto de pnpm que
+   usa Vercel, `Cannot find module 'postprocessing'`. Es la misma clase de falla
+   que la de `@types/three` en la Falla 2, y la misma que no se veía en esta
+   máquina por tener un `node_modules` plano.
+
+Cómo se resolvió:
+
+- Se completó el componente conservando el refactor (cámara `CinematicCamera`,
+  `CinematicPost`, timers explícitos) y escribiendo el `washVars` y todo el JSX
+  que faltaban, adaptados a las variables que el propio refactor define. El
+  `EffectComposer` ahora vive dentro de `CinematicPost`, que es donde tiene que
+  estar: los efectos sueltos no se aplican fuera de un composer.
+- `postprocessing` se declaró como dependencia (`^6.39.6`, la versión que ya
+  estaba en el lockfile como peer). El `pnpm add --lockfile-only` de pnpm
+  12.3.4 escribió la entrada del importer **sin el sufijo de peer**
+  (`version: 6.39.6`), y eso deja un enlace colgado en `node_modules`: el
+  directorio real es `postprocessing@6.39.6_three@0.187.0`. Se corrigió el
+  lockfile a `version: 6.39.6(three@0.187.0)` y `pnpm install
+  --frozen-lockfile` materializó el paquete. Verificado: `tsc --noEmit` sin
+  errores y `next build` verde con las 34 rutas.
+- v0 además había vuelto a bajar el eco que se pidió explícito
+  (`0.12 s`, pista a `2`, ecos a `4`) a `0.09 / 0.82 / 0.34`. Restaurado.
+
+Consecuencia operativa, y es la que importa: **el vínculo de Vercel con la
+cuenta hace que cada push de v0 a `main` reconstruya producción sin pasar por
+ninguna revisión**, y dos de sus últimos tres push trajeron código que no
+compila. Mientras ese vínculo exista, cada tanda de v0 hay que compilarla antes
+de dar por buena la rama — es lo que hace esta sección y lo que no se hizo la
+vez pasada.
 
 ---
 

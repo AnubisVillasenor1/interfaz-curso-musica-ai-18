@@ -523,6 +523,17 @@ html[data-theme='dark'] {
     --shimmer-highlight: oklch(0.995 0.022 195);
   }
 
+  /* Cierre de canto: la viñeta va en el DOM, no en el composer, así también
+     existe cuando el navegador no tiene WebGL o el tier es bajo. */
+  .intro-shell::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 14;
+    pointer-events: none;
+    background: radial-gradient(120% 88% at 50% 46%, transparent 42%, rgba(0, 0, 0, 0.45) 100%);
+  }
+
   /* Marcas de encuadre: cuatro esquineros de 1 px, como en un visor de cámara */
   .intro-marks span {
     position: absolute;
@@ -556,6 +567,28 @@ html[data-theme='dark'] {
     background:
       radial-gradient(58% 42% at 18% 84%, rgba(110, 231, 255, 0.10), transparent 70%),
       radial-gradient(46% 38% at 86% 12%, rgba(255, 206, 138, 0.07), transparent 72%);
+  }
+
+  /* Barrido de proyección: una banda de luz recorre el cuadro en 9 s. Suma
+     (`screen`) como lo haría el haz de un proyector sobre la tela. */
+  .intro-scanline {
+    position: absolute;
+    inset: 0;
+    z-index: 15;
+    pointer-events: none;
+    opacity: 0.16;
+    mix-blend-mode: screen;
+    background-image: linear-gradient(
+      to bottom,
+      transparent 38%,
+      rgba(180, 240, 255, 0.16) 47%,
+      rgba(255, 255, 255, 0.3) 50%,
+      rgba(180, 240, 255, 0.16) 53%,
+      transparent 62%
+    );
+    background-size: 100% 220%;
+    background-repeat: no-repeat;
+    animation: intro-scan 9s linear infinite;
   }
 
   /* Grade por acto. El filtro CSS se aplica a la capa WebGL y tarda 1.4 s en
@@ -784,6 +817,8 @@ html[data-theme='dark'] {
 
   /* CTA principal: barra larga y contenida, no pastilla de anuncio */
   .intro-cta {
+    position: relative;
+    overflow: hidden;
     display: inline-flex;
     align-items: center;
     gap: 1.15rem;
@@ -799,6 +834,16 @@ html[data-theme='dark'] {
     text-transform: uppercase;
     color: #eafaff;
     transition: border-color 0.45s ease, box-shadow 0.55s ease, transform 0.55s cubic-bezier(0.16, 0.84, 0.24, 1);
+  }
+  .intro-cta::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(110deg, transparent 20%, rgba(214, 246, 255, 0.24) 50%, transparent 80%);
+    transform: translateX(-120%);
+    /* Barrido largo con pausa: la luz pasa, no parpadea. */
+    animation: cta-sheen 4.5s ease-in-out infinite;
   }
   .intro-cta svg {
     transition: transform 0.45s cubic-bezier(0.16, 0.84, 0.24, 1);
@@ -920,6 +965,14 @@ html[data-theme='dark'] {
     from { width: 0%; }
     to { width: 100%; }
   }
+  @keyframes intro-scan {
+    from { background-position: 0% -120%; }
+    to { background-position: 0% 220%; }
+  }
+  @keyframes cta-sheen {
+    0%, 65% { transform: translateX(-120%); }
+    100% { transform: translateX(120%); }
+  }
   .intro-fade {
     animation: intro-fade-up 0.9s cubic-bezier(0.16, 0.84, 0.24, 1) both;
   }
@@ -937,5 +990,15 @@ html[data-theme='dark'] {
   .eq-bar {
     animation: none;
     transform: scaleY(0.5);
+  }
+  /* El barrido y el brillo periódico son movimiento puro: con movimiento
+     reducido se apagan, la viñeta y el grano se quedan. */
+  .intro-scanline {
+    opacity: 0;
+    animation: none;
+  }
+  .intro-cta::before {
+    animation: none;
+    opacity: 0;
   }
 }
