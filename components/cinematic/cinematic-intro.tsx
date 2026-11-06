@@ -85,14 +85,14 @@ export default function CinematicIntro({ onComplete, onSkip, autoAdvance = true 
     const bed = new SoundBed(INTRO_TRACK, {
       // Eco pedido: 0.12 s base, pista a 2 y serie de ecos a 4, degradada en
       // tres tomas que se atenúan y se oscurecen una tras otra.
-      delaySeconds: 0.12,
-      mainGain: 2,
-      echoGain: 4,
-      tapMix: [0.5, 0.3, 0.2],
+      delaySeconds: 0.09,
+      mainGain: ,
+      echoGain: ,
+      tapMix: [0.4, 0.5, 0.2],
       tapDampHz: [5200, 3400, 2200],
       trim: 0.2,
-      master: 1,
-      fadeIn: 1.2,
+      master: 2,
+      fadeIn: 0.6,
       fadeOut: 0.5,
     })
     bedRef.current = bed
@@ -145,9 +145,9 @@ export default function CinematicIntro({ onComplete, onSkip, autoAdvance = true 
       window.setTimeout(() => {
         setAct(index)
         setProgressKey((key) => key + 1)
-        env.current.warp = 0.12
-        transitionTimers.current.push(window.setTimeout(() => setWarping(false), 260))
-      }, 520),
+        env.current.warp = 0.09
+        transitionTimers.current.push(window.setTimeout(() => setWarping(false), 290))
+      }, 500),
     )
   }, [act, warping])
 
