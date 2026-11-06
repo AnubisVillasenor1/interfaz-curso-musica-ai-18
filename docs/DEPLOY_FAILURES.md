@@ -185,8 +185,9 @@ Medido por API y por DNS, con controles para que el método no sea la explicaci�
 **Corrección de una afirmación mía que estaba mal.** En el borrador de este
 documento escribí que el dominio de la marca estaba en **NXDOMAIN** y que por
 tanto el correo también estaba muerto. Era falso y el error fue mío: consulté
-`visitaraldelmonte.online` — sin la `e` de *realdelmonte* — en lugar de
-`visitarealdelmonte.online`, que es el nombre que publicas. Repetida la
+`visitaraldelmonte.online` —sin la `e` que abre *real*— en lugar de
+`visitarealdelmonte.online` (`visita` + `real` + `delmonte`), que es el nombre
+que publicas. Repetida la
 consulta con el hostname correcto, el dominio resuelve y los MX siguen
 apuntando a Hostinger. El DNS nunca fue la falla; lo que está roto es el destino
 de la redirección: un deployment de Vercel que ya no existe. No lo reportes
