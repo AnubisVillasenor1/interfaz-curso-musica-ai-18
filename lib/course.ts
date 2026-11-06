@@ -188,29 +188,7 @@ export const COURSE_LESSONS: Lesson[] = [
         name: 'Traductor de escena a prompt',
         outcome: 'Convertir una escena mental en un prompt con las cinco decisiones cubiertas.',
         text: 'Género: {género y subgénero}. Tempo: {BPM} BPM. Tonalidad: {tonalidad y modo}. Voz: {registro} con {textura} y {articulación}. Instrumentación: {capa base} sosteniendo el groove, {capa armónica} en versos, {capa que entra en coros}. Estructura: {intro} / {verso} / {pre-coro} / {coro} / {puente} / {outro}, alrededor de {duración total}. Dinámica: {qué sube en el coro} y {qué baja en el puente}. Mezcla: {referencia de espacio} con {referencia de espectro}. La escena, sin adjetivos emocionales: {una frase de la escena}.',
-        variables: [
-          'género y subgénero',
-          'BPM',
-          'tonalidad y modo',
-          'registro',
-          'textura',
-          'articulación',
-          'capa base',
-          'capa armónica',
-          'capa que entra en coros',
-          'intro',
-          'verso',
-          'pre-coro',
-          'coro',
-          'puente',
-          'outro',
-          'duración total',
-          'qué sube en el coro',
-          'qué baja en el puente',
-          'referencia de espacio',
-          'referencia de espectro',
-          'una frase de la escena',
-        ],
+        variables: ['género y subgénero', 'BPM', 'tonalidad y modo', 'registro', 'textura', 'articulación', 'capa base', 'capa armónica', 'capa que entra en coros', 'intro', 'verso', 'pre-coro', 'coro', 'puente', 'outro', 'duración total', 'qué sube en el coro', 'qué baja en el puente', 'referencia de espacio', 'referencia de espectro', 'una frase de la escena'],
       },
       {
         name: 'Antídoto contra el adjetivo vacío',
@@ -338,31 +316,7 @@ export const COURSE_LESSONS: Lesson[] = [
         name: 'Ficha de los cuatro conceptos',
         outcome: 'Un prompt donde BPM, modo, curva de energía y estructura con tiempos quedan explícitos.',
         text: 'Género: {género}. Tempo: {BPM} BPM, feel {straight, halftime o doble}. Tonalidad: {tonalidad} en {modo}, melodía vocal en rango {estrecho, medio o amplio}. Energía por sección: verso {nivel 1-5} con {capas}, pre-coro {nivel} sumando {instrumento}, coro {nivel} con {elemento que abre el espectro}, puente {nivel} con {elemento que queda solo}. Estructura en segundos: {intro} / {verso} / {pre-coro} / {coro} / {puente} / {coro final} / {outro}, total {duración}. Mezcla: {graves}, {agudos} y {espacio}.',
-        variables: [
-          'género',
-          'BPM',
-          'straight, halftime o doble',
-          'tonalidad',
-          'modo',
-          'estrecho, medio o amplio',
-          'nivel 1-5',
-          'capas',
-          'nivel',
-          'instrumento',
-          'elemento que abre el espectro',
-          'elemento que queda solo',
-          'intro',
-          'verso',
-          'pre-coro',
-          'coro',
-          'puente',
-          'coro final',
-          'outro',
-          'duración',
-          'graves',
-          'agudos',
-          'espacio',
-        ],
+        variables: ['género', 'BPM', 'straight, halftime o doble', 'tonalidad', 'modo', 'estrecho, medio o amplio', 'nivel 1-5', 'capas', 'nivel', 'instrumento', 'elemento que abre el espectro', 'elemento que queda solo', 'intro', 'verso', 'pre-coro', 'coro', 'puente', 'coro final', 'outro', 'duración', 'graves', 'agudos', 'espacio'],
       },
       {
         name: 'Auditoría de energía por secciones',
@@ -601,36 +555,7 @@ export const COURSE_LESSONS: Lesson[] = [
         name: 'Prompt maestro de siete campos',
         outcome: 'Un prompt completo y estable que puedes relanzar con cualquier generador.',
         text: '{género y subgénero}, {BPM} BPM feel {recto, medio tiempo o doble}, {tonalidad} {modo}, voz {registro} con {textura}, {articulación} y acento {acento}, en {idioma}; instrumentación: {capa rítmica} con {patrón}, {capa armónica} en versos, {capa que entra en el coro}, {elemento de contraste en el puente}; estructura: {intro con segundos}, {verso}, {pre-coro}, {coro}, {puente}, {coro final}, {outro}, total {duración}; dinámica: {qué sube en el coro} y {qué se retira en el puente}; mezcla: {graves}, {agudos}, {espacio y profundidad de la voz}.',
-        variables: [
-          'género y subgénero',
-          'BPM',
-          'recto, medio tiempo o doble',
-          'tonalidad',
-          'modo',
-          'registro',
-          'textura',
-          'articulación',
-          'acento',
-          'idioma',
-          'capa rítmica',
-          'patrón',
-          'capa armónica',
-          'capa que entra en el coro',
-          'elemento de contraste en el puente',
-          'intro con segundos',
-          'verso',
-          'pre-coro',
-          'coro',
-          'puente',
-          'coro final',
-          'outro',
-          'duración',
-          'qué sube en el coro',
-          'qué se retira en el puente',
-          'graves',
-          'agudos',
-          'espacio y profundidad de la voz',
-        ],
+        variables: ['género y subgénero', 'BPM', 'recto, medio tiempo o doble', 'tonalidad', 'modo', 'registro', 'textura', 'articulación', 'acento', 'idioma', 'capa rítmica', 'patrón', 'capa armónica', 'capa que entra en el coro', 'elemento de contraste en el puente', 'intro con segundos', 'verso', 'pre-coro', 'coro', 'puente', 'coro final', 'outro', 'duración', 'qué sube en el coro', 'qué se retira en el puente', 'graves', 'agudos', 'espacio y profundidad de la voz'],
       },
       {
         name: 'Etiquetas de sección para la caja de letra',
@@ -770,7 +695,7 @@ export const COURSE_LESSONS: Lesson[] = [
         name: 'Instrumentación con función y presupuesto',
         outcome: 'Reemplazar la lista de instrumentos por capas con tarea, sección y rango.',
         text: 'Capa rítmica: {bombo o patrón} con {subdivisión}, marca el pulso. Capa grave: {bajo o sub} que {duplica el bombo o camina por el acorde}, sin pasar de {límite de registro}. Capa armónica: {piano, guitarra o pad} en registro {medio o grave}, entrada en {sección}. Capa de contraste: {instrumento} solo en {sección}, en registro {una octava sobre o por debajo de la voz}. Capa de aire: {perk o textura} en {estéreo}, volumen {fondo}. Presupuesto: {n} capas en versos, {m} en coros, {k} en el puente. Centro del espectro reservado para {voz, bombo y bajo}.',
-        variables: ['bombo o patrón', 'subdivisión', 'duplica el bombo o camina por el acorde', 'límite de registro', 'piano, guitarra o pad', 'medio o grave', 'sección', 'instrumento', 'una octava sobre o por debajo de la voz', 'perk o textura', 'estéreo', 'fondo', 'n', 'm', 'k', 'voz, bombo y bajo'],
+        variables: ['bombo o patrón', 'subdivisión', 'bajo o sub', 'duplica el bombo o camina por el acorde', 'límite de registro', 'piano, guitarra o pad', 'medio o grave', 'sección', 'instrumento', 'una octava sobre o por debajo de la voz', 'perk o textura', 'estéreo', 'fondo', 'n', 'm', 'k', 'voz, bombo y bajo'],
       },
     ],
     exercise: {
@@ -897,7 +822,7 @@ export const COURSE_LESSONS: Lesson[] = [
         name: 'Checklist de escucha crítica en tres pasadas',
         outcome: 'Un formato para anotar cada escucha y llegar a una decisión con evidencia.',
         text: 'Pasada 1 (cuerpo): ¿en {mm:ss} muevo la cabeza? ¿recuerdo el gancho {sí o no}? ¿qué parte saltaría? {nota}. Pasada 2 (forma): secciones detectadas en {tiempos}; capas en verso {n}, capas en coro {m}; ¿el puente se siente contraste? {sí o no}; duración total {mm:ss}. Pasada 3 (detalle): artefactos en {mm:ss}; sílaba mal pegada en {palabra}; choque de espectro en {zona}; final {deliberado o cortado}. Decisión: {conservar, iterar una variable, editar fuera o descartar}.',
-        variables: ['mm:ss', 'sí o no', 'nota', 'tiempos', 'n', 'm', 'sí o no', 'mm:ss', 'mm:ss', 'palabra', 'zona', 'deliberado o cortado', 'conservar, iterar una variable, editar fuera o descartar'],
+        variables: ['mm:ss', 'sí o no', 'nota', 'tiempos', 'n', 'm', 'palabra', 'zona', 'deliberado o cortado', 'conservar, iterar una variable, editar fuera o descartar'],
       },
     ],
     exercise: {
@@ -1008,13 +933,13 @@ export const COURSE_LESSONS: Lesson[] = [
         name: 'Tres versiones del mismo gancho',
         outcome: 'Un set A/B/C con una sola variable rotando por versión, listo para la checklist.',
         text: 'Gancho literal que se repite idéntico en cada coro: {frase de 4 a 10 palabras}. Base: {género}, {BPM} BPM {feel}, {tonalidad} {modo}, voz {registro, textura, articulación, acento}, {n} capas en verso y {m} en coro, estructura {segundos por bloque}, mezcla {graves, agudos, espacio}. Versión B = base, cambia solo {campo de arreglo} a {valor}. Versión C = versión B, cambia solo {tempo, feel o instrucción de interpretación} a {valor}. En las tres: el gancho se canta con la misma melodía y no se añade material nuevo en los coros.',
-        variables: ['frase de 4 a 10 palabras', 'género', 'BPM', 'feel', 'tonalidad', 'modo', 'registro, textura, articulación, acento', 'n', 'm', 'segundos por bloque', 'graves, agudos, espacio', 'campo de arreglo', 'valor', 'tempo, feel o instrucción de interpretación', 'valor'],
+        variables: ['frase de 4 a 10 palabras', 'género', 'BPM', 'feel', 'tonalidad', 'modo', 'registro, textura, articulación, acento', 'n', 'm', 'segundos por bloque', 'graves, agudos, espacio', 'campo de arreglo', 'valor', 'tempo, feel o instrucción de interpretación'],
       },
       {
         name: 'Checklist de calidad de ocho puntos',
         outcome: 'Un formato de evaluación para seleccionar versión con evidencia.',
         text: 'Memoria: el gancho aparece antes de {0:60} ({mm:ss}), ¿lo tararearía sin audio? {sí o no}. Forma: se distinguen verso {mm:ss}, pre-coro {mm:ss}, coro {mm:ss}; el puente es contraste {sí o no}. Sonido: se entiende la voz en el primer verso {sí o no}, problema de grave en {mm:ss}; artefactos en {mm:ss}. Intención: el final es {fade, golpe seco o caída a silencio} y es deliberado {sí o no}. Puntuación: {n} de 8 puntos cumplidos. Selección: {versión}, gana {algo}, pierde {algo}, siguiente paso {una línea}.',
-        variables: ['0:60', 'mm:ss', 'sí o no', 'mm:ss', 'mm:ss', 'mm:ss', 'sí o no', 'sí o no', 'mm:ss', 'mm:ss', 'fade, golpe seco o caída a silencio', 'sí o no', 'n', 'versión', 'algo', 'algo', 'una línea'],
+        variables: ['0:60', 'mm:ss', 'sí o no', 'fade, golpe seco o caída a silencio', 'n', 'versión', 'algo', 'una línea'],
       },
     ],
     exercise: {
@@ -1266,13 +1191,13 @@ export const COURSE_LESSONS: Lesson[] = [
         name: 'Plantilla de letra con métrica por sección',
         outcome: 'Una letra completa que cabe en el compás y con funciones separadas.',
         text: '[Verso 1: {qué información entrega}] {n} líneas de {sílabas por verso}, rima {asonante o suelta}, acentos finales en {tiempo fuerte del compás}.\n[Pre-coro: {qué sube}] {2 a 4} líneas de {sílabas más cortas}, terminando en {vocal abierta para el salto}.\n[Coro: {la sentencia}] gancho de {4 a 10} palabras con {título dentro}, {2 a 4} líneas, rima {consonante}, {paralela gemela} en las dos primeras.\n[Verso 2: {nueva información, misma métrica del verso 1}]\n[Puente: {cambio de persona, tiempo o punto de vista}] {n} líneas de {métrica distinta a propósito}.\n[Coro final: {variación o capa vocal nueva}]\n[Outro: {cómo termina la idea}].',
-        variables: ['qué información entrega', 'n', 'sílabas por verso', 'asonante o suelta', 'tiempo fuerte del compás', 'qué sube', '2 a 4', 'sílabas más cortas', 'vocal abierta para el salto', 'la sentencia', '4 a 10', 'título dentro', '2 a 4', 'consonante', 'paralela gemela', 'nueva información, misma métrica del verso 1', 'cambio de persona, tiempo o punto de vista', 'métrica distinta a propósito', 'variación o capa vocal nueva', 'cómo termina la idea'],
+        variables: ['qué información entrega', 'n', 'sílabas por verso', 'asonante o suelta', 'tiempo fuerte del compás', 'qué sube', '2 a 4', 'sílabas más cortas', 'vocal abierta para el salto', 'la sentencia', '4 a 10', 'título dentro', 'consonante', 'paralela gemela', 'nueva información, misma métrica del verso 1', 'cambio de persona, tiempo o punto de vista', 'métrica distinta a propósito', 'variación o capa vocal nueva', 'cómo termina la idea'],
       },
       {
         name: 'Revisión de encaje silábico',
         outcome: 'Detectar y arreglar la línea que el motor no alcanza a cantar.',
-        text: 'Línea que se traga sílabas: {línea}. BPM de la canción: {BPM}. Sílabas contadas con sinalefa y acento final: {n}. Sílabas que caben en {duración de la frase}: {m}. Corrección aplicada: {partir la línea en dos / quitar átonos / cambiar la palabra final a otra de {x} sílabas / moverla a otro tiempo del compás}. Vuelve a leerla en voz alta con metrónomo antes de regenerar y verifica que la sílaba tónica caiga en {tiempo fuerte}.',
-        variables: ['línea', 'BPM', 'n', 'duración de la frase', 'm', 'partir la línea en dos / quitar átonos / cambiar la palabra final a otra de {x} sílabas / moverla a otro tiempo del compás', 'x', 'tiempo fuerte'],
+        text: 'Línea que se traga sílabas: {línea}. BPM de la canción: {BPM}. Sílabas contadas con sinalefa y acento final: {n}. Sílabas que caben en {duración de la frase}: {m}. Corrección aplicada: {partir la línea en dos, quitar átonos, cambiar la palabra final por otra más corta o moverla a otro tiempo del compás}. Vuelve a leerla en voz alta con metrónomo antes de regenerar y verifica que la sílaba tónica caiga en {tiempo fuerte}.',
+        variables: ['línea', 'BPM', 'n', 'duración de la frase', 'm', 'partir la línea en dos, quitar átonos, cambiar la palabra final por otra más corta o moverla a otro tiempo del compás', 'tiempo fuerte'],
       },
       {
         name: 'Puente que reencuadra',
@@ -1396,7 +1321,7 @@ export const COURSE_LESSONS: Lesson[] = [
         name: 'Ficha de evaluación de interpretación',
         outcome: 'Convertir la escucha en tres veredictos y una corrección.',
         text: 'Canción: {título} · versión {v}. Prueba 1, primer verso ({mm:ss}): {cumple o falla}, evidencia {qué se oye}. Prueba 2, inteligibilidad de la frase clave ({mm:ss}): {cumple o falla}, evidencia {qué palabra se pierde y por qué}. Prueba 3, contraste puente/último coro ({mm:ss} vs {mm:ss}): {cumple o falla}. Corrección única para la siguiente versión: {un solo eje de los cuatro}. Lo que dejo de tocar: {campos conservados}.',
-        variables: ['título', 'v', 'mm:ss', 'cumple o falla', 'qué se oye', 'mm:ss', 'cumple o falla', 'qué palabra se pierde y por qué', 'mm:ss', 'mm:ss', 'cumple o falla', 'un solo eje de los cuatro', 'campos conservados'],
+        variables: ['título', 'v', 'mm:ss', 'cumple o falla', 'qué se oye', 'qué palabra se pierde y por qué', 'un solo eje de los cuatro', 'campos conservados'],
       },
     ],
     exercise: {
@@ -1520,7 +1445,7 @@ export const COURSE_LESSONS: Lesson[] = [
         name: 'Matriz de capas con función',
         outcome: 'Un prompt donde cada instrumento tiene tarea, sección y territorio.',
         text: 'Género: {género} · {BPM} BPM · {tonalidad} {modo}. Pulso: {instrumento} con {patrón}. Groove: {instrumento} en {subdivisión}. Fundamental: {bajo o sub} que {duplica el bombo o sigue la raíz}, {corto o largo}, {manda él o el bombo} en el centro grave. Armonía: {instrumento} en registro {medio o grave}, entra en {sección}, sin invadir {400-2000 Hz}. Melodía complementaria: {instrumento} solo en {sección}, {una octava sobre la voz}. Voz: {registro, textura, articulación, acento}. Aire: {texturas o perk} en {estéreo}, al {fondo}. Presupuesto: {n} capas en versos, {m} en coros, {k} en el puente. Silencio: {qué se detiene y cuándo}.',
-        variables: ['género', 'BPM', 'tonalidad', 'modo', 'instrumento', 'patrón', 'subdivisión', 'bajo o sub', 'duplica el bombo o sigue la raíz', 'corto o largo', 'manda él o el bombo', 'instrumento', 'medio o grave', 'sección', '400-2000 Hz', 'una octava sobre la voz', 'registro, textura, articulación, acento', 'texturas o perk', 'estéreo', 'fondo', 'n', 'm', 'k', 'qué se detiene y cuándo'],
+        variables: ['género', 'BPM', 'tonalidad', 'modo', 'instrumento', 'patrón', 'subdivisión', 'bajo o sub', 'duplica el bombo o sigue la raíz', 'corto o largo', 'manda él o el bombo', 'medio o grave', 'sección', '400-2000 Hz', 'una octava sobre la voz', 'registro, textura, articulación, acento', 'texturas o perk', 'estéreo', 'fondo', 'n', 'm', 'k', 'qué se detiene y cuándo'],
       },
       {
         name: 'Ficha de género con sus funciones obligatorias',
@@ -1647,7 +1572,7 @@ export const COURSE_LESSONS: Lesson[] = [
         name: 'Groove y curva de dinámica',
         outcome: 'Dirigir el movimiento rítmico y los tres momentos de energía con nombre propio.',
         text: '{género}, {BPM} BPM, feel {recto, tresillos o medio tiempo}, acento característico en {tiempo o subdivisión}. Groove: {nombre del patrón} con {instrumento} en {subdivisión} y {instrumento} marcando {tiempos}. Pulso grave: {bombo o sub} en {dónde} y con {ataque}. Curva de dinámica: versos {n} capas con {elemento que sostiene}; pre-coro {build de cuántos compases sumando qué}; coros {m} capas con {elemento que abre}; puente {drop instrumental o voz sola durante cuántos compases}; último coro {drop-out de un compás antes y luego qué}. Tonalidad: {tonalidad} {modo}, progresión {grados romanos} y {tensión donde importa}.',
-        variables: ['género', 'BPM', 'recto, tresillos o medio tiempo', 'tiempo o subdivisión', 'nombre del patrón', 'instrumento', 'subdivisión', 'dónde', 'bombo o sub', 'ataque', 'n', 'elemento que sostiene', 'build de cuántos compases sumando qué', 'm', 'elemento que abre', 'drop instrumental o voz sola durante cuántos compases', 'drop-out de un compás antes y luego qué', 'tonalidad', 'modo', 'grados romanos', 'tensión donde importa'],
+        variables: ['género', 'BPM', 'recto, tresillos o medio tiempo', 'tiempo o subdivisión', 'nombre del patrón', 'instrumento', 'subdivisión', 'tiempos', 'bombo o sub', 'dónde', 'ataque', 'n', 'elemento que sostiene', 'build de cuántos compases sumando qué', 'm', 'elemento que abre', 'drop instrumental o voz sola durante cuántos compases', 'drop-out de un compás antes y luego qué', 'tonalidad', 'modo', 'grados romanos', 'tensión donde importa'],
       },
       {
         name: 'Ficha de referencia en cuatro líneas',
@@ -1716,6 +1641,531 @@ export const COURSE_LESSONS: Lesson[] = [
     ],
     takeaway:
       'El groove se nombra, la dinámica se planifica con entradas y salidas, y la referencia se copia solo en propiedades.',
+  },
+  {
+    id: 'm04-l13',
+    moduleIndex: 4,
+    lessonNumber: 13,
+    title: 'Ejercicio: transformar una idea pop en tres géneros',
+    kicker: 'Sesión 13 · Práctica de módulo',
+    minutes: 22,
+    objective:
+      'Demostrar que una misma idea sostiene tres producciones distintas cambiando solo las variables dirigibles.',
+    blocks: [
+      {
+        heading: 'Qué se conserva y qué se cambia',
+        body: [
+          'La idea es el material que no se toca: el gancho de cuatro a diez palabras, la melodía del coro, la métrica de los versos y la función de cada sección. Todo lo demás es vestuario: tempo y feel, groove nombrado, capas con función, perfil vocal, presupuesto de capas, mezcla y idioma del acento. En este ejercicio conservas la primera lista y cambias la segunda, tres veces. Si además cambias el gancho, ya no estás haciendo arreglos: estás escribiendo tres canciones.',
+          'Al terminar vas a poder afirmar qué parte de tu canción es composición y qué parte es producción, y esa distinción es exactamente lo que necesitas en el módulo 5 para hablar de autoría, splits y licencias. Un arreglo nuevo no crea una obra nueva; una melodía y una letra nuevas sí.',
+        ],
+      },
+      {
+        heading: 'Tres recetas escritas como se dirigen',
+        body: [
+          'Bachata: 126 BPM feel recto, guitarra con arpegio en corcheas como groove, güira marcando corcheas y tambora en tiempos fuertes, bajo siguiendo la raíz, voz en registro medio con vibrato al final de cada frase, acento caribeño, doblaje en coros, mezcla con voz al frente y reverberación corta. La guitarra hace dos funciones: groove y armonía; decláralo para que no se apile.',
+          'Regional mexicano norteño: 104 BPM feel recto en compás de tres por cuatro o seis por ocho según tu melodía, acordeón como melodía complementaria, bajo sexto arpegiando la armonía, tambora marcando el pulso y tololoche o bajo eléctrico en la raíz; voz masculina con borde rasposo y articulación percusiva, acento norteño, sin sintetizadores. Aquí el ejercicio es honesto: si tu melodía está escrita en cuatro tiempos, puede no funcionar en tres por cuatro, y esa es una decisión de composición, no de arreglo.',
+          'House bailable: 124 BPM con kick en cada tiempo, hi-hat en corcheas con acento off-beat, bajo sintetizado rítmico que no hace melodía, pad abierto en coros, voz fragmentada convertida en riff repetido, build de ocho compases antes del drop y drop sin melodía. El gancho se repite muchas más veces que en el original: la forma del género manda sobre tu forma de pop.',
+        ],
+      },
+      {
+        heading: 'La matriz comparativa: tu entregable',
+        body: [
+          'Construye una tabla con las siete funciones como filas y los tres géneros como columnas. En cada celda escribe el instrumento y su función, o «vacío» si esa función no existe en ese género. Al terminar verás dos cosas útiles: qué funciones son universales (voz, fundamental, pulso) y cuáles son las que definen el género (groove y aire, casi siempre). Esa columna de groove es la que convierte «otra canción pop» en «bachata de verdad».',
+          'Después agrega tres filas de decisión: cuánto tarda en aparecer el gancho en cada versión, cuántas capas hay en el coro y qué dispositivo de dinámica elegiste (build, drop o drop-out). Con eso tu matriz ya no es solo descriptiva: es un comparativo de producción, y puedes justificar cuál versión va a cuál destino.',
+        ],
+      },
+      {
+        heading: 'Cómo elegir la versión final sin adivinar',
+        body: [
+          'Tres preguntas de destino, por escrito. ¿Dónde va a sonar: playlist de género, reel, pista de baile, evento familiar? ¿Quién lo va a escuchar y qué espera del género: la comunidad que reconoce ese groove lo acepta o lo rechaza en veinte segundos? ¿Qué puedes sostener tú: si no puedes tocar esa música en vivo ni conseguiste quien la cante como corresponde, la versión más simple gana.',
+          'La versión que gana no es la que suena «mejor»: es la que tiene destino. Regístralo con una línea por versión, porque en la Sesión 15 vas a necesitar explicar por qué publicaste la que publicaste, y porque en un portafolio profesional esa línea es lo que demuestra criterio. Un portafolio sin decisiones escritas es una colección de audios.',
+        ],
+      },
+    ],
+    examples: [
+      'Idea pop de partida, conservada sin cambios en las tres versiones: gancho «sigo encendiendo lo que se apagó», coro de ocho compases en La menor, versos de ocho sílabas, estructura verso-pre-coro-coro-verso-coro-puente-coro, duración objetivo 2:50.',
+      'Prompt bachata: «bachata, 126 BPM feel recto, La menor; groove: guitarra con arpegio en corcheas y güira en corcheas, tambora en tiempos fuertes; fundamental: bajo siguiendo la raíz con ataque corto; armonía: la misma guitarra en registro medio sin invadir la voz; voz masculina en registro medio con vibrato al final de cada frase, articulación ligada, acento caribeño, canto en español; doblaje en coros, sin coro masivo; el gancho aparece en 0:42; mezcla con voz delantera y reverberación corta, agudos sin filo». Melodía y letra: las de la idea pop, intactas.',
+      'Prompt norteño: «norteño, 104 BPM, La menor en compás de tres por cuatro; pulso: tambora en tiempos fuertes; groove: bajo sexto arpegiado en corcheas; fundamental: tololoche o bajo eléctrico en la raíz; melodía complementaria: acordeón respondiendo entre frases vocales, nunca durante la voz; voz masculina con borde rasposo y articulación percusiva, acento norteño, canto en español; sin sintetizadores ni pads; puente: acordeón solo ocho compases; mezcla seca con percusión al frente y estéreo estrecho en el acordeón».',
+      'Prompt house: «house bailable, 124 BPM, La menor; pulso: kick en cada tiempo; groove: hi-hat en corcheas con acento off-beat y percusión metálica en estéreo; fundamental: bajo sintetizado corto y rítmico sin melodía; armonía: pad abierto entrando en el coro; voz femenina fragmentada repitiendo el gancho como riff, con poco aire; build de ocho compases antes del drop; drop sin melodía con percusión y bajo; el gancho aparece en 0:28; mezcla con grave controlado y brillo alto sin siseo». El mismo material, otro destino.',
+    ],
+    techniques: [
+      'Congela la idea: antes de transformar, escribe en una tarjeta el gancho, la melodía y la métrica, y no los toques en ninguna de las tres versiones.',
+      'Tabla de siete funciones por tres columnas: llena cada celda con instrumento y función, y escribe «vacío» cuando el género no la usa. Los vacíos son información.',
+      'Columna de groove como identidad: en cada género hay una capa que lo define; declárala primero y con su patrón, porque sin ella el resultado suena a pop con otro traje.',
+      'Verificación comunitaria: pide a alguien que escuche tu versión de género y diga si el groove es creíble. El oído entrenado en ese género detecta en diez segundos lo que a ti te toma tres escuchas.',
+      'Frase de destino por versión: escribe para dónde sirve cada arreglo. Sin destino, la comparación de tres versiones no se puede decidir.',
+    ],
+    prompts: [
+      {
+        name: 'Transformación de género conservando la idea',
+        outcome: 'Un prompt de arreglo nuevo que mantiene el material de composición intacto.',
+        text: 'Material conservado sin cambios: gancho «{frase del gancho}», melodía del coro {descripción}, versos de {n} sílabas, estructura {secciones}, duración objetivo {mm:ss}. Arreglo nuevo: {género destino}, {BPM} BPM feel {recto, tresillos o medio tiempo}, {tonalidad} {modo} {y compás si cambia}; pulso: {instrumento y patrón}; groove definitorio: {patrón con nombre}; fundamental: {instrumento}; armonía: {instrumento} que entra en {sección}; melodía complementaria: {instrumento} {cuándo responde}; voz: {registro, textura, articulación, acento}; {doblajes o armonías vocales}; mezcla: {graves, agudos, espacio}; el gancho entra en {mm:ss}; dispositivo de dinámica: {build, drop o drop-out} en {sección}.',
+        variables: ['frase del gancho', 'descripción', 'n', 'secciones', 'mm:ss', 'género destino', 'BPM', 'recto, tresillos o medio tiempo', 'tonalidad', 'modo', 'y compás si cambia', 'instrumento y patrón', 'patrón con nombre', 'instrumento', 'sección', 'cuándo responde', 'registro, textura, articulación, acento', 'doblajes o armonías vocales', 'graves, agudos, espacio', 'build, drop o drop-out'],
+      },
+      {
+        name: 'Matriz comparativa de tres arreglos',
+        outcome: 'El entregable del módulo, en formato que se puede revisar y justificar.',
+        text: 'Filas: pulso, groove, fundamental, armonía, melodía complementaria, voz, aire. Columnas: {género 1}, {género 2}, {género 3}. En cada celda: {instrumento} haciendo {función}, o vacío. Filas de decisión añadidas: gancho entra en {mm:ss} por versión; capas en coro {n} por versión; dispositivo elegido {build, drop o drop-out} por versión; destino declarado {dónde va a sonar} por versión; verificación de género creíble {sí o no} con comentario de {quién escuchó}.',
+        variables: ['género 1', 'género 2', 'género 3', 'instrumento', 'función', 'mm:ss', 'n', 'build, drop o drop-out', 'dónde va a sonar', 'sí o no', 'quién escuchó'],
+      },
+    ],
+    exercise: {
+      title: 'Una idea, tres producciones',
+      steps: [
+        'Elige tu mejor idea pop hasta ahora y anota en una tarjeta el gancho, la melodía del coro, la métrica de los versos y la estructura. Desde ese momento queda congelada.',
+        'Selecciona tres géneros que te interesen y declara para cada uno su capa de groove definitoria con nombre y patrón.',
+        'Escribe tres prompts de transformación con la plantilla, cambiando solo la segunda lista: tempo, feel, groove, capas, voz, mezcla y momento del gancho.',
+        'Genera dos tomas por género y llena la matriz comparativa de siete funciones por tres columnas, marcando los vacíos.',
+        'Pide a una persona por género que valide si el groove es creíble, y registra su veredicto con una línea.',
+        'Cierra con la versión seleccionada y una frase de destino por arreglo: dónde sonaría cada una.',
+      ],
+      deliverable:
+        'Entregable del módulo: matriz comparativa con tres arreglos del mismo material, los tres prompts completos, la validación de género y el prompt final de producción justificado.',
+      checklist: [
+        'El gancho, la melodía y la métrica son idénticos en las tres versiones y la tarjeta lo certifica.',
+        'Cada género declara su capa de groove con nombre y patrón, no con la etiqueta del género solamente.',
+        'La matriz tiene las siete funciones llenas o declaradas como vacías en las tres columnas.',
+        'Hay una frase de destino por versión y una selección final con justificación.',
+      ],
+    },
+    listening: [
+      {
+        title: 'Crossover de género: la misma canción en dos mundos',
+        focus:
+          'Busca una canción versionada en dos géneros distintos y escucha qué se conservó (melodía, letra, forma) y qué cambió (groove, instrumentación, tempo, voz). Ese par de versiones es exactamente el ejercicio que estás haciendo.',
+        search: 'misma canción versión en dos géneros crossover comparación arreglo original y versión',
+      },
+      {
+        title: 'Bachata contemporánea: una guitarra con dos funciones',
+        focus:
+          'Identifica cómo la guitarra hace groove y armonía a la vez, y cuándo aparece el arpegio continuo frente a los silencios. Localiza también el momento exacto en que entra la segunda capa y cuántas suenan en el coro.',
+        search: 'bachata guitarra arpegio requinto función de groove y armonía análisis',
+      },
+      {
+        title: 'House: el gancho convertido en riff',
+        focus:
+          'Escucha una pista bailable con voz y cuenta cuántas veces se repite la misma frase. Observa cómo la voz deja de narrar y pasa a ser textura rítmica, y dónde está el build y dónde el drop. Es la lección de forma aplicada a otro género.',
+        search: 'house vocal hook repeated as riff build and drop structure analysis',
+      },
+    ],
+    pitfalls: [
+      {
+        mistake: 'Cambiar el gancho o la melodía al cambiar de género.',
+        fix: 'Congela el material de composición en una tarjeta y revísala después de cada generación.',
+      },
+      {
+        mistake: 'Pedir el género por etiqueta y no por su capa definitoria.',
+        fix: 'Escribe siempre el groove del género con nombre y patrón; la etiqueta sola produce pop disfrazado.',
+      },
+      {
+        mistake: 'Forzar una melodía escrita en cuatro tiempos a un compás de tres.',
+        fix: 'Reconoce que eso es un problema de composición: adapta la melodía o elige un género en cuatro tiempos.',
+      },
+      {
+        mistake: 'Elegir la versión que suena más espectacular.',
+        fix: 'Decide por destino: dónde suena, quién lo escucha y qué puedes sostener tú después.',
+      },
+    ],
+    takeaway:
+      'Si tu canción solo funciona en un género, tienes una producción; si funciona en tres, tienes una composición.',
+  },
+  {
+    id: 'm05-l14',
+    moduleIndex: 5,
+    lessonNumber: 14,
+    title: 'Selección, edición y control de versiones',
+    kicker: 'Sesión 14 · Versiones',
+    minutes: 18,
+    objective:
+      'Pasar de veinte tomas prometedoras a un paquete de entrega con versión final, archivos y trazabilidad.',
+    blocks: [
+      {
+        heading: 'Selección con criterios, no con cansancio',
+        body: [
+          'Después de tres sesiones de generación tienes veinte archivos, todos con algo bueno y nada terminable. Selecciona con cuatro filtros en este orden, y detente en el primero que falle: inteligibilidad (¿se entiende la frase clave del coro sin leer?), forma (¿se distinguen las secciones?), artefactos (¿hay sílabas pegadas, costuras, ruido bajo, un final cortado a media idea?) y repetición (¿la volverías a escuchar sin obligarte?). Un archivo que falla el segundo filtro se archiva, no se repara.',
+          'Añade dos pruebas técnicas rápidas: escucha en el altavoz del teléfono y escucha en mono. La mayoría de las canciones generadas se escuchan bien en estéreo con audífonos y se desarman en mono o en un celular: la voz se entierra, el grave desaparece. Estas dos pruebas toman un minuto y salvan releases.',
+          'Ponte un número máximo de candidatas: tres. Con cinco o más, la decisión se pospone indefinidamente y empiezas a comparar novedades en lugar de criterios. Tres candidatas, una elegida, y las otras dos reciben un destino escrito: loop, reel, base para otra letra, archivo con fecha.',
+        ],
+      },
+      {
+        heading: 'Edición: lo que se arregla fuera del motor',
+        body: [
+          'Hay cosas que la generación rara vez te da y la edición te da siempre: un intro de ocho compases que resulta de veinte, un final que se corta, un verso repetido de más, una costura de dos segundos entre secciones. Recorta, coloca fundidos de entrada y salida de uno a dos segundos y elimina compases muertos. Con eso solo ya tienes una canción radial y no una maqueta.',
+          'Después, dos operaciones de alto rendimiento: acortar la canción y duplicar el coro final. El estándar de plataformas para canciones cortas funciona: si tus datos de escucha muestran que la mayor caída ocurre antes del segundo 40, el intro sobra. Y un repeat del último coro con una capa menos suele cerrar mejor que cualquier outro nuevo que inventes.',
+          'Si la plataforma entrega pistas separadas, úsalas con moderación: la voz aislada sirve para ajustar su nivel, corregir un siseo o bajarla en el intro. No la uses para reconstruir la canción entera, porque los stems generados suelen tener filtrados y solapamientos: lo que ganas en control lo pierdes en coherencia. Edita para resolver un problema concreto, no para mezclar de cero.',
+        ],
+      },
+      {
+        heading: 'Control de versiones: que tu yo de dentro de un mes te entienda',
+        body: [
+          'Nombra los archivos sin poesía: CANCION_v03_R2_take1.wav, y el nombre final CANCION_FINAL_v05.wav, con la fecha dentro del nombre si vas a colaborar. En paralelo, el manifiesto de versiones: una fila por archivo con prompt pegado, fecha, plataforma y plan, qué cambió respecto a la versión anterior, quién escuchó y veredicto. Con esas dos cosas puedes reconstruir una decisión meses después; sin ellas, no.',
+          'El manifiesto además te protege. Cuando hables de derechos, colaboraciones o licencias, necesitarás poder responder cuándo se hizo, con qué herramienta, qué parte era tuya y qué parte generó la máquina. Ese registro con fechas es tu evidencia; un correo a ti mismo con el archivo adjunto y la fecha ya sirve como prueba rudimentaria de existencia anterior.',
+          'Cierra cada sesión con tres líneas: qué elegí, por qué, y cuál es el siguiente movimiento concreto. Si el siguiente movimiento es «generar más», cambia «generar» por «probar esta variable específica». Un control de versiones que no termina nada no es control: es acumulación.',
+        ],
+      },
+      {
+        heading: 'Empaquetado para entrega',
+        body: [
+          'Un paquete de release mínimo tiene cinco elementos: el audio final en la máxima calidad que la herramienta te entregue (WAV si existe, no MP3 recodificado), metadatos correctos (título, artista, género, año, lenguaje de la letra), arte con el título legible en miniatura, la letra con créditos y una nota de uso de IA, y el manifiesto de versiones. Lo que no va: catorce tomas alternativas, el archivo de sesión o tus notas internas.',
+          'Y una regla de loudness honesta: las plataformas de streaming normalizan la reproducción, de modo que subir el volumen hasta que deforme no hace que tu canción suene más fuerte que la de al lado, y sí puede hacerla sonar peor. El objetivo práctico es una versión sin distorsión auditable, con picos verdaderos bajo cero dBTP y un sonido comparable a tu referencia al mismo volumen de escucha. Los números concretos de normalización los publica cada plataforma y cambian: verifícalos en su documentación oficial antes de masterizar para un destino específico.',
+        ],
+      },
+    ],
+    examples: [
+      'Manifiesto real de cuatro versiones: «SOMBRA_v01 2026-02-03 plataforma A plan Pro: prompt base, coro en 0:58, voz se pierde en 1:12 → se descarta. v02 mismo prompt, 20 s de recorte de intro: gancho en 0:44, conserva. v03 cambia solo arreglo del coro (quita una capa aguda): se entiende la frase clave, artefacto de siseo nuevo en 2:04. v04 = v03 con esses suaves y final recortado 3 s. Elegida: v04. Destinos de descartes: v01 loop para reel, v02 archivo, v03 base para versión acústica». Todo el proceso cabe en una tarjeta y es reproducible.',
+      'Edición que resolvió un problema no dirigible: una toma con un bridge excelente y un intro de 32 segundos. El prompt no lograba acortarlo. Se exportó, se recortó a 6 segundos y se aplicó un fade de 1,5 s. La decisión quedó registrada en el manifiesto como «edición externa: recorte de intro, no es cambio de prompt», para que en el futuro no se pida al motor algo que se arregla en dos minutos fuera.',
+      'Chequeo de mono y teléfono: «en estéreo con audífonos: todo bien. En mono (0:52): la voz baja de nivel respecto al pad y el gancho se entierra. En el altavoz del teléfono (1:20): el sub-bajo desaparece y el coro pierde cuerpo». Conclusión de producción: pedir sub-bajo con contenido en armónicas medias y menos pad en 300-900 Hz en la siguiente versión, no subir el volumen de la voz.',
+    ],
+    techniques: [
+      'Cuatro filtros en orden: inteligibilidad, forma, artefactos, repetición. El primero que falla decide el archivo, y no se discute.',
+      'Doble prueba barata: altavoz del teléfono y escucha en mono. Detectan el 90% de los problemas que se vuelven públicos.',
+      'Techo de tres candidatas: máximo tres archivos a evaluación final; el resto recibe destino o archivo con fecha.',
+      'Nombre determinista: CANCION_vNN_Rr_takeN.wav y un FINAL con fecha. Nunca «definitiva», «última» o «ahora sí».',
+      'Manifiesto de versiones: una fila por archivo con prompt pegado, fecha, plataforma, plan, cambio único y veredicto de quien escuchó.',
+      'Edición fuera con propósito: recorta intros, arregla finales, duplica el último coro. Registra qué fue edición y qué fue prompt para no repetir el error de pedirlo al motor.',
+    ],
+    prompts: [
+      {
+        name: 'Manifiesto de control de versiones',
+        outcome: 'Un registro que hace reproducible y auditable cualquier decisión de la sesión.',
+        text: '{CANCION}_v{NN} · fecha {AAAA-MM-DD} · plataforma {nombre y plan} · modelo {si se declara} · archivo {nombre.ext} · duración {mm:ss} · prompt exacto: {pegado} · cambio único respecto a v{NN-1}: {campo de valor a valor} · resultado escuchado: {qué cambió en mm:ss} · verificación mono y teléfono: {cumple o falla} · edición aplicada: {recorte, fade, duplicado, nada} · decisión: {final, candidata, descartada con destino}.',
+        variables: ['CANCION', 'NN', 'AAAA-MM-DD', 'nombre y plan', 'si se declara', 'nombre.ext', 'mm:ss', 'pegado', 'NN-1', 'campo de valor a valor', 'qué cambió en mm:ss', 'cumple o falla', 'recorte, fade, duplicado, nada', 'final, candidata, descartada con destino'],
+      },
+      {
+        name: 'Paquete de entrega de una canción',
+        outcome: 'Todo lo que necesitas antes de subir a un agregador o enviar a un colaborador.',
+        text: '1) Audio final: {formato y nombre con versión}, duración {mm:ss}, picos verdaderos {bajo cero dBTP}, sin distorsión auditable en {mm:ss} de clímax. 2) Metadatos: título {título}, artista {nombre real o artístico}, género {género}, año {AAAA}, idioma de la letra {idioma}, compositor {créditos por porcentaje}. 3) Arte: {archivo}, legible a {tamaño miniatura}. 4) Letra: {archivo con secciones}. 5) Declaración: {qué fue letra propia, qué fue melodía propia, qué generó la herramienta, con fechas}. 6) Splits: {acuerdo firmado o captura con fecha}. 7) Versiones alternativas: {listado con destino}.',
+        variables: ['formato y nombre con versión', 'mm:ss', 'bajo cero dBTP', 'título', 'nombre real o artístico', 'género', 'AAAA', 'idioma', 'créditos por porcentaje', 'archivo', 'tamaño miniatura', 'archivo con secciones', 'qué fue letra propia, qué fue melodía propia, qué generó la herramienta, con fechas', 'acuerdo firmado o captura con fecha', 'listado con destino'],
+      },
+    ],
+    exercise: {
+      title: 'De diez tomas a un paquete de release',
+      steps: [
+        'Reúne todas tus tomas actuales y aplícales los cuatro filtros en orden; quédate con tres candidatas.',
+        'Haz la prueba del teléfono y la de mono a las tres, con marcas de tiempo de lo que falla.',
+        'Edita la elegida: recorta el intro, arregla el final y evalúa si duplicar el último coro mejora el cierre.',
+        'Completa el manifiesto de versiones de cada una de las tres candidatas, con prompt pegado y cambio único.',
+        'Arma el paquete de entrega con los siete elementos y escribe la declaración de qué fue tuyo y qué generó la herramienta.',
+        'Asigna destino por escrito a cada archivo descartado y guarda el paquete en una carpeta con fecha.',
+      ],
+      deliverable:
+        'Un paquete de release con audio final editado, metadatos, arte, letra, declaración de participación, splits y manifiesto de tres versiones.',
+      checklist: [
+        'Tres candidatas evaluadas con los cuatro filtros y con las pruebas de mono y teléfono documentadas.',
+        'El archivo final tiene nombre con número de versión y fecha, y está en la máxima calidad disponible.',
+        'El manifiesto permite reconstruir la decisión sin abrir la plataforma.',
+        'La declaración separa letra, melodía, arreglos generados y edición externa, con fechas.',
+      ],
+    },
+    listening: [
+      {
+        title: 'Comparar masters de un mismo álbum en distintas plataformas',
+        focus:
+          'Busca una misma canción en dos servicios de música y comprueba si el volumen percibido cambia. Vas a notar que la normalización manda: por eso un master deformado por volumen no gana nada. Escucha además en el altavoz del teléfono una referencia del género y compara qué se pierde.',
+        search: 'loudness normalization streaming platforms same song volume difference phone speaker',
+      },
+      {
+        title: 'Estructura editada: intros cortos en el pop actual',
+        focus:
+          'Cronometra en cinco canciones actuales en cuánto aparece la voz y en cuánto el gancho. Vas a encontrar intros mucho más cortos que los de hace quince años. Esa edición de recorte es una decisión de la que hablamos en este módulo y se puede hacer fuera del motor.',
+        search: 'pop song intro length vocal entry hook timing current releases analysis',
+      },
+    ],
+    pitfalls: [
+      {
+        mistake: 'Guardar todo y no decidir nada.',
+        fix: 'Techo de tres candidatas y destino escrito para cada descarte. Decidir no es perder, es elegir.',
+      },
+      {
+        mistake: 'Volver a codificar un MP3 sobre otro MP3.',
+        fix: 'Trabaja siempre desde el archivo de mayor calidad disponible y exporta una sola vez al formato que pide el destino.',
+      },
+      {
+        mistake: 'Masterizar más fuerte para «sonar como la referencia».',
+        fix: 'Compara al mismo volumen de escucha y entrega una versión sin distorsión; la normalización de la plataforma hace el resto.',
+      },
+      {
+        mistake: 'No registrar fecha, plataforma ni plan de cada toma.',
+        fix: 'Agrega esos tres campos al manifiesto. Son la evidencia que vas a necesitar al hablar de derechos y colaboraciones.',
+      },
+    ],
+    takeaway:
+      'Una canción termina cuando tiene versión final, manifiesto y un paquete que otros puedan usar sin preguntarte nada.',
+  },
+  {
+    id: 'm05-l15',
+    moduleIndex: 5,
+    lessonNumber: 15,
+    title: 'Brief profesional para colaborar y publicar',
+    kicker: 'Sesión 15 · Brief y derechos',
+    minutes: 22,
+    objective:
+      'Preparar una canción para colaboración y publicación entendiendo qué es autoría, qué es licencia de plataforma y qué es distribución.',
+    blocks: [
+      {
+        heading: 'El brief de colaboración: ocho campos antes de grabar',
+        body: [
+          'Un brief de colaboración se escribe antes de abrir el estudio, y tiene ocho campos: objetivo de la canción, destino (playlist, sync, live, regalo, venta), referencia de sonido descrita en propiedades, entregables con formato y calidad, plazos con fecha, decisión de créditos y porcentaje, quién aprueba la versión final y qué se considera terminado. Sin los dos últimos campos, toda colaboración termina en discusión; con ellos, termina en entrega.',
+          'Los porcentajes se acuerdan antes, no después. En una canción hay dos capas de autoría: la composición (letra y música) y la grabación (el máster). Un colaborador que solo aporta un arreglo puede llevar 0% de composición y un pago único por su trabajo; quien escribe la mitad de la letra lleva una parte de composición. Escribe quién hizo qué con fechas: tu letra con fecha es la evidencia más clara de autoría humana en una canción hecha con IA.',
+          'Y una convención que evita pleitos: el split sheet. Una hoja con los nombres, el porcentaje de cada uno sobre la composición y la fecha de acuerdo. Es simple, se firma en dos minutos y es lo primero que va a pedir cualquier agregador, sello o editor con experiencia. En muchas plataformas de distribución existe la función de splits, que además automatiza el pago: úsala en lugar de repartir dinero a mano cada mes.',
+        ],
+      },
+      {
+        heading: 'Quién posee lo que genera una IA: lo que es ley y lo que es política',
+        body: [
+          'Separemos dos cosas que la gente mezcla. El derecho de autor protege creaciones humanas: en la mayoría de los sistemas jurídicos, para que exista obra protegida hace falta autoría humana suficiente. Eso significa que una melodía y una letra que escribiste tú son tuyas con independencia de qué herramienta las grabó, mientras que una salida generada íntegramente por la máquina, sin intervención creativa humana determinable, puede no ser registrable o recibir una protección más débil.',
+          'Cómo se resuelve eso cambia por país y cambia rápido. En Estados Unidos la oficina de copyright ha instruido que el material generado por IA sin autoría humana no es registrable y que al registrar hay que declarar qué partes fueron generadas por IA y cuáles son humanas. En varios países latinoamericanos y en España se exige igualmente creación intelectual humana, aunque existen regímenes distintos para obras asistidas. Nada de esto lo puedes resolver con un tutorial: verifica la guía vigente de tu oficina nacional o consulta a un abogado especializado antes de firmar cualquier exclusividad.',
+          'Lo que sí está en tu mano: maximizar tu autoría documentada. Letra escrita por ti, melodía del gancho definida por ti, selección y orden de secciones decidido por ti, edición y montaje hechos por ti, y todo eso con fecha. No son detalles burocráticos: son los elementos que la ley reconoce como aportación humana, y son también los que un tribunal o una oficina van a preguntarte.',
+        ],
+      },
+      {
+        heading: 'Licencia de la plataforma: permiso contractual, no un derecho de autor',
+        body: [
+          'Cuando una plataforma dice que «tú tienes los derechos de lo que generas», casi siempre está concediendo una licencia contractual de uso, no creando una obra registrable a tu nombre. Esos términos cambian según el plan: en muchas herramientas el uso comercial se permite solo a usuarios de pago, y los planes gratuitos imponen atribución, restricciones o ni siquiera otorgan permiso comercial. No asumas: lee los términos vigentes, guarda una captura fechada de la versión que aplicaba cuando generaste, y revisa si tu plan seguía activo en esa fecha.',
+          'La responsabilidad del input es siempre tuya, aunque la plataforma se haga cargo del output. Si subes la letra de otra persona, una melodía reconocible de alguien más o una voz clonada sin consentimiento, el problema legal es tuyo y suele quedar expresamente en tu contra en los términos de servicio. Esto es especialmente relevante con voces: imitar una identidad vocal identificable puede violar derechos de imagen y de voz, que en varios países se protegen con o sin registro.',
+          'Y una advertencia práctica: varias plataformas permiten usar el material de tus canciones para entrenar o mejorar sus modelos, salvo que desactives esa opción en configuración. Busca ese ajuste explícito, porque no está en todos lados en el mismo lugar. Lo mismo con los créditos: no afirmes en la ficha pública que compusiste en solitario algo que generó la máquina; la desinformación no te da protección y puede costarte distribuciones.',
+        ],
+      },
+      {
+        heading: 'Registro de la obra y distribución: ISRC y agregadores',
+        body: [
+          'Registrar una obra no crea el derecho: lo prueba. En México se acude al instituto nacional del derecho de autor; en España al registro territorial de la propiedad intelectual; en Estados Unidos a la oficina federal de copyright, con casillas específicas para declarar material generado por IA. Se registran letra y música como obra musical, y por separado el máster como grabación, cuando corresponde. El costo y el trámite varían; la ventaja es la misma en todos lados: una fecha oficial y una descripción de autoría.',
+          'El ISRC es el código internacional que identifica una grabación concreta, no la composición. Está compuesto por un prefijo de país, un código de registrante, el año y un número secuencial de designación, todo definido por el estándar internacional administrado por la IFPI y sus agencias nacionales. Su uso práctico: cada versión distinta (máster nuevo, remix, edit para radio, regrabación) lleva un ISRC nuevo; la misma grabación en todas las tiendas comparte uno solo. Si un agregador te lo asigna, no lo inventes ni lo reutilices.',
+          'Los agregadores (por ejemplo DistroKid, TuneCore, CD Baby y otros regionales) son los que entregan tu grabación a las tiendas y plataformas, y suelen ser quien te genera el ISRC. Se diferencian en el modelo de cobro — anualidad por artista, pago por lanzamiento o comisión sobre ingresos —, en los países donde pagan, en si permiten repartir splits automáticamente, y en qué políticas tienen sobre contenido generado con IA. Verifica siempre lo vigente en su propia página: esto cambia sin previo aviso.',
+          'Responde con honestidad si el formulario pregunta por IA. Un agregador puede rechazar o retirar un lanzamiento por declaración falsa, y los sistemas de identificación de contenido exigen que declares tener todos los derechos sobre el audio que subes. La declaración no te quita oportunidades: te quita el riesgo de que te borren el catálogo con las regalías dentro.',
+        ],
+      },
+    ],
+    examples: [
+      'Brief de colaboración real (ocho campos): «Objetivo: versión urbana de SOMBRA para playlist de género. Destino: plataformas y un reel de difusión. Referencia de sonido: espacio corto, voz delantera, sub-bajo rítmico, dembow suave, 92 BPM, feel de medio tiempo. Entregables: WAV final, pista sin voz, letra con secciones, manifiesto. Plazo: idea 3 días, voz propia 5, entrega final 12. Créditos: letra 100% mía, música compartida 70/30 por acuerdo escrito antes de generar. Aprueba: yo, porque la masterizo yo. Terminado: paquete de siete elementos más split firmado». Con eso no hay conversación pendiente.',
+      'Split sheet en una línea de ejemplo de texto (no es un modelo legal): «SOMBRA — letra: 60% nombre A, 40% nombre B; música: 100% nombre A; fecha de acuerdo 2026-02-20; cada firmante declara contribuir con autoría humana y conoce que la grabación se realizó con una herramienta de IA identificada en el manifiesto». Esto es lo que se firma; las plantillas propias de cada país o sociedad son las que valen.',
+      'Situación real de plataforma: «generé una canción en el plan gratuito, la subí a una tienda con mi nombre y ahora quiero monetizar». Acción correcta: leer los términos vigentes de ese momento, verificar si el plan gratuito concedía uso comercial, y si no, generar de nuevo en un plan con permiso o contactar a la plataforma por escrito. Guarda la respuesta: es tu licencia.',
+    ],
+    techniques: [
+      'Ocho campos obligatorios del brief: objetivo, destino, referencia por propiedades, entregables, plazos, créditos y porcentajes, quién aprueba, qué es terminado.',
+      'Split sheet antes de grabar: acuerdo de porcentajes con fecha, antes de la primera generación; si el agregador tiene splits automáticos, configúralos al subir, no después.',
+      'Separar composición de máster: la obra (letra y música) y la grabación (el archivo) tienen dueños y registros distintos; nunca los escribas en una sola línea.',
+      'Captura fechada de términos: guarda el texto de la política que regía cuando generaste. Es el documento que responde «podías usar esto comercialmente?» años después.',
+      'Verificar el ajuste de entrenamiento: busca la opción de uso de tu material para entrenar modelos y decide conscientemente; no está en el mismo lugar en cada plataforma.',
+      'Un ISRC por versión: máster nuevo, remix o edit = código nuevo. Pídelo al agregador y registra la correspondencia código-versión en el manifiesto.',
+    ],
+    prompts: [
+      {
+        name: 'Brief de colaboración en ocho campos',
+        outcome: 'Un documento que se envía a un colaborador y evita la pelea de créditos.',
+        text: '1) Objetivo: {qué debe lograr la canción}. 2) Destino: {playlist, reel, sync, live, venta directa}. 3) Referencia de sonido por propiedades: {espacio}, {groove}, {curva de energía}, {voz y su lugar}. 4) Entregables: {audio final y formato}, {pista sin voz}, {letra con secciones}, {manifiesto}. 5) Plazos con fecha: {propuesta}, {grabación o generación}, {entrega final}. 6) Créditos y porcentajes: letra {porcentajes y nombres}, música {porcentajes y nombres}, arreglo {porcentaje o pago único}. 7) Quién aprueba la versión final: {nombre}. 8) Qué se considera terminado: {lista de verificación}. Firmas o constancia con fecha: {medio}.',
+        variables: ['qué debe lograr la canción', 'playlist, reel, sync, live, venta directa', 'espacio', 'groove', 'curva de energía', 'voz y su lugar', 'audio final y formato', 'pista sin voz', 'letra con secciones', 'manifiesto', 'propuesta', 'grabación o generación', 'entrega final', 'porcentajes y nombres', 'porcentaje o pago único', 'nombre', 'lista de verificación', 'medio'],
+      },
+      {
+        name: 'Checklist de derechos antes de publicar',
+        outcome: 'Una verificación final que evita retiradas, bloqueos y pleitos.',
+        text: 'Letra: {original, con fecha y autoría humana declarada}. Melodía del gancho: {propia o colaborativa, con split}. Entrada de la herramienta: {confirmé no subir letra ni melodía de terceros, ni voces clonadas}. Términos de la plataforma al momento de generar: {captura fechada, plan activo, uso comercial permitido sí o no}. Ajuste de entrenamiento: {revisado y decidido}. Créditos públicos: {describen con honestidad qué es humano y qué es generado}. Registro: {oficina nacional, fecha y número si existe}. ISRC: {asignado por el agregador, uno por versión}. Splits: {configurados en el agregador o firmados}. Arte de portada: {original o con licencia, sin marcas ni fotos sin permiso}. Declaración de IA al agregador: {contestada con verdad}.',
+        variables: ['original, con fecha y autoría humana declarada', 'propia o colaborativa, con split', 'confirmé no subir letra ni melodía de terceros, ni voces clonadas', 'captura fechada, plan activo, uso comercial permitido sí o no', 'revisado y decidido', 'describen con honestidad qué es humano y qué es generado', 'oficina nacional, fecha y número si existe', 'asignado por el agregador, uno por versión', 'configurados en el agregador o firmados', 'original o con licencia, sin marcas ni fotos sin permiso', 'contestada con verdad'],
+      },
+      {
+        name: 'Plantilla de nota de créditos para la ficha pública',
+        outcome: 'Describir tu trabajo sin inventar autoría ni esconder la herramienta.',
+        text: '{Título} · letra: {nombre}, {fecha de escritura}. Melodía del gancho: {nombre}. Arreglo y producción: {nombre} con dirección de {género, BPM, tonalidad y capas}, generado con {plataforma y plan} entre {fechas}. Edición final: {qué se recortó o montó a mano}. Mezcla y master: {quién o qué}. Se publican con los derechos correspondientes según {licencia de la plataforma verificada el AAAA-MM-DD}.',
+        variables: ['Título', 'nombre', 'fecha de escritura', 'género, BPM, tonalidad y capas', 'plataforma y plan', 'fechas', 'qué se recortó o montó a mano', 'quién o qué', 'licencia de la plataforma verificada el AAAA-MM-DD'],
+    }
+    ],
+    exercise: {
+      title: 'Preparar una canción para publicación con su expediente de derechos',
+      steps: [
+        'Elige la canción final de la Sesión 14 y redacta su brief de colaboración con los ocho campos, aunque trabajes en solitario.',
+        'Lee los términos vigentes de la plataforma donde la generaste y anota: plan, fecha, permiso de uso comercial, política sobre voces y sobre entrenamiento. Guarda una captura.',
+        'Prepara el split sheet con nombres, porcentajes de letra y música, y fecha; acuerdalo por escrito con quien participó.',
+        'Verifica qué parte de la obra es autoría humana documentada (letra, melodía del gancho, selección, edición) y escríbela con fechas.',
+        'Arma la checklist de derechos de quince puntos y resuelve cada vacío antes de contactar a un agregador.',
+        'Compara dos agregadores con datos actuales de su propia página: modelo de cobro, países de pago, splits automáticos, política sobre contenido generado con IA y tiempo de revisión.',
+      ],
+      deliverable:
+        'Un expediente de publicación con brief de ocho campos, split fechado, notas de términos de plataforma con captura, checklist de derechos resuelta y la comparación de dos agregadores.',
+      checklist: [
+        'El brief declara créditos y porcentajes antes de cualquier generación nueva.',
+        'Hay captura fechada de los términos de la plataforma y confirmación de que el plan permitía uso comercial.',
+        'La checklist de derechos está completa sin casillas en blanco y la nota de créditos describe con honestidad qué hizo la máquina.',
+        'La comparación de agregadores cita la página oficial de cada uno con la fecha de consulta, no información de terceros.',
+      ],
+    },
+    listening: [
+      {
+        title: 'Leer los créditos reales de un lanzamiento',
+        focus:
+          'Busca en la ficha técnica de un álbum o en la base de datos de una sociedad de autores los créditos de una canción que te guste: quién figura como compositor, quién como productor, quién como intérprete. Vas a ver que el reparto no es «quien tocó más», sino quien aportó obra. Así se leen los splits en la práctica.',
+        search: 'cómo leer los créditos de una canción compositor intérprete editor splits bases de datos de obras',
+      },
+      {
+        title: 'La misma canción, tres versiones con ISRC distinto',
+        focus:
+          'Localiza una canción en su versión original, un remix y una edición para radio, y revisa en la ficha de metadatos que cada grabación tenga su propio identificador. Eso confirma la regla operativa: una versión, un ISRC, y nunca reutilizar códigos.',
+        search: 'ISRC original remix radio edit different recording identifier metadata',
+      },
+      {
+        title: 'Derechos de voz e identidad vocal en la conversación pública',
+        focus:
+          'Busca coberturas periodísticas sobre imitación de voces con IA y los reclamos de artistas y sellos. Objetivo: entender por qué clonar una voz identificable es un problema jurídico distinto al del derecho de autor de la obra, y por qué las plataformas lo prohíben en sus términos.',
+        search: 'AI voice cloning likeness rights artist impersonation platform policy news',
+      },
+    ],
+    pitfalls: [
+      {
+        mistake: 'Asumir que «la plataforma dice que es mío» equivale a tener derechos registrables.',
+        fix: 'Separa permiso contractual de autoría. Lee los términos de tu plan y verifica qué exige tu oficina nacional de registro.',
+      },
+      {
+        mistake: 'Negociar porcentajes después de publicar.',
+        fix: 'Split sheet antes de generar. Si la colaboración ya ocurrió, regularízalo por escrito con fecha y alcances claros.',
+      },
+      {
+        mistake: 'Subir con otro nombre una letra o una melodía de terceros como input.',
+        fix: 'Usa solo material propio o con licencia escrita; la responsabilidad del input casi siempre recae en tu cuenta.',
+      },
+      {
+        mistake: 'Copiar información de derechos o regalías de un video o hilo de internet.',
+        fix: 'Consulta fuentes primarias: la política vigente de la plataforma, la guía de tu oficina de registro y la página del agregador, con fecha de consulta.',
+      },
+    ],
+    takeaway:
+      'Publicar sin expediente de derechos es publicar con fecha de caducidad: el brief, el split y la captura de términos son parte del release.',
+  },
+  {
+    id: 'm05-l16',
+    moduleIndex: 5,
+    lessonNumber: 16,
+    title: 'Proyecto final: produce dos canciones y presenta tu portafolio',
+    kicker: 'Sesión 16 · Proyecto final',
+    minutes: 25,
+    objective:
+      'Entregar dos canciones terminadas con su evidencia y un portafolio que muestre criterio, no solo audios.',
+    blocks: [
+      {
+        heading: 'La especificación del proyecto final',
+        body: [
+          'Dos canciones, un mismo estándar. Canción A: con voz, letra tuya completa, mínimo tres secciones distinguibles, gancho antes del minuto, paquete de entrega completo y expediente de derechos resuelto. Canción B: instrumental o con voz propia grabada encima de la generación, en un género distinto al de A, para demostrar que diriges direcciones diferentes y no un solo molde. Si una de las dos no tiene letra o melodía tuya documentada, no cuenta como canción: cuenta como experimento.',
+          'El proceso también se entrega: mínimo tres versiones documentadas por canción, una prueba A/B de una variable, una matriz de siete funciones, y la decisión final con qué gana y qué pierde. Eso es lo que diferencia un portafolio de una lista de Spotify. Nadie contrata a alguien por tener canciones; se le contrata por poder explicarlas.',
+          'Ponte límite de tiempo realista: dos semanas, tres sesiones por semana. El plazo obliga a decidir, y decidir es la habilidad que estás demostrando. Si en dos semanas no terminas, no es falta de talento: es un brief demasiado grande, y acotar la idea está bien.',
+        ],
+      },
+      {
+        heading: 'Cómo se estructura un portafolio que sirva',
+        body: [
+          'Cinco elementos, en este orden: quién eres y qué diriges (cuatro líneas), las dos canciones con su ficha, la evidencia de proceso por canción (prompt final, versiones, decisión), el detalle técnico (plataformas que dominas, qué sabes editar fuera, qué no), y un contacto con una petición concreta. La petición concreta hace más que cualquier adjetivo: «busco colaboraciones para voz femenina en urbano» obtiene respuestas; «abierto a oportunidades» no.',
+          'Cada ficha de canción se escribe igual: género, BPM, tonalidad, voz y dirección, capas con función, estructura con segundos, prompt final, plataforma y plan, qué fue autoría humana, qué se editó fuera y en qué fecha. Diez líneas por canción. Ese formato demuestra que controlas el proceso y, de paso, te deja el texto listo para responder cualquier pregunta de un cliente, un colaborador o un agregador.',
+          'Sé honesto con el rol de la IA: declarar «letra y melodía mías, arreglos generados y dirigidos por mí, mezclada en casa» no te resta credibilidad. Lo que te resta es afirmar autoría total sobre algo que no puedes explicar. La honestidad sobre la herramienta es hoy una señal de profesionalismo, no una debilidad.',
+        ],
+      },
+      {
+        heading: 'De dónde puede entrar dinero: canales, sin promesas',
+        body: [
+          'Primero, lo que no existe: no hay una tarifa universal por reproducción. El pago por stream se acuerda entre la plataforma y el distribuidor y depende del país, del tipo de cuenta, del mix de escuchas y del contrato; varía tanto que cualquier número que te den sin fuente primaria es ruido. Pide siempre la tarifa vigente al agregador y habla en rangos, no en promesas. Y ten presente que una sola canción aislada casi nunca genera ingresos relevantes: los canales que sí escalan son catálogo sostenido, uso en video y presentación en vivo.',
+          'Segundo, los canales reales: regalías de ejecución pública a través de una sociedad de autores (en México SOCIM, en Colombia SAYCO, en España SGAE, en Estados Unidos ASCAP o BMI, entre otras), regalías mecánicas de reproducción y streaming a través de las entidades y servicios que correspondan en tu país, ingresos del agregador por tiendas, venta directa de audio y merchandising, presentaciones en vivo, encargos de música para creadores de contenido y licencias de sincronización. Cada canal tiene su propio registro, su propio trámite y sus propios tiempos de pago.',
+          'Tercero, lo que depende de tu autoría demostrable: muchas sociedades y sistemas de identificación de contenido exigen declarar con precisión quién compuso qué y quién tiene derechos para cederlos. Si la obra no es registrable en tu jurisdicción por falta de autoría humana, puede que no puedas cobrar ciertas regalías aunque la canción se escuche. No es una razón para dejar de publicar; es una razón para escribir tú la letra y la melodía, y dejar constancia fechada.',
+        ],
+      },
+      {
+        heading: 'Cómo se cobra un sync: dos licencias y una negociación',
+        body: [
+          'Sincronización es el permiso para usar tu música junto a una imagen: serie, anuncio, videojuego, reel, documental. Se pagan dos licencias separadas y ambas tienen que estar en regla: la de sincronización sobre la composición, que depende de quien tiene los derechos de letra y música, y la de uso del máster sobre la grabación, que depende de quién es dueño de ese archivo concreto. Si trabajaste con una editorial, un sello o un colaborador, quizá no controles las dos, y entonces no puedes firmar.',
+          'El precio lo fija un cruce de variables, no una tarifa: medio (televisión, cine, publicidad, plataforma, contenido de un tercero), territorio, plazo, exclusividad, duración del fragmento usado, prominencia (fondo o tema principal) y si incluye música como parte argumental o solo acompañamiento. Se suele pagar un fijo por uso, y en algunos acuerdos hay además regalías posteriores declaradas mediante un cue sheet ante la sociedad de autores. Negocia con datos y por escrito: jamás envíes un audio sin saber qué uso se pide.',
+          'Las trampas frecuentes: «all media, perpetuity, worldwide, exclusive» sin límite de monto, que es un cesión total disfrazada; el work-for-hire que te quita la obra a cambio de un pago único, válido si es negocio pero debe ser consciente; y las bibliotecas de música que piden exclusividad de catálogo a cambio de distribución. Regla simple: si no puedes explicar el acuerdo en dos frases, no firmes. Y guarda siempre una versión sin exclusividad para otros usos.',
+          'Ojo con el sync y la IA: muchos clientes piden garantías de que controlas todos los derechos del máster. Si tu grabación no tiene autoría humana clara, quizá puedas ceder un uso pero no una exclusividad defendible. Sé preciso en la propuesta: «música y letra de mi autoría, producción asistida con IA, controlo el máster, no puedo conceder garantía de no-infracción sobre el modelo» es una respuesta profesional; «es 100% mía» es un riesgo para las dos partes.',
+        ],
+      },
+    ],
+    examples: [
+      'Ficha de portafolio, canción A: «SOMBRA — urbano pop, 92 BPM feel de medio tiempo, Do# menor. Letra y melodía del gancho: mías, escritas el 2026-02-01, archivo con fecha. Arreglos: dirección propia con prompt de siete capas, generado en plataforma con plan activo. Versiones: 5 documentadas, una prueba A/B de BPM. Edición externa: recorte de intro de 26 a 6 segundos, fade final de 1,5 s. Duración final 2:48. Créditos declarados, split firmado, ISRC asignado por el agregador». Diez líneas, cero humo.',
+      'Propuesta de sync bien escrita: «Título: SOMBRA. Géneros y moods: urbano pop nocturno, 92 BPM, Do# menor, voz femenina en español, gancho en el segundo 44. Duración total 2:48, con versiones: completa, 60 s, 30 s, 15 s sin voz y loop instrumental de 8 compases. Uso solicitado: {medio, territorio, plazo, exclusividad}. Lo que cedo: sincronización y uso del máster, no exclusividad de catálogo. Lo que no puedo garantizar: no-infracción sobre el modelo de generación, que se declara en los créditos». Con eso un supervisor musical puede responderte con una cifra.',
+      'Reflexión de aprendizaje útil (estructura, no plantilla): «Lo que más cambió mi resultado no fue el modelo: fue escribir el groove con nombre y dejar tres capas en el verso. El error que más repetí fue cambiar dos variables a la vez: en v3 perdí dos sesiones creyendo que el problema era la voz. La próxima etapa: grabar mis propias voces para el 50% de las canciones, porque ahí está mi problema de identidad y de derechos». Una reflexión con un error nombrado y un plan concreto vale más que diez líneas de entusiasmo.',
+    ],
+    techniques: [
+      'Ficha de diez líneas por canción: género, tempo, tonalidad, voz, capas con función, estructura, prompt final, plataforma y plan, participación humana documentada y edición externa con fecha.',
+      'Prueba de la explicación oral: si no puedes explicar tu canción en dos minutos a alguien que no conoce tu proyecto, el portafolio todavía no está listo.',
+      'Versiones para sync: entrega siempre completa, 60, 30 y 15 segundos, más una versión sin voz y un loop instrumental. Un supervisor compra lo que puede montar, no lo que te gusta a ti.',
+      'Lectura de acuerdo en dos frases: medio, territorio, plazo, exclusividad y qué cesión concreta das. Si no cabe en dos frases, pide aclaración antes de firmar.',
+      'Catálogo con destinos: una canción para publicar, una para sync, una para regalo o vivo. Diversificar destinos rinde más que repetir el mismo intento monetario.',
+      'Cierre con pedido: el portafolio termina con una solicitud específica, no con «abierto a oportunidades». Define el tipo de colaboración que buscas.',
+    ],
+    prompts: [
+      {
+        name: 'Ficha de portafolio por canción',
+        outcome: 'El documento que convierte una pista en evidencia de criterio profesional.',
+        text: 'Título: {título} · versión final {vNN} · fecha {AAAA-MM-DD}. Género y destino: {género}, para {destino}. Datos: {BPM} BPM feel {recto, medio tiempo o doble}, {tonalidad} {modo}, duración {mm:ss}, gancho en {mm:ss}. Voz: {registro, textura, articulación, acento}. Capas con función: {pulso}, {groove}, {fundamental}, {armonía}, {melodía complementaria}, {aire}. Autoría humana documentada: letra {título del archivo y fecha}, melodía del gancho {cómo la definiste}, selección de secciones y edición {qué decidiste}. Herramienta: {plataforma y plan}, generado entre {fechas}. Versiones: {n} documentadas, prueba A/B de {variable}, decisión {qué gana y qué pierde}. Estado legal: {splits firmados, términos verificados, registro si existe, ISRC asignado}.',
+        variables: ['título', 'vNN', 'AAAA-MM-DD', 'género', 'destino', 'BPM', 'recto, medio tiempo o doble', 'tonalidad', 'modo', 'mm:ss', 'registro, textura, articulación, acento', 'pulso', 'groove', 'fundamental', 'armonía', 'melodía complementaria', 'aire', 'título del archivo y fecha', 'cómo la definiste', 'qué decidiste', 'plataforma y plan', 'fechas', 'n', 'variable', 'qué gana y qué pierde', 'splits firmados, términos verificados, registro si existe, ISRC asignado'],
+      },
+      {
+        name: 'Cotización de sync en dos frases',
+        outcome: 'Responder a un pedido de uso sin regalarte ni perder el trato.',
+        text: 'Dos frases de control antes de cotizar: «Qué uso concreto piden» y «Qué estoy cediendo». Respuesta al cliente: {Título}, {duración total} con versiones {completa, 60 s, 30 s, 15 s, sin voz, loop}. Uso solicitado: {medio}, {territorio}, {plazo}, {exclusividad sí o no}, {duración del fragmento}, {prominencia: fondo o principal}. Cedo: {licencia de sincronización sobre composición y licencia de uso de máster, con o sin exclusividad}. No cedo: {cesión total, perpetuidad, todos los medios} salvo acuerdo aparte de {monto}. Base de cotización: {rango propio por tipo de uso y medio, que defines tú y defiendes por escrito}. Nota de origen: producción asistida con IA declarada en créditos; controlo el máster; no garantizo derechos sobre el modelo de generación.',
+        variables: ['Título', 'duración total', 'completa, 60 s, 30 s, 15 s, sin voz, loop', 'medio', 'territorio', 'plazo', 'exclusividad sí o no', 'duración del fragmento', 'prominencia: fondo o principal', 'licencia de sincronización sobre composición y licencia de uso de máster, con o sin exclusividad', 'cesión total, perpetuidad, todos los medios', 'monto', 'rango propio por tipo de uso y medio, que defines tú y defiendes por escrito'],
+      },
+      {
+        name: 'Reflexión final de tres párrafos',
+        outcome: 'Cerrar el curso con lo que vas a hacer distinto, escrito con evidencia.',
+        text: 'Párrafo 1, decisión técnica: {la decisión que más cambió tu resultado}, evidenciado en {versión y mm:ss}. Párrafo 2, error repetido: {el error que más cometiste}, qué costó {sesiones o tiempo} y cómo lo corregiste {regla que aplicaste}. Párrafo 3, plan de tres meses: {qué vas a hacer con las canciones terminadas}, {qué habilidad vas a entrenar}, {qué vas a dejar de hacer}.',
+        variables: ['la decisión que más cambió tu resultado', 'versión y mm:ss', 'el error que más cometiste', 'sesiones o tiempo', 'regla que aplicaste', 'qué vas a hacer con las canciones terminadas', 'qué habilidad vas a entrenar', 'qué vas a dejar de hacer'],
+      },
+    ],
+    exercise: {
+      title: 'Proyecto final: dos canciones, portafolio y plan de uso',
+      steps: [
+        'Escribe letra y melodía del gancho de dos canciones distintas, con fecha y archivo propio, en géneros diferentes.',
+        'Genera cada canción con prompt de siete campos, documenta mínimo tres versiones y aplica una prueba A/B de una variable.',
+        'Cierra el paquete de entrega de cada canción: audio final, metadatos, arte, letra, nota de créditos, split y manifiesto de versiones.',
+        'Completa el expediente de derechos con la checklist de quince puntos y, si vas a publicar, elige agregador con datos de su página oficial fechados.',
+        'Arma el portafolio con las dos fichas de diez líneas, la evidencia de proceso, el detalle técnico y un contacto con petición concreta.',
+        'Prepara para la canción A las cuatro versiones de sync (60, 30, 15 y sin voz) con su cotización en dos frases y escribe la reflexión final de tres párrafos.',
+      ],
+      deliverable:
+        'Entregable final: portafolio con dos canciones terminadas y trazables, dos expedientes de derechos, fichas de producción con prompt final y evidencia de versiones, cuatro versiones listas para sync y una reflexión de tres párrafos con plan a tres meses.',
+      checklist: [
+        'Las dos canciones tienen letra y melodía de autoría humana documentada con fecha, en géneros distintos.',
+        'Cada canción trae paquete de entrega completo, manifiesto de mínimo tres versiones y expediente de derechos sin casillas en blanco.',
+        'El portafolio permite explicar cada canción en dos minutos y termina con una petición concreta de colaboración.',
+        'La canción A incluye versiones de 60, 30 y 15 segundos más una sin voz, con su propuesta de sync redactada en dos frases.',
+        'La reflexión final nombra un error propio, su costo y la regla que la corrigió, con un plan de tres meses.',
+      ],
+    },
+    listening: [
+      {
+        title: 'Auditoría de una licencia de sync en la conversación pública',
+        focus:
+          'Busca coberturas sobre canciones usadas en publicidad o cine y localiza qué variables se mencionan: medio, territorio, plazo y exclusividad. No busques cifras: busca estructura del acuerdo. Eso es lo que vas a negociar con dos frases.',
+        search: 'synchronization license variables media territory term exclusivity explained',
+      },
+      {
+        title: 'Edit de una misma canción para distintos usos',
+        focus:
+          'Escucha una canción en su versión álbum y en su edit para radio o trailer: qué se corta, qué se repite y qué se deja de lado para caber en 30 o 60 segundos. Ese ejercicio de recorte es el mismo que harás con tus cuatro versiones de sync.',
+        search: 'radio edit versus album version what is cut shorter structure comparison',
+      },
+      {
+        title: 'Portafolios de productores que explican sus decisiones',
+        focus:
+          'Busca páginas profesionales de productores o compositores de música para medios y observa cuánta información escrita acompaña cada audio: géneros, moods, BPM, versiones disponibles, contacto. El audio es la mitad; la ficha es la que cierra el negocio.',
+        search: 'music supervisor portfolio producer credits listing bpm versions available',
+      },
+    ],
+    pitfalls: [
+      {
+        mistake: 'Prometer ingresos por stream con cifras copiadas de internet.',
+        fix: 'Habla en rangos y cita la tarifa vigente de tu agregador y de tu país, consultada en su página y con fecha. Si no la sabes, no la cites.',
+      },
+      {
+        mistake: 'Firmar una cesión total creyendo que firmas un uso.',
+        fix: 'Exige medio, territorio, plazo y exclusividad por escrito. «Todos los medios, perpetuidad, mundial, exclusiva» es otra cosa y se cobra distinto.',
+      },
+      {
+        mistake: 'Presentar un portafolio con veinte audios y cero explicaciones.',
+        fix: 'Dos canciones con ficha, versiones y decisión escrita valen más que una lista de pistas que nadie puede interpretar.',
+      },
+      {
+        mistake: 'Declarar autoría total sobre una obra generada.',
+        fix: 'Describe con precisión qué es tuyo y qué hizo la herramienta. Es más creíble, y te protege cuando alguien pida garantías.',
+      },
+    ],
+    takeaway:
+      'El curso termina cuando tienes dos canciones explicables, un expediente de derechos y un plan para usarlas.',
   },
   // __PART2__
 ]
