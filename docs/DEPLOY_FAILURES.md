@@ -1,5 +1,12 @@
 # Dónde están las fallas del deploy
 
+**Estado al 6 de noviembre 05:15 UTC (5 nov, 23:15 hora del centro de México):
+las fallas 1 y 2 están resueltas y verificadas en producción.** El proyecto
+migró a `AnubisVillasenor1`, el build pasó y `interfaz-curso-musica-ai.vercel.app`
+sirve el código real. Quedan la 3 (variables), la 4 (migraciones) y la 5
+(dominio), que necesitan escrituras que no puedo hacer yo. Lo de abajo se queda
+como estaba porque es la evidencia; donde algo ya no aplica está marcado.
+
 Medido el 2026-11-05 contra la API de Vercel con token de `anubisvillasenor1`,
 sobre la URL pública de producción y sobre el historial de git de las dos
 cuentas. Nada de esta página es inferencia sin comprobación: cada afirmación
@@ -80,10 +87,39 @@ edición suya en `app/layout.tsx` —donde todavía vive `title: 'Sonora IA'` y
 build que vuelve a caer en el mismo TS7016 porque el fix no está en esa rama.
 Por eso los dos intentos de production de hoy fallaron con errores idénticos.
 
+**Cómo se resolvió (y verificado, no supuesto).** Se fusionó la rama de trabajo
+sobre `AnubisVillasenor1/main` en el commit `347c97f`, que toma `89cd2d1` como
+ancestro: el push es fast-forward y Vercel no necesitó cambiar el vínculo. El
+único conflicto funcional era `components/cinematic/cinematic-intro.tsx` y se
+resolvió conservando nuestra versión, que es la que compila contra el `SoundBed`
+real (la de v0 pasa `wet`/`feedback`/`dampHz`, parámetros que nuestra clase no
+acepta, escribe un ref durante el render y acumula timeouts sin límite). Antes
+de empujar, el árbol fusionado se verificó en un worktree limpio: `pnpm install
+--frozen-lockfile` en 33 s, `tsc --noEmit` en 0 y `next build` en 0.
+
+Después del push, la API confirmó el deployment `dpl_5fdQDjvJP1d2N2f9Jy9kTNd66Eom`
+con `gitSource.sha = 347c97f`, `state = READY` y `target = production`. Sondeada
+la URL viva, sin seguir redirects:
+
+| ruta | antes | ahora |
+|---|---|---|
+| `/`, `/curso`, `/precios`, `/perfil`, `/biblioteca`, `/studio` | 404 | **200** |
+| `/robots.txt`, `/sitemap.xml` | 404 | **200** (con cuerpo real, no el `Disallow: /` de apagón) |
+| `<title>` | `Sonora IA — Academia musical` | `Play and Go by TAMV ONLINE — Música con IA` |
+| `<meta name="generator">` | `v0.app` | ausente |
+| `POST /api/agent` | — | 200, `source: fallback`, cita los precios reales del catálogo |
+
+O sea: el curso, la marca, el estudio y las páginas ya no viven solo en un repo
+que nadie despliega. Están en el sitio.
+
 
 ---
 
-## Falla 2 — El build fallaba por tipos, no por el código (ya arreglada)
+## Falla 2 — El build fallaba por tipos, no por el código (resuelta y en producción)
+
+El fix está publicado: `347c97f` construyó `READY` con el fix de tipos presente
+en `package.json` de la rama que Vercel lee. Lo de abajo se mantiene porque es
+la explicación del porqué un typecheck local aprobaba.
 
 ```
 cinematic-intro.tsx(5,24): error TS7016: Could not find a declaration file for module 'three'
@@ -211,23 +247,19 @@ infraestructura ajena.
 
 ## Orden para salir
 
-1. Decidir qué rama es la real, porque hoy hay dos y Vercel lee la que pierde.
-   Las opciones, con su costo:
-   - **Remontar el proyecto a `OsoPanda1/…`** (cambio de vínculo en Vercel). El
-     build pasa en cuanto se monte: `d215ccb` ya compila verificado con pnpm.
-     v0 deja de poder pisar la rama de producción.
-   - **Merge de los 10 de OsoPanda a `AnubisVillasenor1/main`** sin tocar el
-     vínculo. Menos pasos de plataforma, pero deja las dos cuentas escribiendo
-     la misma rama: el siguiente push de v0 puede deshacer la marca o volver a
-     romper el build, y hay que resolver 3 commits ajenos en el camino.
-   Cualquiera de las dos hay que hacerla antes de mirar lo demás: hoy cualquier
-   comprobación contra producción se hace sobre `fde148c`, un build de hace dos
-   días. Lo que sí se puede sin tocar nada es un deploy manual desde `d215ccb`
-   para ver el sitio entero funcionando en una URL de preview.
-2. Añadir `NEXT_PUBLIC_APP_URL`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`,
-   `SUPABASE_SERVICE_ROLE_KEY`, `GENERATOR_CALLBACK_SECRET` y `API_KEY` al
-   proyecto, y volver a desplegar para que las variables de `NEXT_PUBLIC_*`
-   lleguen al bundle.
+1. ~~Decidir qué rama es la real.~~ **Hecho el 5 de noviembre:** el trabajo se
+   fusionó en `AnubisVillasenor1/main`, que es la rama que Vercel ya leía, con
+   merge fast-forward y build verificado en producción. Queda una consecuencia
+   operativa: mientras v0 siga vinculado a la cuenta, un push suyo a `main`
+   reconstruye producción, así que hay que revisar qué entra antes de empujar.
+   El respaldo del historial completo está en `respaldo-interfaz-347c97f.bundle`,
+   junto a la carpeta del proyecto.
+2. Añadir las variables al proyecto, que hoy tiene **0**: `NEXT_PUBLIC_APP_URL`,
+   `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`,
+   `SUPABASE_SERVICE_ROLE_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`,
+   `GENERATOR_CALLBACK_SECRET`, `API_KEY` y las tres de `AI_AGENT_*`. Hace falta
+   el valor de cada una, y esos valores no pasan por este chat. Las
+   `NEXT_PUBLIC_*` viajan en el bundle: cambiarlas exige reconstruir.
 3. Aplicar las cuatro migraciones en Supabase.
 4. Montar el endpoint de webhook de Stripe contra el dominio real y probar un
    cobro de test de punta a punta: pago → webhook → `entitlements` → canción
