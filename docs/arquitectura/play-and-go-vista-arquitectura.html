@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Play and Go by TAMV ONLINE — vista de arquitectura</title>
+<style>
+  :root {
+    --bg: #07121f; --surface: #0c1c2b; --surface-2: #102434;
+    --hairline: rgba(146, 197, 216, .16); --keyline: rgba(146, 197, 216, .32);
+    --ink: #e8f6fb; --text: #adc4d0; --muted: #7f9aa7;
+    --cyan: #75e9f2; --cyan-soft: #8cecf3; --violet: #c09eff;
+    --magenta: #ff9eea; --amber: #ffcf72; --mint: #83d7b4;
+    --step--1: .82rem; --step-0: .95rem; --step-1: 1.1rem;
+    --step-2: 1.45rem; --step-3: 2.1rem; --step-4: 2.9rem;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 400 var(--step-0)/1.7 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 4.5rem 2rem 6rem; }
+  .eyebrow {
+    font-size: var(--step--1); letter-spacing: .22em; text-transform: uppercase;
+    font-weight: 600; color: var(--cyan); margin: 0;
+  }
+  .eyebrow.v { color: var(--violet); } .eyebrow.m { color: var(--magenta); }
+  .eyebrow.a { color: var(--amber); } .eyebrow.n { color: var(--mint); }
+  h1 {
+    margin: .8rem 0 0; font-size: var(--step-4); line-height: .94;
+    letter-spacing: -.055em; font-weight: 600; color: var(--ink); text-wrap: balance;
+  }
+  h2 {
+    margin: 0; font-size: var(--step-2); line-height: 1.12;
+    letter-spacing: -.032em; font-weight: 600; color: var(--ink);
+  }
+  h3 { margin: 0; font-size: var(--step-1); letter-spacing: -.018em; font-weight: 600; color: var(--ink); }
+  p { margin: 1rem 0 0; }
+  lede, .lede { display: block; margin-top: 1.15rem; max-width: 68ch; font-size: var(--step-1); line-height: 1.65; }
+  section { margin-top: 4.2rem; }
+  .sec-head { display: flex; gap: 1.4rem; align-items: baseline; border-bottom: 1px solid var(--hairline); padding-bottom: 1.1rem; margin-bottom: 1.8rem; }
+  .sec-num { font-size: var(--step--1); font-weight: 600; letter-spacing: .18em; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .grid { display: grid; gap: 1rem; }
+  .g2 { grid-template-columns: repeat(auto-fit, minmax(310px, 1fr)); }
+  .g3 { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+  .card {
+    background: var(--surface); border: 1px solid var(--hairline); border-radius: 1.05rem;
+    padding: 1.35rem 1.45rem;
+  }
+  .card h3 + p { margin-top: .5rem; }
+  .card p { font-size: var(--step--1); line-height: 1.62; }
+  .tag {
+    display: inline-flex; align-items: center; gap: .4rem; margin-top: .95rem;
+    font-size: .74rem; letter-spacing: .06em; padding: .28rem .62rem;
+    border: 1px solid var(--keyline); border-radius: 999px; color: var(--text);
+  }
+  .tag.o { background: rgba(255, 207, 114, .1); border-color: rgba(255, 207, 114, .4); color: var(--amber); }
+  .tag.g { background: rgba(131, 215, 180, .1); border-color: rgba(131, 215, 180, .42); color: var(--mint); }
+  .tag.p { background: rgba(192, 158, 255, .1); border-color: rgba(192, 158, 255, .42); color: var(--violet); }
+  .tag.r { background: rgba(255, 158, 234, .1); border-color: rgba(255, 158, 234, .42); color: var(--magenta); }
+  .node {
+    border: 1px solid var(--keyline); border-radius: .9rem; padding: .85rem 1rem;
+    background: var(--surface-2); text-align: center;
+  }
+  .node b { display: block; color: var(--ink); font-size: var(--step-0); font-weight: 600; letter-spacing: -.01em; }
+  .node span { display: block; font-size: .74rem; color: var(--muted); margin-top: .2rem; letter-spacing: .02em; }
+  .flow { display: grid; gap: .7rem; }
+  .arrow { text-align: center; color: var(--cyan); font-size: 1rem; line-height: 1; }
+  .lanes { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: .8rem; }
+  .stack { display: grid; gap: .55rem; }
+  .step {
+    display: grid; grid-template-columns: 2.2rem 1fr; gap: .85rem; align-items: start;
+    border: 1px solid var(--hairline); border-radius: .85rem; padding: .8rem 1rem; background: var(--surface);
+  }
+  .step i {
+    font-style: normal; font-variant-numeric: tabular-nums; font-weight: 600; font-size: .78rem;
+    color: var(--bg); background: var(--cyan); border-radius: .45rem; padding: .16rem .34rem; justify-self: start;
+  }
+  .step.violet i { background: var(--violet); } .step.amber i { background: var(--amber); }
+  .step.mint i { background: var(--mint); } .step.magenta i { background: var(--magenta); }
+  .step b { display: block; color: var(--ink); font-size: var(--step-0); font-weight: 600; }
+  .step code { font-size: .85em; color: var(--cyan-soft); }
+  .step p { margin: .25rem 0 0; font-size: var(--step--1); line-height: 1.55; color: var(--muted); }
+  table { width: 100%; border-collapse: collapse; margin-top: 1.1rem; font-size: var(--step--1); }
+  caption { text-align: left; font-size: var(--step--1); color: var(--muted); margin-bottom: .8rem; }
+  th {
+    text-align: left; font-weight: 600; color: var(--muted); letter-spacing: .1em;
+    text-transform: uppercase; font-size: .7rem; padding: 0 .8rem .7rem 0; border-bottom: 1px solid var(--keyline);
+  }
+  td { padding: .85rem .8rem .85rem 0; border-bottom: 1px solid var(--hairline); vertical-align: top; color: var(--text); }
+  td b { color: var(--ink); font-weight: 600; }
+  code { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; }
+  .k { color: var(--cyan-soft); }
+  .state { font-weight: 600; letter-spacing: .01em; white-space: nowrap; }
+  .s-ok { color: var(--mint); } .s-wait { color: var(--amber); } .s-none { color: var(--magenta); } .s-info { color: var(--violet); }
+  .callout {
+    margin-top: 1.4rem; border-left: 2px solid var(--amber); background: rgba(255, 207, 114, .06);
+    padding: 1rem 1.2rem; border-radius: 0 .85rem .85rem 0; font-size: var(--step--1); line-height: 1.65;
+  }
+  .callout b { color: var(--amber); font-weight: 600; }
+  .callout.v { border-color: var(--violet); background: rgba(192, 158, 255, .06); }
+  .callout.v b { color: var(--violet); }
+  footer { margin-top: 4.5rem; padding-top: 1.6rem; border-top: 1px solid var(--hairline); font-size: .78rem; color: var(--muted); }
+  @media (max-width: 640px) { .wrap { padding: 3rem 1.15rem 4rem; } h1 { font-size: 2.25rem; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <p class="eyebrow">Play and Go by TAMV ONLINE · vista de arquitectura</p>
+    <h1>Dónde está hoy el sistema<br>y dónde tiene que estar</h1>
+    <span class="lede">Vista de contenedores para decisión, no para decoración. Cada bloque lleva su
+    evidencia: archivo del repo o medición en producción. Lo que no está verificado aparece marcado como
+    tal, aunque eso deje el cuadro menos bonito.</span>
+    <p style="margin-top:1.4rem; font-size:.8rem; color:var(--muted)">
+      Hecha sobre <code class="k">AnubisVillasenor1/interfaz-curso-musica-ai-18</code>,
+      commit <code class="k">b9457ee</code> en <code class="k">main</code>, producción
+      <code class="k">interfaz-curso-musica-ai.vercel.app</code> · 6 nov 2026.
+    </p>
+  </header>
+
+  <section>
+    <div class="sec-head"><span class="sec-num">01</span><h2>Contexto: qué toca al usuario y qué pasa por detrás</h2></div>
+    <div class="flow">
+      <div class="lanes">
+        <div class="node"><b>Estudiante / músico</b><span>navegador, móvil</span></div>
+        <div class="node"><b>Productor de contenido</b><span>misma superficie, cupo de pago</span></div>
+      </div>
+      <div class="arrow">↓</div>
+      <div class="node"><b>Play and Go — Next.js 16.4.5 (App Router + Turbopack)</b><span>Vercel · 34 rutas · SSR + SSG en /curso/*</span></div>
+      <div class="arrow">↓&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;↑</div>
+      <div class="lanes">
+        <div class="node"><b>Supabase</b><span>auth + Postgres + RLS + Storage</span></div>
+        <div class="node"><b>Stripe</b><span>cobro, webhook, factura</span></div>
+        <div class="node"><b>Cola de trabajos</b><span>propuesta: Postgres <code class="k">SKIP LOCKED</code></span></div>
+      </div>
+      <div class="arrow">↓</div>
+      <div class="lanes">
+        <div class="node"><b>Motor de generación</b><span>ACE-Step / DiffRhythm (Apache-2.0)</span></div>
+        <div class="node"><b>Separación</b><span>Demucs (MIT)</span></div>
+        <div class="node"><b>Análisis</b><span>librosa / aubio → Mapa Emocional</span></div>
+        <div class="node"><b>Transcripción</b><span>Whisper (MIT)</span></div>
+      </div>
+      <div class="arrow">↓</div>
+      <div class="node"><b>Objetos de audio + metadatos</b><span>Storage (Supabase hoy · MinIO sólo si se autoaloja)</span></div>
+    </div>
+    <div class="callout v"><b>Lectura corta.</b> La columna izquierda (Next + Supabase + Stripe) ya está escrita y desplegada.
+    La mitad derecha —motores de audio y worker— <b>no existe como servicio</b>: hoy el estudio genera audio en el navegador
+    (Tone.js / síntesis local) y <code class="k">docs/stack-reference/pipeline.py</code> es la referencia ejecutable del flujo
+    cobrado, no un despliegue.</div>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="sec-num">02</span><h2>Contenedores: hoy (monolito Next) y propuesto (monorepo)</h2></div>
+    <div class="grid g2">
+      <div class="card">
+        <p class="eyebrow">Hoy</p>
+        <h3>Un solo deploy</h3>
+        <p><code class="k">app/</code> 24 rutas · <code class="k">components/</code> 63 archivos ·
+        <code class="k">lib/</code> dominio y clientes · <code class="k">supabase/migrations/</code> 4 archivos SQL
+        escritos, sin aplicar. Todo corre en Vercel como funciones serverless de segundos.</p>
+        <span class="tag g">Desplegado y medido</span>
+      </div>
+      <div class="card">
+        <p class="eyebrow v">Propuesto</p>
+        <h3>Tres superficies, un contrato</h3>
+        <p><code class="k">apps/web</code> (Next, Vercel) · <code class="k">services/audio-py</code> (FastAPI + worker con
+        CUDA, fuera de Vercel) · <code class="k">packages/shared-contract</code> (los campos de <code class="k">AudioJob</code>
+        generados desde Python). Cuatro reglas: el contrato es la única frontera, el worker no expone HTTP al público,
+        la licencia es dato de interfaz, y ningún motor sin licencia declarada se registra.</p>
+        <span class="tag r">No iniciado — <code class="k">pnpm-workspace.yaml</code> existe pero no declara <code class="k">packages:</code></span>
+      </div>
+    </div>
+    <div class="grid g3" style="margin-top:1rem">
+      <div class="card"><h3>Web / presentación</h3><p>Sistema editorial <code class="k">.pg-*</code> en <code class="k">app/globals.css</code>
+      (2 021 líneas, 332/332 llaves). Cero hex en classNames del curso y del estudio.</p><span class="tag g">Slice 3 publicado</span></div>
+      <div class="card"><h3>Dominio / producto</h3><p><code class="k">lib/course.ts</code>, catálogo honesto en
+      <code class="k">components/account/pricing-table.tsx</code>, guías con procedencia visible de la respuesta.</p><span class="tag g">Vivo</span></div>
+      <div class="card"><h3>Ejecución de audio</h3><p><code class="k">docs/stack-reference/pipeline.py</code>: registro de
+      motores con SHA-256, cupo descontado en la misma transacción, reintegro al fallar, puerta CC-BY-NC.</p><span class="tag o">Referencia ejecutada, no desplegada</span></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="sec-num">03</span><h2>El flujo cobrado, paso a paso</h2></div>
+    <div class="stack">
+      <div class="step"><i>1</i><div><b>El usuario pide pista</b><p>El sitio crea un <code class="k">AudioJob</code> (prompt, estilo, duración, identidad, motor pedido) e inserta en la cola. HTTP se devuelve enseguida; el trabajo sigue en otro proceso.</p></div></div>
+      <div class="step violet"><i>2</i><div><b>Reserva de cupo <code class="k">FOR UPDATE SKIP LOCKED</code></b><p><code class="k">SQL_CLAIM</code> toma la fila y descuenta el cupo <em>en la misma transacción</em>: dos workers nunca cobran la misma canción.</p></div></div>
+      <div class="step amber"><i>3</i><div><b>Puerta de licencia</b><p><code class="k">assert_usage_rights()</code> rechaza un motor CC-BY-NC (p. ej. MusicGen) si <code class="k">TAMV_COMMERCIAL=1</code>. Medido: la puerta se dispara y el trabajo no llega al modelo.</p></div></div>
+      <div class="step mint"><i>4</i><div><b>Generar → separar → analizar</b><p>Motor Apache-2.0 produce el bounce; Demucs abre stems; librosa/aubio extraen tempo, energía y modo para el Mapa Emocional TAMV. Cada fase escribe su hash de pesos y artefacto.</p></div></div>
+      <div class="step magenta"><i>5</i><div><b>Publicar o reintegrar</b><p>Éxito: sube a Storage, crea la fila de biblioteca, marca <code class="k">done</code>. Fallo: <code class="k">SQL_REFUND</code> devuelve el cupo en la misma transacción y deja el error a la vista.</p></div></div>
+    </div>
+    <div class="callout"><b>Contraparte de pago.</b> El webhook de Stripe (<code class="k">async_payment_succeeded</code>, tarjeta, OXXO/SPEI)
+    es lo que alimenta el cupo. Las 4 migraciones que lo sostienen están <b>escritas</b> en
+    <code class="k">supabase/migrations/20261105*_*</code> y <b>sin aplicar</b>; con cero variables declaradas en Vercel,
+    el alta y la cuota no funcionan en producción todavía.</div>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="sec-num">04</span><h2>Capa educativa: cinco superficies sobre el mismo motor</h2></div>
+    <div class="grid g3">
+      <div class="card"><p class="eyebrow n">E1</p><h3>Lección dentro del DAW</h3><p>La ruta
+      <code class="k">/curso/[modulo]/[leccion]</code>
+      pide una decisión musical real al alumno y la ejecuta en el estudio. Prerrender <code class="k">●</code> SSG medido en <code class="k">next build</code>.</p></div>
+      <div class="card"><p class="eyebrow n">E2</p><h3>Mapa Emocional TAMV</h3><p>La métrica que Beatoven no expone: energía/modo/tempo
+      por sección, calculados con librosa y mostrados con procedencia del audio.</p></div>
+      <div class="card"><p class="eyebrow n">E3</p><h3>Timeline regenerativa</h3><p>Regenerar un tramo sin perder el resto: el contrato
+      de <code class="k">AudioJob</code> lleva semilla y ventana, no sólo prompt.</p></div>
+      <div class="card"><p class="eyebrow v">E4</p><h3>Consola TAMV</h3><p>El panel de control del estudio ya existe en el navegador
+      (<code class="k">real-audio-studio.tsx</code>, FFT en canvas con tokens). Le falta el backend de motores.</p></div>
+      <div class="card"><p class="eyebrow a">E5</p><h3>Identidad sonora regional</h3><p>Diferenciador declarado; hoy es contenido del
+      curso, no un motor. Requiere corpus y licencia propia antes de prometerlo.</p></div>
+      <div class="card"><p class="eyebrow">Soberanía técnica</p><h3>Poder salir del proveedor</h3><p>Autoalojar el worker no cambia el
+      contrato. Es la razón de separar <code class="k">services/audio-py</code> desde el día uno.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="sec-num">05</span><h2>Sobre de costo del autoalojamiento</h2></div>
+    <table>
+      <caption>Escenarios del §6 de la estrategia. La columna decisiva no es el precio de la GPU, es si el trabajo cabe en un request.</caption>
+      <thead><tr><th>Escenario</th><th>Qué es</th><th>Orden de magnitud</th><th>Veredicto</th></tr></thead>
+      <tbody>
+        <tr><td><b>A — Todo serverless</b></td><td>Motores dentro de Vercel/Cloud Functions por request</td><td>Factura impredecible; los límites de tiempo matan la generación larga</td><td class="state s-none">Descartado</td></tr>
+        <tr><td><b>B — GPU bajo demanda + contrato de worker</b></td><td>Cola Postgres, worker que levanta la GPU sólo con trabajo y la apaga</td><td>Punto de equilibrio alcanzable desde el primer cupo pago; el costo fijo es almacenamiento de pesos</td><td class="state s-ok">Recomendado</td></tr>
+        <tr><td><b>C — Nodo propio siempre encendido</b></td><td>GPU dedicada 24/7</td><td>Se paga ociosa; sólo tiene sentido por encima de uso continuo</td><td class="state s-wait">Más adelante</td></tr>
+      </tbody>
+    </table>
+    <div class="grid g3" style="margin-top:1.4rem">
+      <div class="card"><h3>Lo que no se puede usar en cobro</h3><p>MusicGen (pesos CC-BY-NC), Essentia (AGPL), MinIO (AGPL sin mantenimiento contratado). Están en la referencia como motores bloqueados o sustituidos, no como atajos.</p><span class="tag r">Bloqueados por licencia</span></div>
+      <div class="card"><h3>Lo que sí</h3><p>ACE-Step y DiffRhythm (Apache-2.0), Demucs (MIT, ojo con MUSDB18-HQ para entrenamiento), Whisper (MIT), Stable Audio Open (comercial bajo umbral y con registro en Stability).</p><span class="tag g">Usables</span></div>
+      <div class="card"><h3>Lo que falta medir</h3><p>Costo real por pista en la GPU concreta, no la estimación de catálogo. Se mide con <code class="k">--worker</code> contra una cola vacía y un generador de carga.</p><span class="tag o">Pendiente</span></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="sec-num">06</span><h2>Matriz de evidencia: qué afirmación tiene qué prueba</h2></div>
+    <table>
+      <thead><tr><th>Afirmación</th><th>Dónde está la prueba</th><th>Estado</th></tr></thead>
+      <tbody>
+        <tr><td><b>Sistema editorial en curso y estudio</b></td><td>Chunk <code class="k">/_next/static/immutable/chunks/25es38oebukhx.css</code> en producción (78 576 B) contiene <code class="k">--pg-mint</code>, <code class="k">.pg-seg</code>, <code class="k">.pg-status[data-tone=error]</code></td><td class="state s-ok">Verificado en vivo</td></tr>
+        <tr><td><b>10 rutas sirviendo 200</b></td><td>Sonda: <code class="k">/ · /studio · /auth · /ajustes · /informacion · /biblioteca · /perfil · /curso · /curso/m01 · /precios</code></td><td class="state s-ok">Verificado en vivo</td></tr>
+        <tr><td><b>Slice 3 no cambió conducta</b></td><td>Auditoría del diff: sets de manejadores y llamadas idénticos en los 21 archivos, cero cadenas visibles nuevas</td><td class="state s-ok">Verificado</td></tr>
+        <tr><td><b>El curso se prerrenderiza</b></td><td><code class="k">generateStaticParams</code> + salida de <code class="k">next build</code> (SSG <code class="k">●</code>)</td><td class="state s-ok">Verificado</td></tr>
+        <tr><td><b>Flujos de pago</b></td><td><code class="k">supabase/migrations/2026110519*</code>: SQL escrito y auditado, sin aplicar; webhook nunca probado con carga real</td><td class="state s-wait">Pendiente del dueño</td></tr>
+        <tr><td><b>Configuración de producción</b></td><td>Variables de entorno en Vercel: cero declaradas en la última medición</td><td class="state s-none">Bloqueante</td></tr>
+        <tr><td><b>Motor de audio desplegado</b></td><td><code class="k">docs/stack-reference/pipeline.py</code> ejecutado local (compila y pasa <code class="k">--selfcheck</code>); sin CUDA, ffmpeg ni torch aquí</td><td class="state s-wait">Referencia, no servicio</td></tr>
+        <tr><td><b>Monorepo</b></td><td><code class="k">pnpm-workspace.yaml</code> presente, <code class="k">packages:</code> ausente</td><td class="state s-none">No iniciado</td></tr>
+        <tr><td><b>Dominio propio</b></td><td><code class="k">visitarealdelmonte.online</code> resuelve (Hostinger) y apunta a un deploy muerto</td><td class="state s-wait">Montar o reescribir la portada</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <footer>
+    Hoja de decisión derivada de <code>docs/ESTRATEGIA-ABIERTA-PLAY-AND-GO.md</code>. Las tres medidas que sostienen esta
+    vista (chunk de CSS, sonda de rutas, auditoría de diff) se pueden volver a ejecutar; nada aquí es estimación de catálogo.
+  </footer>
+</div>
+</body>
+</html>
