@@ -1,0 +1,123 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1200" role="img" aria-label="Productor creando música con inteligencia artificial">
+  <defs>
+    <radialGradient id="sky" cx="34%" cy="26%" r="82%">
+      <stop offset="0%" stop-color="#17435f"/>
+      <stop offset="42%" stop-color="#0c2438"/>
+      <stop offset="100%" stop-color="#04101a"/>
+    </radialGradient>
+    <radialGradient id="halo" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#75e9f2" stop-opacity=".55"/>
+      <stop offset="48%" stop-color="#9b5ce2" stop-opacity=".18"/>
+      <stop offset="100%" stop-color="#9b5ce2" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="ridgeA" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#5ad2e8"/>
+      <stop offset="100%" stop-color="#08202f"/>
+    </linearGradient>
+    <linearGradient id="ridgeB" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#9b5ce2"/>
+      <stop offset="100%" stop-color="#061523"/>
+    </linearGradient>
+    <linearGradient id="ridgeC" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ff9eea" stop-opacity=".85"/>
+      <stop offset="100%" stop-color="#04101a"/>
+    </linearGradient>
+    <linearGradient id="spectrum" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#73edf1"/>
+      <stop offset="55%" stop-color="#9a72e8"/>
+      <stop offset="100%" stop-color="#ffcf72"/>
+    </linearGradient>
+    <linearGradient id="desk" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0f2c3f"/>
+      <stop offset="100%" stop-color="#05121d"/>
+    </linearGradient>
+    <radialGradient id="vignette" cx="50%" cy="46%" r="72%">
+      <stop offset="55%" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity=".55"/>
+    </radialGradient>
+    <filter id="soft" x="-25%" y="-25%" width="150%" height="150%">
+      <feGaussianBlur stdDeviation="18"/>
+    </filter>
+  </defs>
+
+  <!-- Cielo: la misma paleta que el intro cinemático, sin depender de un bucket ajeno. -->
+  <rect width="1600" height="1200" fill="url(#sky)"/>
+  <ellipse cx="560" cy="330" rx="720" ry="480" fill="url(#halo)"/>
+
+  <!-- Estrella de campo: puntos pequeños, densidad mayor cerca del horizonte. -->
+  <g fill="#cfeaf5">
+    <circle cx="120" cy="90" r="2" opacity=".5"/><circle cx="290" cy="150" r="1.5" opacity=".35"/>
+    <circle cx="430" cy="70" r="2.5" opacity=".6"/><circle cx="610" cy="120" r="1.5" opacity=".3"/>
+    <circle cx="760" cy="60" r="2" opacity=".45"/><circle cx="900" cy="140" r="2.5" opacity=".55"/>
+    <circle cx="1060" cy="80" r="1.5" opacity=".3"/><circle cx="1210" cy="160" r="2" opacity=".5"/>
+    <circle cx="1380" cy="95" r="2.5" opacity=".4"/><circle cx="1500" cy="180" r="1.5" opacity=".3"/>
+    <circle cx="70" cy="280" r="1.5" opacity=".28"/><circle cx="240" cy="330" r="2" opacity=".42"/>
+    <circle cx="1320" cy="300" r="2" opacity=".38"/><circle cx="1470" cy="360" r="1.5" opacity=".26"/>
+    <circle cx="540" cy="250" r="1.5" opacity=".3"/><circle cx="980" cy="245" r="2" opacity=".34"/>
+  </g>
+
+  <!-- Cordilleras de espectro: tres crestas escalonadas, como un waveform apilado. -->
+  <path d="M0 640 L110 590 L210 655 L330 555 L450 640 L560 570 L690 660 L800 585 L930 665 L1050 595 L1180 670 L1300 605 L1430 675 L1540 620 L1600 655 L1600 1200 L0 1200 Z" fill="url(#ridgeB)" opacity=".55"/>
+  <path d="M0 760 L130 705 L250 775 L380 690 L520 780 L650 715 L790 790 L920 725 L1070 795 L1200 735 L1340 800 L1470 745 L1600 790 L1600 1200 L0 1200 Z" fill="url(#ridgeA)" opacity=".5"/>
+
+  <!-- Analizador: barras verticales ancladas a la cresta delantera. -->
+  <g fill="url(#spectrum)" opacity=".8">
+    <rect x="120" y="880" width="18" height="120" rx="9"/>
+    <rect x="164" y="835" width="18" height="165" rx="9"/>
+    <rect x="208" y="900" width="18" height="100" rx="9"/>
+    <rect x="252" y="810" width="18" height="190" rx="9"/>
+    <rect x="296" y="875" width="18" height="125" rx="9"/>
+    <rect x="340" y="930" width="18" height="70" rx="9"/>
+    <rect x="384" y="855" width="18" height="145" rx="9"/>
+    <rect x="428" y="905" width="18" height="95" rx="9"/>
+    <rect x="1140" y="900" width="18" height="100" rx="9"/>
+    <rect x="1184" y="845" width="18" height="155" rx="9"/>
+    <rect x="1228" y="885" width="18" height="115" rx="9"/>
+    <rect x="1272" y="815" width="18" height="185" rx="9"/>
+    <rect x="1316" y="910" width="18" height="90" rx="9"/>
+    <rect x="1360" y="860" width="18" height="140" rx="9"/>
+    <rect x="1404" y="925" width="18" height="75" rx="9"/>
+    <rect x="1448" y="870" width="18" height="130" rx="9"/>
+  </g>
+
+  <!-- Puesto de producción: consola en primer plano, silhouette de productor. -->
+  <path d="M0 1000 L1600 1000 L1600 1200 L0 1200 Z" fill="url(#ridgeC)" opacity=".45"/>
+  <rect x="470" y="960" width="680" height="240" rx="26" fill="url(#desk)"/>
+  <rect x="470" y="960" width="680" height="10" rx="5" fill="#75e9f2" opacity=".5"/>
+
+  <!-- Perillas y faders: lectura táctil a escala pequeña. -->
+  <g fill="#75e9f2" opacity=".65">
+    <circle cx="545" cy="1040" r="14"/><circle cx="615" cy="1040" r="14"/>
+    <circle cx="685" cy="1040" r="14"/><circle cx="755" cy="1040" r="14"/>
+    <circle cx="1085" cy="1040" r="14"/><circle cx="1015" cy="1040" r="14"/>
+  </g>
+  <g fill="#9fb8c7" opacity=".5">
+    <rect x="830" y="1015" width="10" height="60" rx="5"/><rect x="866" y="1030" width="10" height="45" rx="5"/>
+    <rect x="902" y="1005" width="10" height="70" rx="5"/><rect x="938" y="1038" width="10" height="37" rx="5"/>
+  </g>
+  <rect x="510" y="1100" width="600" height="6" rx="3" fill="#75e9f2" opacity=".3"/>
+
+  <!-- Silueta del productor con audífonos, mirando la pantalla. -->
+  <g filter="url(#soft)" opacity=".45">
+    <ellipse cx="810" cy="700" rx="250" ry="180" fill="#75e9f2"/>
+  </g>
+  <path d="M742 960 C742 880 762 828 810 806 C858 828 878 880 878 960 Z" fill="#040e16" opacity=".92"/>
+  <circle cx="810" cy="770" r="52" fill="#040e16" opacity=".92"/>
+  <path d="M756 762 C752 720 768 700 810 700 C852 700 868 720 864 762" fill="none" stroke="#75e9f2" stroke-width="13" stroke-linecap="round" opacity=".85"/>
+  <rect x="742" y="752" width="22" height="42" rx="11" fill="#9b5ce2" opacity=".9"/>
+  <rect x="856" y="752" width="22" height="42" rx="11" fill="#9b5ce2" opacity=".9"/>
+
+  <!-- Pantalla flotante: la pista que el curso enseña a dirigir. -->
+  <rect x="1000" y="620" width="360" height="230" rx="18" fill="#061a27" opacity=".85"/>
+  <rect x="1000" y="620" width="360" height="230" rx="18" fill="none" stroke="#75e9f2" stroke-width="2" opacity=".45"/>
+  <g stroke="#73edf1" stroke-width="3" fill="none" opacity=".75">
+    <path d="M1022 700 L1050 660 L1078 726 L1106 674 L1134 712 L1162 656 L1190 720 L1218 682 L1246 716 L1274 668 L1302 712 L1330 690"/>
+  </g>
+  <g stroke="#ffcf72" stroke-width="2.5" fill="none" opacity=".6">
+    <path d="M1022 780 L1058 762 L1094 796 L1130 770 L1166 800 L1202 766 L1238 792 L1274 772 L1310 798 L1338 780"/>
+  </g>
+  <circle cx="1180" cy="832" r="16" fill="#75e9f2" opacity=".9"/>
+
+  <!-- Vignette: cierra el encuadre y da profundidad sin postproducción. -->
+  <rect width="1600" height="1200" fill="url(#vignette)"/>
+</svg>

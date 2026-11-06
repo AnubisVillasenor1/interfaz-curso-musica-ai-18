@@ -1,56 +1,85 @@
-# **TAMV ONLINE NETWORK**
+# Play and Go by TAMV ONLINE
 
-# Interfaz Curso Música AI (`interfaz-curso-musica-ai-18`)
+Curso y estudio de producción musical con IA: 16 sesiones en 5 módulos, motor de
+audio local en el navegador, análisis espectral en tiempo real, un asistente que
+responde con el contenido real del programa y cobro por producto con Stripe.
 
-Plataforma interactiva de última generación para la educación y producción musical impulsada por Inteligencia Artificial, experiencias cinemáticas en 3D y análisis de audio en tiempo real.
+Hecho en Mineral del Monte, Hidalgo. `by TAMV ONLINE` — la marca visible en el
+sitio es **Play and Go**, no `Sonora IA` (nombre que dejó v0 y que seguía en
+producción).
 
-[![Despliegue en Vercel](https://img.shields.io/badge/Estado-Desplegado-success?style=flat-square&logo=vercel)](https://interfaz-curso-musica-ai.vercel.app)
-[![TypeScript](https://img.shields.io/badge/TypeScript-90.3%25-blue?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
-[![CSS](https://img.shields.io/badge/CSS-9.6%25-informational?style=flat-square&logo=css3)](https://developer.mozilla.org/en-US/docs/Web/CSS)
-[![Licencia](https://img.shields.io/badge/Licencia-Privada%2FInstitucional-red?style=flat-square)]()
-
----
-
-## 🚀 Descripción General
-
-**interfaz-curso-musica-ai-18** es un ecosistema de software avanzado diseñado para fusionar la teoría musical, la ejecución instrumental en tiempo real y la asistencia de agentes de Inteligencia Artificial. Cuenta con un motor de audio local, renderizado gráfico tridimensional y un flujo completo de autenticación y facturación de inscripciones.
+Estado del despliegue: [docs/DEPLOY_FAILURES.md](docs/DEPLOY_FAILURES.md). Ese
+documento mide, no supone: cada afirmación trae la prueba y el comando.
 
 ---
 
-## ✨ Características Principales
+## Qué hay aquí de verdad
 
-*   **Motor Musical Local y Estudio FFT:** Integración de un estudio de análisis de audio con Transformada Rápida de Fourier (FFT) real para la visualización y procesamiento de señales musicales dentro del agente de música.
-*   **Experiencia Cinemática 3D:** Entorno visual inmersivo construido con **Three.js** y **React Three Fiber**, optimizado para renderizar experiencias interactivas de aprendizaje.
-*   **Agentes de Inteligencia Artificial (`AGENTES.md`):** Asistentes inteligentes especializados en tutoría musical, análisis de rendimiento y guía interactiva para estudiantes.
-*   **Autenticación y Facturación:** Sistema robusto impulsado por **Supabase** para la gestión de usuarios, control de acceso y pasarelas de pago para inscripciones a los cursos.
-*   **Gestión de Dependencias Moderna:** Configurado como un monorepo gestionado mediante **pnpm workspaces**.
+| pieza | dónde | estado |
+|---|---|---|
+| Programa del curso (16 sesiones, 5 módulos) | `lib/course.ts` | completo, tipado, servido desde `app/curso/…` |
+| Páginas de curso, precios, perfil y biblioteca | `app/`, `components/account/`, `components/course/` | renderizan y degradan honesto sin claves |
+| Intro cinemática 3D (Three.js + React Three Fiber) | `components/cinematic/` | seis actos de 60 s, eco 0.12 s, materiales estables |
+| Motor de audio local (síntesis con Tone.js) | `lib/music/engine.ts`, `components/music-studio.tsx` | funciona sin backend ni pago |
+| Voz y canción pagada (proveedor externo) | `app/api/music/` | requiere claves; sin ellas responde 503 |
+| Asistente con IA | `app/api/agent/` | con `AI_AGENT_API_KEY` usa un LLM real; sin ella responde con el temario y lo dice |
+| Pagos | `app/api/checkout/`, `app/api/stripe/` | flujo escrito, pendiente de claves y de montar el webhook |
+| Base de datos | `supabase/migrations/` | cuatro migraciones escritas, **todavía no aplicadas** |
 
----
+Nada de lo anterior es maqueta: se puede levantar con `pnpm dev` y tocar. Pero
+el sitio **no cobra ni guarda progreso hasta que haya variables de entorno y
+migraciones aplicadas**, y las páginas lo dicen en vez de fingir que funcionan.
 
-## 🛠️ Stack Tecnológico
-
-El proyecto utiliza un conjunto moderno de tecnologías de alto rendimiento:
-
-*   **Lenguaje Principal:** [TypeScript](https://www.typescriptlang.org/) (90.3%)
-*   **Estilos:** [CSS](https://developer.mozilla.org/) (9.6%) / JavaScript (0.1%)
-*   **Librerías de Audio y 3D:** 
-    *   `three` y `@react-three/...` (Experiencia cinemática 3D)
-    *   `tone` (Motor de síntesis y manipulación de audio web)
-    *   `midi` (Procesamiento de archivos y flujos MIDI)
-*   **Backend & Base de Datos:** [Supabase](https://supabase.com/) (Autenticación y gestión de datos transaccionales)
-*   **Gestor de Paquetes:** `pnpm` (pnpm workspaces)
-
----
-
-## 📂 Estructura del Repositorio
+## Estructura real
 
 ```text
-├── .github/             # Configuraciones de GitHub y flujos de trabajo
-├── aplicación/          # Rutas principales y lógica de la aplicación (Next.js App Router)
-├── componentes/         # Componentes de interfaz de usuario reutilizables
-├── documentos/          # Documentación técnica, guías y especificaciones
-├── biblioteca/          # Módulos de lógica musical, utilidades y helpers
-├── público/             # Recursos estáticos (imágenes, fuentes, assets)
-├── AGENTES.md           # Definición y configuración de los agentes de IA
-├── proxy.ts             # Proxy de red y manejo de peticiones seguras
-└── paquete.json         # Dependencias y scripts principales del proyecto
+app/                    # App Router: páginas, rutas de API, layout raíz
+components/             # UI: cinematic/, course/, account/, music-studio
+lib/                    # course.ts, music/, agent/, cinematic/, supabase/, utils
+supabase/migrations/    # schema, RLS, funciones RPC y storage
+public/                 # marca local (logo.svg, hero-studio.svg) y audio/
+docs/                   # DEPLOY_FAILURES.md y el análisis del proyecto
+proxy.ts                # refresco de sesión (reemplaza a middleware.ts en Next 16)
+```
+
+## Arrancar en local
+
+```bash
+pnpm install            # el lockfile es pnpm-lock.yaml; package-lock.json está gitignoreado
+cp .env.example .env.local
+pnpm dev                # http://localhost:3000, sin claves: el sitio degrada a 503 honesto
+```
+
+Verificación que sí significa algo antes de cualquier push:
+
+```bash
+pnpm typecheck          # tsc --noEmit
+pnpm build              # next build completo
+```
+
+El typecheck local con npm **puede mentir**: npm sube `@types/*` a la raíz y
+TypeScript los incluye sin que nadie se los pida, así que un tipo ausente pasa
+aquí y falla en Vercel. Vercel instala con pnpm. Para comprobar como Vercel,
+hacer una copia limpia del árbol y correr `pnpm install --frozen-lockfile` antes
+del `pnpm build`.
+
+## Variables de entorno
+
+Están descritas en `.env.example`. Las que el proyecto necesita para dejar de
+degradar: `NEXT_PUBLIC_APP_URL`, `NEXT_PUBLIC_SUPABASE_URL`,
+`NEXT_PUBLIC_SUPABASE_ANON_KEY` (o `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`),
+`SUPABASE_SERVICE_ROLE_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`,
+`GENERATOR_CALLBACK_SECRET`, `API_KEY` y las tres de `AI_AGENT_*`. Las
+`NEXT_PUBLIC_*` viajan en el bundle: cambiarlas exige reconstruir, no solo
+reiniciar.
+
+## Cuenta y rama
+
+GitHub está escribiendo aquí desde `AnubisVillasenor1`, que es la cuenta a la
+que Vercel está vinculado (`productionBranch = main`). La cuenta
+`OsoPanda1` quedó inaccesible por un problema de acceso en curso; el trabajo
+que se hizo allí está fusionado en `main` y no se perdió. Mientras `main` sea
+el destino, un push desde v0 vuelve a construir producción: hay que cuidar qué
+se firma antes de empujar.
+
+Licencia: privada / institucional.

@@ -517,6 +517,41 @@ html[data-theme='dark'] {
       radial-gradient(46% 38% at 86% 12%, rgba(255, 206, 138, 0.07), transparent 72%);
   }
 
+  /* Grade por acto. El filtro CSS se aplica a la capa WebGL y tarda 1.4 s en
+     pasar de una paleta a otra: el color cambia fundido, no en el corte, y
+     funciona incluso con frameloop="demand" o sin postprocessing. */
+  .intro-stage {
+    filter: var(--grade-filter, none);
+    transition: filter 1400ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+
+  /* Gele de color: `screen` suma como lo haría una gelatina delante de un foco,
+     en vez de velar la imagen como haría un overlay normal. */
+  .intro-wash {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    mix-blend-mode: screen;
+    opacity: var(--wash, 0.32);
+    background:
+      radial-gradient(68% 54% at 20% 80%, var(--wash-a, transparent), transparent 72%),
+      radial-gradient(58% 48% at 84% 14%, var(--wash-b, transparent), transparent 74%);
+    transition:
+      opacity 1400ms cubic-bezier(0.22, 0.61, 0.36, 1),
+      background 1400ms linear;
+  }
+
+  /* Regla de luz bajo el título: sin ella el bloque de texto flota sobre la
+     niebla. Crece desde la izquierda, como un travelling de apertura. */
+  .intro-rule {
+    position: relative;
+    height: 1px;
+    margin-top: 1.6rem;
+    background: linear-gradient(90deg, var(--rule-color, rgba(150, 232, 250, 0.5)), transparent 78%);
+    transform-origin: left;
+    animation: intro-rule 1.5s cubic-bezier(0.16, 0.84, 0.24, 1) 0.35s both;
+  }
+
   .intro-monogram {
     display: inline-flex;
     align-items: center;
@@ -618,13 +653,16 @@ html[data-theme='dark'] {
     flex-direction: column;
     gap: 0;
     min-width: 210px;
+    /* Seis capítulos: el riel se da el lujo de respirar sólo en pantallas altas.
+       por debajo de lg se oculta desde el componente para no empujar el titular. */
+    max-height: 52vh;
   }
   .intro-rail button {
     display: grid;
     grid-template-columns: 26px 1fr;
     align-items: center;
     gap: 0.85rem;
-    padding: 0.62rem 0.2rem;
+    padding: 0.5rem 0.2rem;
     text-align: left;
     border-top: 1px solid rgba(255, 255, 255, 0.09);
     color: rgba(196, 218, 228, 0.58);
@@ -768,9 +806,41 @@ html[data-theme='dark'] {
     position: absolute;
     inset: 0 auto 0 0;
     width: 0;
-    background: linear-gradient(90deg, rgba(134, 219, 238, 0.35), #86dbee 60%, #ffd28a);
-    box-shadow: 0 0 14px rgba(134, 219, 238, 0.85);
-    animation: intro-progress var(--act-seconds, 9s) linear forwards;
+    /* Los tres colores del recorrido vienen del acto: la barra es parte del
+       grade, no un adorno fijo que se queda cian cuando la escena es ámbar. */
+    background: linear-gradient(
+      90deg,
+      var(--time-a, rgba(134, 219, 238, 0.35)),
+      var(--time-b, #86dbee) 62%,
+      var(--time-c, #ffd28a)
+    );
+    box-shadow: 0 0 14px var(--time-glow, rgba(134, 219, 238, 0.85));
+    animation: intro-progress var(--act-seconds, 10s) linear forwards;
+  }
+
+  /* Contador de capítulos: 03 / 06 + nombre, en la keyline inferior */
+  .intro-count {
+    display: flex;
+    align-items: baseline;
+    gap: 0.6rem;
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: rgba(176, 203, 214, 0.48);
+    white-space: nowrap;
+  }
+  .intro-count b {
+    font-weight: 500;
+    font-size: 12.5px;
+    letter-spacing: 0.12em;
+    color: var(--count-color, #9be8f8);
+    transition: color 1.2s ease;
+  }
+  .intro-count em {
+    font-style: normal;
+    letter-spacing: 0.22em;
+    color: rgba(196, 218, 228, 0.62);
   }
 
   /* Flash de transición entre actos: la luz cambia, la opacidad del marco no */
@@ -778,7 +848,7 @@ html[data-theme='dark'] {
     position: absolute;
     inset: 0;
     pointer-events: none;
-    background: radial-gradient(60% 50% at 50% 50%, rgba(180, 240, 255, 0.30), transparent 70%);
+    background: radial-gradient(60% 50% at 50% 50%, var(--flash-color, rgba(180, 240, 255, 0.3)), transparent 70%);
     opacity: 0;
     transition: opacity 0.42s ease;
   }

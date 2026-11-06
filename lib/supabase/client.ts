@@ -1,8 +1,14 @@
 import { createBrowserClient } from '@supabase/ssr'
 
+import { readPublicEnv } from './config'
+
+/**
+ * Cliente de navegador. Devuelve `null` si el entorno no expone credenciales:
+ * sin URL pública no hay sesión posible, y las pantallas que lo consumen deben
+ * poder decirlo en palabras en vez de dejar la página en blanco.
+ */
 export function createClient() {
-  return createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
-  )
+  const env = readPublicEnv()
+  if (!env) return null
+  return createBrowserClient(env.url, env.anonKey)
 }

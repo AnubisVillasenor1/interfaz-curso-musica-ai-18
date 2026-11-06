@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Play and Go by TAMV ONLINE">
+  <defs>
+    <linearGradient id="pgMark" x1="6" y1="6" x2="58" y2="58" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#75e9f2"/>
+      <stop offset=".52" stop-color="#9b5ce2"/>
+      <stop offset="1" stop-color="#ff9eea"/>
+    </linearGradient>
+    <linearGradient id="pgWave" x1="14" y1="0" x2="52" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#75e9f2"/>
+      <stop offset="1" stop-color="#ffcf72"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Contenedor: redondeado y con borde luminoso, coherente con la UI -->
+  <rect x="2.5" y="2.5" width="59" height="59" rx="15" fill="#0b1f2e"/>
+  <rect x="3.5" y="3.5" width="57" height="57" rx="14.5" fill="none" stroke="url(#pgMark)" stroke-width="1.6" opacity=".85"/>
+
+  <!-- Triangle de play: la idea, a punto de sonar -->
+  <path d="M21 18.5 L44 32 L21 45.5 Z" fill="url(#pgMark)"/>
+
+  <!-- Cinco barras de espectro sobre el eje del triángulo: "and go" -->
+  <g stroke="url(#pgWave)" stroke-width="2.4" stroke-linecap="round">
+    <line x1="26" y1="27.5" x2="26" y2="36.5"/>
+    <line x1="31" y1="24"   x2="31" y2="40"/>
+    <line x1="36" y1="26.5" x2="36" y2="37.5"/>
+    <line x1="41" y1="29"   x2="41" y2="35"/>
+  </g>
+</svg>

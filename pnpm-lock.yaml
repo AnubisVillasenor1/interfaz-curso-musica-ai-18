@@ -26,9 +26,6 @@ importers:
       '@supabase/supabase-js':
         specifier: ^2.118.0
         version: 2.118.0
-      '@tonejs/midi':
-        specifier: ^2.0.28
-        version: 2.0.28
       '@vercel/analytics':
         specifier: 1.6.1
         version: 1.6.1(next@16.4.5(@babel/core@7.29.7)(@types/node@24.10.4)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react@19.2.4)
@@ -50,9 +47,6 @@ importers:
       react-dom:
         specifier: ^19
         version: 19.2.4(react@19.2.4)
-      shadcn:
-        specifier: ^4.11.0
-        version: 4.19.0(typescript@5.7.3)
       stripe:
         specifier: ^23.0.0
         version: 23.0.0(@types/node@24.10.4)
@@ -87,6 +81,9 @@ importers:
       postcss:
         specifier: ^8.5
         version: 8.5.6
+      shadcn:
+        specifier: ^4.11.0
+        version: 4.19.0(typescript@5.7.3)
       tailwindcss:
         specifier: ^4.3.3
         version: 4.3.3
@@ -758,9 +755,6 @@ packages:
   '@tailwindcss/postcss@4.3.3':
     resolution: {integrity: sha512-JTSZZGQi1AyKirbLN3azmjVzef92tcX7h+iSqPdaeStyFpGpDlKvvpxeOE8njhbUanbRwr3z8DyzhICWnMtQeg==}
 
-  '@tonejs/midi@2.0.28':
-    resolution: {integrity: sha512-RII6YpInPsOZ5t3Si/20QKpNqB1lZ2OCFJSOzJxz38YdY/3zqDr3uaml4JuCWkdixuPqP1/TBnXzhQ39csyoVg==}
-
   '@ts-morph/common@0.27.0':
     resolution: {integrity: sha512-Wf29UqxWDpc+i61k3oIOzcUfQt79PIT9y/MWfAGlrkjg6lBC1hwDECLXPVJAhWjiGbfBCxZd65F/LIZF3+jeJQ==}
 
@@ -864,9 +858,6 @@ packages:
 
   argparse@2.0.1:
     resolution: {integrity: sha512-8+9WqebbFzpX9OR+Wa6O29asIogeRMzcGtAINdpMHHyAg10f05aSFVBbcEqGf/PXw1EjAZ+q2/bEBg3DvurK3Q==}
-
-  array-flatten@3.0.0:
-    resolution: {integrity: sha512-zPMVc3ZYlGLNk4mpK1NzP2wg0ml9t7fUgDsayR5Y5rSzxQilzR9FGu/EH2jQOcKSAeAfWeylyW8juy3OkWRvNA==}
 
   ast-types@0.16.1:
     resolution: {integrity: sha512-6t10qk83GOG8p0vKmaCr8eiilZwO171AvbROMtvvNiwrTly62t+7XkA8RdIIVbpMhCASAsxgAzdRSwh6nw/5Dg==}
@@ -1595,9 +1586,6 @@ packages:
   micromatch@4.0.8:
     resolution: {integrity: sha512-PXwfBhYu0hBCPw8Dn0E+WDYb7af3dSLVWKi3HGv84IdF4TyFoC0ysxFd0Goxw7nSv4T/PzEJQxsYsEiFCKo2BA==}
     engines: {node: '>=8.6'}
-
-  midi-file@1.2.4:
-    resolution: {integrity: sha512-B5SnBC6i2bwJIXTY9MElIydJwAmnKx+r5eJ1jknTLetzLflEl0GWveuBB6ACrQpecSRkOB6fhTx1PwXk2BVxnA==}
 
   mime-db@1.54.0:
     resolution: {integrity: sha512-aU5EJuIN2WDemCcAp2vFBfp/m4EAhWJnUNSSw0ixs7/kXbd6Pg64EmwJkNdFhB8aWt1sH2CTXrLxo/iAGV3oPQ==}
@@ -2875,11 +2863,6 @@ snapshots:
       postcss: 8.5.19
       tailwindcss: 4.3.3
 
-  '@tonejs/midi@2.0.28':
-    dependencies:
-      array-flatten: 3.0.0
-      midi-file: 1.2.4
-
   '@ts-morph/common@0.27.0':
     dependencies:
       fast-glob: 3.3.3
@@ -2958,8 +2941,6 @@ snapshots:
   ansi-regex@6.2.2: {}
 
   argparse@2.0.1: {}
-
-  array-flatten@3.0.0: {}
 
   ast-types@0.16.1:
     dependencies:
@@ -3584,8 +3565,6 @@ snapshots:
     dependencies:
       braces: 3.0.3
       picomatch: 2.3.2
-
-  midi-file@1.2.4: {}
 
   mime-db@1.54.0: {}
 

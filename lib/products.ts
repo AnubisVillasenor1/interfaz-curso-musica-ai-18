@@ -1,20 +1,124 @@
-export interface CourseProduct {
-  id: string
+/**
+ * Catálogo de productos.
+ *
+ * Existían dos constantes sueltas y tres verdades distintas del precio: la
+ * landing decía $490, el chat decía $500 y la pasarela cobraba 50000 centavos.
+ * Aquí el número vive una sola vez y la UI lo formatea desde el mismo objeto
+ * que usa `/api/checkout`, así que ninguna pantalla puede anunciar un precio
+ * que ningún pago pueda cumplir.
+ *
+ * `mode` es lo que decide si Stripe cobra una vez o cada mes. El dueño pidió
+ * explícitamente un servicio de pago para seguir usando la plataforma: eso es
+ * `subscription`, y antes no existía en ningún sitio.
+ */
+
+export type ProductId = 'play-and-go-course' | 'play-and-go-extension' | 'play-and-go-pro'
+
+export interface Product {
+  id: ProductId
   name: string
   description: string
+  /** Centavos MXN. Nunca unidades: Stripe cobra en la unidad menor. */
   priceInCents: number
+  mode: 'payment' | 'subscription'
+  /** Solo en suscripción. */
+  interval?: 'month' | 'year'
+  /**
+   * Price ID creado en el Dashboard de Stripe. Si está definido se usa ese y
+   * el precio deja de estar hardcodeado en el código; si falta, la ruta monta
+   * `price_data` inline. Los descuentos y las subidas de precio se gestionan
+   * entonces en Stripe, no en un deploy.
+   */
+  stripePriceId?: string
+  /** Lo que el webhook concede al confirmar el pago. */
+  grant: {
+    plan: 'enrolled' | 'extension' | 'pro'
+    /** Cupo diario de composiciones con el proveedor de pago. */
+    dailyLimit: number
+    /** Cupo diario del motor local, que no cuesta dinero. */
+    localDailyLimit: number
+    /** Días de validez del acceso desde la entrega; null = mientras la suscripción aguante. */
+    accessDays: number | null
+  }
 }
 
-export const EXTENSION_PRODUCT: CourseProduct = {
-  id: 'play-and-go-extension',
-  name: 'Play and Go — Extensión de canciones',
-  description: 'Añade capacidad para crear más canciones durante tu ciclo de aprendizaje.',
-  priceInCents: 22900,
+export const PRODUCTS: Record<ProductId, Product> = {
+  'play-and-go-course': {
+    id: 'play-and-go-course',
+    name: 'Play and Go — Música con IA Pro',
+    description: 'Curso completo: 5 módulos, 16 sesiones, biblioteca de prompts, ejercicios, audio e insignias.',
+    priceInCents: 50000,
+    mode: 'payment',
+    grant: { plan: 'enrolled', dailyLimit: 2, localDailyLimit: 20, accessDays: null },
+  },
+  'play-and-go-extension': {
+    id: 'play-and-go-extension',
+    name: 'Play and Go — Extensión de canciones',
+    description: 'Amplía tu cupo diario de composiciones durante tu ciclo de aprendizaje.',
+    priceInCents: 22900,
+    mode: 'payment',
+    grant: { plan: 'extension', dailyLimit: 10, localDailyLimit: 40, accessDays: 30 },
+  },
+  'play-and-go-pro': {
+    id: 'play-and-go-pro',
+    name: 'Play and Go — Estudio abierto (mensual)',
+    description: 'Todo desbloqueado cada mes: cupo ampliado, agente de IA sin límite de contexto y biblioteca completa.',
+    priceInCents: 29900,
+    mode: 'subscription',
+    interval: 'month',
+    grant: { plan: 'pro', dailyLimit: 20, localDailyLimit: 100, accessDays: null },
+  },
 }
 
-export const COURSE_PRODUCT: CourseProduct = {
-  id: 'play-and-go-pro',
-  name: 'Play and Go — Música con IA Pro',
-  description: 'Acceso completo al curso, biblioteca de prompts, ejercicios, audio, video e insignias.',
-  priceInCents: 50000,
+export const PRODUCT_IDS = Object.keys(PRODUCTS) as ProductId[]
+
+/**
+ * Lista blanca estricta. El webhook anterior resolvía cualquier `productId`
+ * desconocido como el curso: escribir `?productId=loquesea` en una Session de
+ * la extensión de $229 daba el plan de $500.
+ */
+export function findProduct(id: unknown): Product | null {
+  if (typeof id !== 'string') return null
+  const candidate = id as ProductId
+  return PRODUCT_IDS.includes(candidate) ? PRODUCTS[candidate] : null
+}
+
+const priceFormatter = new Intl.NumberFormat('es-MX', {
+  style: 'currency',
+  currency: 'MXN',
+  maximumFractionDigits: 0,
+})
+
+export function formatPrice(cents: number): string {
+  return priceFormatter.format(cents / 100)
+}
+
+export function priceLabel(product: Product): string {
+  const price = formatPrice(product.priceInCents)
+  if (product.mode !== 'subscription') return price
+  return product.interval === 'year' ? `${price}/año` : `${price}/mes`
+}
+
+/** Compatibilidad con el código que ya importaba las constantes antiguas. */
+export const COURSE_PRODUCT = PRODUCTS['play-and-go-course']
+export const EXTENSION_PRODUCT = PRODUCTS['play-and-go-extension']
+export const PRO_PRODUCT = PRODUCTS['play-and-go-pro']
+
+/**
+ * Plan gratuito real.
+ *
+ * Coincide con los `default` de la tabla `entitlements` y con lo que deja
+ * `deactivateSubscription`. Existe como constante porque la UI necesita
+ * dibujar una columna de precios para quien no ha pagado, y si ese número
+ * vive solo en la interfaz termina prometiendo un cupo que la base de datos
+ * no concede.
+ *
+ * El motor local es generoso a propósito: no cuesta dinero, y un visitante al
+ * que no se le deja hacer nada no se inscribe.
+ */
+export const FREE_TIER = {
+  plan: 'free' as const,
+  active: false,
+  dailyLimit: 0,
+  localDailyLimit: 10,
 }
