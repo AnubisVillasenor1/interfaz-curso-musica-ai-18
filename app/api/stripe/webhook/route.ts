@@ -6,6 +6,7 @@ import {
   deactivateSubscription,
   grantProduct,
   queuePendingPayment,
+  releaseEventClaim,
   resolveUserId,
 } from '@/lib/fulfilment'
 import { findProduct } from '@/lib/products'
@@ -13,19 +14,6 @@ import { SERVICE_NOT_CONFIGURED, createAdminClient } from '@/lib/supabase/admin'
 
 export const runtime = 'nodejs'
 
-/**
- * Webhook de Stripe.
- *
- * Reglas que este handler ahora respeta y antes no:
- *
- * - Un evento se procesa una vez (`stripe_events`), porque Stripe reintenta.
- * - `payment_status` admite `paid` y `succeeded`; lo otro era anular el propio
- *   evento `checkout.session.async_payment_succeeded` que se declaraba soportado.
- * - `productId` se valida contra la lista blanca: sin ella, un metadata
- *   mal escrito o manipulado entregaba el plan caro pagando el barato.
- * - Cualquier fallo real de entrega devuelve 500 a propósito, para que Stripe
- *   reintente. Responder 200 sobre un error era borrar la evidencia del dinero.
- */
 export async function POST(request: Request) {
   const secretKey = process.env.STRIPE_SECRET_KEY
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
@@ -49,37 +37,53 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Firma inválida.' }, { status: 400 })
   }
 
-  const isNew = await claimEvent(admin, event.id, event.type)
-  if (!isNew) return NextResponse.json({ received: true, duplicate: true })
+  const claim = await claimEvent(admin, event.id, event.type)
+  if (claim === 'duplicate') return NextResponse.json({ received: true, duplicate: true })
+  if (claim === 'error') return NextResponse.json({ error: 'No se pudo registrar el evento.' }, { status: 500 })
 
-  if (event.type === 'checkout.session.completed' || event.type === 'checkout.session.async_payment_succeeded') {
-    return handleCheckoutCompleted(admin, event.data.object as Stripe.Checkout.Session)
+  try {
+    let response: Response
+
+    if (event.type === 'checkout.session.completed' || event.type === 'checkout.session.async_payment_succeeded') {
+      response = await handleCheckoutCompleted(admin, event.data.object as Stripe.Checkout.Session)
+    } else if (event.type === 'customer.subscription.deleted') {
+      response = await handleSubscriptionDeleted(admin, event.data.object as Stripe.Subscription)
+    } else if (event.type === 'invoice.payment_failed') {
+      // Un intento de cobro fallido no significa que la suscripción haya
+      // terminado: Stripe puede reintentar y el periodo de gracia sigue vigente.
+      response = NextResponse.json({ received: true, deferred: 'subscription-not-deleted' })
+    } else {
+      response = NextResponse.json({ received: true, ignored: event.type })
+    }
+
+    if (response.status >= 500) await releaseEventClaim(admin, event.id)
+    return response
+  } catch (error) {
+    console.error('[webhook] fallo inesperado al procesar evento', {
+      eventId: event.id,
+      type: event.type,
+      message: error instanceof Error ? error.message : String(error),
+    })
+    await releaseEventClaim(admin, event.id)
+    return NextResponse.json({ error: 'No se pudo procesar el evento.' }, { status: 500 })
   }
-
-  if (event.type === 'customer.subscription.deleted' || event.type === 'invoice.payment_failed') {
-    return handleSubscriptionLost(admin, event.data.object as Stripe.Subscription | Stripe.Invoice)
-  }
-
-  return NextResponse.json({ received: true, ignored: event.type })
 }
 
 async function handleCheckoutCompleted(
-  admin: ReturnType<typeof createAdminClient>,
+  admin: NonNullable<ReturnType<typeof createAdminClient>>,
   session: Stripe.Checkout.Session,
 ) {
-  if (!admin) return NextResponse.json({ error: 'admin no disponible' }, { status: 503 })
-
   const paid = session.payment_status === 'paid' || session.payment_status === 'succeeded'
   if (!paid) return NextResponse.json({ received: true, pending: session.payment_status })
 
   const product = findProduct(session.metadata?.productId)
   if (!product) {
-    // Un `productId` desconocido no puede interpretarse: se registra y se
-    // avisa, en vez de regalar el plan más caro.
     console.error('[webhook] productId no reconocido en la Session', {
       sessionId: session.id,
       productId: session.metadata?.productId ?? null,
     })
+    // Se reconoce el evento para evitar reintentos inútiles; requiere revisión
+    // manual porque la metadata no permite identificar de forma segura el plan.
     return NextResponse.json({ received: true, unknownProduct: true })
   }
 
@@ -92,7 +96,7 @@ async function handleCheckoutCompleted(
   if (!userId) {
     if (!email) {
       console.error('[webhook] pago sin correo ni referencia, no es reconciliable', { sessionId: session.id })
-      return NextResponse.json({ error: 'El pago no tiene correo ni referencia.' }, { status: 422 })
+      return NextResponse.json({ error: 'El pago no tiene correo ni referencia.' }, { status: 500 })
     }
     const queued = await queuePendingPayment(admin, {
       sessionId: session.id,
@@ -106,12 +110,14 @@ async function handleCheckoutCompleted(
     return NextResponse.json({ received: true, queued: true })
   }
 
+  const subscriptionId = typeof session.subscription === 'string' ? session.subscription : session.subscription?.id
   const delivered = await grantProduct(
     admin,
     userId,
     product,
     session.id,
-    typeof session.customer === 'string' ? session.customer : null,
+    typeof session.customer === 'string' ? session.customer : session.customer?.id,
+    subscriptionId,
   )
   if (delivered.status === 'error') {
     console.error('[webhook] la entrega falló, Stripe debe reintentar', delivered.detail)
@@ -121,25 +127,22 @@ async function handleCheckoutCompleted(
   return NextResponse.json({ received: true, granted: delivered.status, plan: product.grant.plan })
 }
 
-async function handleSubscriptionLost(
-  admin: ReturnType<typeof createAdminClient>,
-  object: Stripe.Subscription | Stripe.Invoice,
+async function handleSubscriptionDeleted(
+  admin: NonNullable<ReturnType<typeof createAdminClient>>,
+  subscription: Stripe.Subscription,
 ) {
-  if (!admin) return NextResponse.json({ error: 'admin no disponible' }, { status: 503 })
-
-  const customerId = object.customer as string | null
-  if (!customerId) return NextResponse.json({ received: true, skipped: 'no-customer' })
-
-  const { data: row } = await admin
+  const { data: row, error } = await admin
     .from('entitlements')
     .select('user_id')
-    .eq('stripe_customer_id', customerId)
+    .eq('subscription_id', subscription.id)
     .maybeSingle()
 
-  if (!row?.user_id) return NextResponse.json({ received: true, skipped: 'unknown-customer' })
+  if (error) return NextResponse.json({ error: 'No se pudo localizar la suscripción.' }, { status: 500 })
+  if (!row?.user_id) return NextResponse.json({ received: true, skipped: 'unknown-subscription' })
 
   const result = await deactivateSubscription(admin, row.user_id)
   if (result.status === 'error') {
+    console.error('[webhook] no se pudo revocar la suscripción', result.detail)
     return NextResponse.json({ error: 'No se pudo revocar el acceso.' }, { status: 500 })
   }
 

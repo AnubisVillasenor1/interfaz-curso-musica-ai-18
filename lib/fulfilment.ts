@@ -2,24 +2,6 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 
 import type { Product } from '@/lib/products'
 
-/**
- * Entrega de accesos.
- *
- * Vive separado del webhook porque el webhook tiene cuatro salidas distintas y
- * ninguna era correcta antes de esto:
- *
- * - Buscaba al comprador enumerando `listUsers({ perPage: 1000 })` en una sola
- *   página. Desde el usuario 1001 el correo nunca aparecía y el pago se
- *   descartaba devolviendo 200, o sea, "todo bien, no cobramos nada más".
- * - Trataba cualquier `productId` desconocido como el curso, así que una
- *   Session de $229 podía entregar el plan de $500.
- * - Filtraba `payment_status !== 'paid'`, lo que cancelaba de hecho la rama de
- *   `async_payment_succeeded`, cuyo estado es `succeeded`: OXXO, SPEI y
- *   cualquier pago diferido nunca activaba nada.
- * - Ignoraba el error del upsert y devolvía 200 igualmente, eliminando el
- *   reintento de Stripe sobre un fallo real de base de datos.
- */
-
 /** Precedencia de plan: una compra nueva nunca puede bajar lo ya pagado. */
 const PLAN_RANK: Record<string, number> = { free: 0, enrolled: 1, extension: 2, pro: 3 }
 
@@ -30,9 +12,8 @@ export interface DeliveryResult {
 }
 
 /**
- * Encuentra al comprador. Primero por `client_reference_id` (el userId que
- * metimos en la Session, que no depende de que el correo coincida), y solo si
- * falta recorre la lista de usuarios paginada.
+ * Encuentra al comprador. Primero por `client_reference_id` y, si falta,
+ * recorre la lista paginada de usuarios.
  */
 export async function resolveUserId(
   admin: SupabaseClient,
@@ -47,8 +28,6 @@ export async function resolveUserId(
 
   if (!email) return null
 
-  // Paginado de verdad: `listUsers` da 1000 por página y antes se tomaba solo
-  // la primera, sin `page`.
   const target = email.toLowerCase()
   for (let page = 1; page <= 20; page += 1) {
     const { data, error } = await admin.auth.admin.listUsers({ page, perPage: 1000 })
@@ -61,41 +40,38 @@ export async function resolveUserId(
   return null
 }
 
-/** Concede el producto. Lee, compara rangos y escribe: un solo escritor por evento. */
+/** Concede el producto y mantiene los accesos/cupos que aún son válidos. */
 export async function grantProduct(
   admin: SupabaseClient,
   userId: string,
   product: Product,
   sessionId: string,
   customerId?: string | null,
+  subscriptionId?: string | null,
 ): Promise<DeliveryResult> {
   const { data: current, error: readError } = await admin
     .from('entitlements')
-    .select('plan, daily_limit, local_daily_limit, active, stripe_customer_id, access_expires_at')
+    .select('plan, daily_limit, local_daily_limit, active, stripe_customer_id, subscription_id, access_expires_at')
     .eq('user_id', userId)
     .maybeSingle()
 
   if (readError) return { status: 'error', detail: readError.message }
 
   const grant = product.grant
-  const keepPlan =
-    PLAN_RANK[current?.plan ?? 'free'] > PLAN_RANK[grant.plan] ? (current?.plan ?? 'enrolled') : grant.plan
-
-  /**
-   * Vencimiento: el acceso pagado nunca se acorta.
-   *
-   * Plan y cupo ya se protegían con `PLAN_RANK` y `Math.max`, pero
-   * `access_expires_at` se sobrescribía a ciegas: quien tiene el curso —acceso
-   * permanente, columna en `null`— y compra la extensión de 30 días terminaba
-   * con una fecha de caducidad en la fila de un acceso que no caduca. Hoy nada
-   * lee esa columna, así que el daño era latente; el día que algo la lea, le
-   * cerraría la cuenta a quien pagó primero. Un `null` entrante (permanente) o
-   * una cuenta ya permanente mantienen el acceso abierto.
-   */
+  const currentPlan = current?.plan ?? 'free'
+  const keepPlan = PLAN_RANK[currentPlan] > PLAN_RANK[grant.plan] ? currentPlan : grant.plan
   const hadPermanentAccess =
     Boolean(current?.active) &&
-    (current?.access_expires_at ?? null) === null &&
-    PLAN_RANK[current?.plan ?? 'free'] > PLAN_RANK.free
+    current?.access_expires_at === null &&
+    PLAN_RANK[currentPlan] > PLAN_RANK.free
+
+  // Una extensión se suma al vencimiento vigente, no lo reemplaza por una fecha
+  // calculada desde hoy que pudiera acortar días ya comprados.
+  const currentExpiry = current?.access_expires_at ? Date.parse(current.access_expires_at) : 0
+  const accessExpiresAt =
+    grant.accessDays === null || hadPermanentAccess
+      ? null
+      : new Date(Math.max(Date.now(), currentExpiry) + grant.accessDays * 86_400_000).toISOString()
 
   const payload = {
     user_id: userId,
@@ -104,13 +80,9 @@ export async function grantProduct(
     daily_limit: Math.max(current?.daily_limit ?? 0, grant.dailyLimit),
     local_daily_limit: Math.max(current?.local_daily_limit ?? 0, grant.localDailyLimit),
     last_stripe_session_id: sessionId,
-    // Se guarda el cliente: es la única forma de revocar el acceso cuando la
-    // suscripción deja de pagar, porque ese evento no lleva userId.
     stripe_customer_id: customerId ?? current?.stripe_customer_id ?? null,
-    access_expires_at:
-      grant.accessDays === null || hadPermanentAccess
-        ? null
-        : new Date(Date.now() + grant.accessDays * 86_400_000).toISOString(),
+    subscription_id: subscriptionId ?? current?.subscription_id ?? null,
+    access_expires_at: accessExpiresAt,
   }
 
   const { error } = await admin.from('entitlements').upsert(payload, { onConflict: 'user_id' })
@@ -136,25 +108,39 @@ export async function queuePendingPayment(
   return { status: 'queued', detail: 'Pago registrado; se activará al crear la cuenta con ese correo.' }
 }
 
-/**
- * Idempotencia de eventos. Stripe reintenta hasta 3 días; sin esta tabla cada
- * reintento reescribía el plan y pisaba `stripe_session_id`.
- *
- * Devuelve `false` si el evento ya se procesó, para que el webhook responda
- * 200 sin repetir la entrega.
- */
-export async function claimEvent(admin: SupabaseClient, id: string, type: string): Promise<boolean> {
+export type EventClaimResult = 'claimed' | 'duplicate' | 'error'
+
+/** Reclama un evento y no confunde fallos de base de datos con duplicados. */
+export async function claimEvent(admin: SupabaseClient, id: string, type: string): Promise<EventClaimResult> {
   const { error } = await admin.from('stripe_events').insert({ id, type })
-  // 23505 = unique_violation: otro intento lo reclamó primero. No es un fallo.
-  if (error && error.code !== '23505') return false
-  return !error
+  if (!error) return 'claimed'
+  if (error.code === '23505') return 'duplicate'
+  console.error('[webhook] no se pudo reclamar el evento', { id, code: error.code, message: error.message })
+  return 'error'
 }
 
-/** Suelta la cuota cuando la suscripción deja de pagar. */
+/** Libera la reclamación cuando falla la entrega para que Stripe pueda reintentar. */
+export async function releaseEventClaim(admin: SupabaseClient, id: string): Promise<boolean> {
+  const { error } = await admin.from('stripe_events').delete().eq('id', id)
+  if (error) {
+    console.error('[webhook] no se pudo liberar la reclamación del evento', { id, message: error.message })
+    return false
+  }
+  return true
+}
+
+/** Revoca la suscripción que terminó. */
 export async function deactivateSubscription(admin: SupabaseClient, userId: string): Promise<DeliveryResult> {
   const { error } = await admin
     .from('entitlements')
-    .update({ active: false, plan: 'free', daily_limit: 0, local_daily_limit: 10 })
+    .update({
+      active: false,
+      plan: 'free',
+      daily_limit: 0,
+      local_daily_limit: 10,
+      subscription_id: null,
+      current_period_end: null,
+    })
     .eq('user_id', userId)
   if (error) return { status: 'error', detail: error.message }
   return { status: 'granted', userId }
