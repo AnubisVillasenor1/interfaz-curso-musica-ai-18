@@ -1,11 +1,15 @@
 import { NextResponse } from 'next/server'
 import { createMidi } from '@/lib/music/midi'
 import { createLocalPlan } from '@/lib/music/agent'
+import { ipOf, rateLimitPublic } from '@/lib/rate-limit'
 
 export const runtime = 'nodejs'
 export const maxDuration = 30
 
 export async function POST(request: Request) {
+  if (!rateLimitPublic(`compose:${ipOf(request)}`, 20)) {
+    return NextResponse.json({ error: 'Demasiadas peticiones. Espera un momento.', code: 'rate_limited' }, { status: 429, headers: { 'Retry-After': '60' } })
+  }
   try {
     const body = await request.json().catch(() => null) as { prompt?: unknown; tempo?: unknown; key?: unknown } | null
     const prompt = typeof body?.prompt === 'string' ? body.prompt.trim() : ''

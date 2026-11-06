@@ -7,17 +7,65 @@ import uuid
 from datetime import datetime, timezone
 
 from fastapi import FastAPI, HTTPException, Request
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 app = FastAPI(title="TAMV Music Engine")
 
 TASKS: dict[str, dict] = {}
 AUDIO: dict[str, bytes] = {}
+_LOCK = threading.Lock()
+_SEMAPHORE = threading.Semaphore(2)  # máximo 2 generaciones simultáneas
+_CREATED: dict[str, float] = {}
+
+
+def _evict_old() -> None:
+    """TTL de 1h para tareas/audio: sin esto, cada WAV (~1.3 MiB) quedaba en
+    memoria para siempre y el engine moría de OOM con ~1k trabajos."""
+    now = time.time()
+    with _LOCK:
+        for task_id, created in list(_CREATED.items()):
+            if now - created > 3600:
+                TASKS.pop(task_id, None)
+                AUDIO.pop(task_id, None)
+                _CREATED.pop(task_id, None)
+
+
+def _require_key(request: Request) -> None:
+    expected = os.getenv("LOCAL_MUSIC_API_KEY")
+    if not expected:
+        return
+    got = request.headers.get("authorization", "")
+    if got != f"Bearer {expected}":
+        raise HTTPException(status_code=401, detail="API key inválida")
+
+
+def _callback_allowed(url: str) -> bool:
+    """Allowlist SSRF: solo se POSTea a callbackUrl si su host es localhost,
+    el de NEXT_PUBLIC_APP_URL o el de ENGINE_PUBLIC_URL. Sin esto, cualquiera
+    alcanzando :8000 podía hacernos llamar a cualquier URL interna."""
+    from urllib.parse import urlparse
+
+    try:
+        host = urlparse(url).hostname
+    except Exception:
+        return False
+    if not host:
+        return False
+    if host in ("127.0.0.1", "localhost", "::1"):
+        return True
+    allowed = set()
+    for raw in (os.getenv("NEXT_PUBLIC_APP_URL"), os.getenv("ENGINE_PUBLIC_URL")):
+        if raw:
+            try:
+                allowed.add(urlparse(raw if "://" in raw else f"https://{raw}").hostname)
+            except Exception:
+                pass
+    return host in allowed
 
 
 class GenerateRequest(BaseModel):
-    prompt: str
-    lyrics: str = ""
+    prompt: str = Field(max_length=2000)
+    lyrics: str = Field(default="", max_length=4000)
     instrumental: bool = False
     duration: int = 30
     callbackUrl: str | None = None
@@ -31,21 +79,20 @@ def _wav_bytes(seconds: int, seed_text: str) -> bytes:
     genera un archivo WAV válido cuyo tono depende del prompt. Cuando se
     instalan Ace-Step/YuE/DiffRhythm (`MUSIC_MODEL` + pesos), se sustituye
     esta función por la inferencia real en `providers/` (ver README).
+    Vectorizado con numpy: el bucle por muestra era O(n²) en memoria.
     """
     import io
-    import math
     import struct
+
+    import numpy as np
 
     seconds = min(max(seconds, 3), 30)
     rate = 22050
-    # Tono base derivado del prompt (determinista): Do4=261.63 + hash % escala.
     h = sum((i + 1) * ord(c) for i, c in enumerate(seed_text)) % 12
     base = 261.63 * (2 ** (h / 12.0))
-    frames = b""
-    for i in range(rate * seconds):
-        t = i / rate
-        sample = 0.3 * math.sin(2 * math.pi * base * t) + 0.2 * math.sin(2 * math.pi * base * 2 * t)
-        frames += struct.pack("<h", int(max(-1.0, min(1.0, sample)) * 32767))
+    t = np.arange(rate * seconds) / rate
+    sample = 0.3 * np.sin(2 * np.pi * base * t) + 0.2 * np.sin(2 * np.pi * base * 2 * t)
+    frames = (np.clip(sample, -1.0, 1.0) * 32767).astype(np.int16).tobytes()
     data = (
         b"RIFF" + struct.pack("<I", 36 + len(frames)) + b"WAVEfmt "
         + struct.pack("<IHHIIHH", 16, 1, 1, rate, rate * 2, 2, 16)
@@ -83,7 +130,7 @@ def _finish(task_id: str) -> None:
                 "generatedAt": datetime.now(timezone.utc).isoformat(),
             },
         }
-        if task.get("callbackUrl"):
+        if task.get("callbackUrl") and _callback_allowed(task["callbackUrl"]):
             import json
             import httpx
             raw = json.dumps(payload).encode()
@@ -91,10 +138,13 @@ def _finish(task_id: str) -> None:
             sig = _sign(raw)
             if sig:
                 headers["x-signature"] = sig
-            try:
-                httpx.post(task["callbackUrl"], content=raw, headers=headers, timeout=15)
-            except Exception as exc:  # noqa: BLE001 - el callback no debe tumbar el worker
-                print(f"[engine] callback falló {task_id}: {exc}")
+            for _attempt in range(3):  # reintento: un 503 de Next no debe colgar la canción
+                try:
+                    resp = httpx.post(task["callbackUrl"], content=raw, headers=headers, timeout=15)
+                    if resp.status_code < 500:
+                        break
+                except Exception as exc:  # noqa: BLE001
+                    print(f"[engine] callback falló {task_id}: {exc}")
         task["audioUrl"] = audio_url
     except Exception as exc:  # noqa: BLE001
         task["status"] = "failed"
@@ -103,19 +153,30 @@ def _finish(task_id: str) -> None:
 
 @app.post("/generate")
 async def generate(request: GenerateRequest, req: Request):
+    _require_key(req)
+    _evict_old()
     if not request.prompt.strip():
         raise HTTPException(status_code=400, detail="prompt es obligatorio")
+    if request.callbackUrl and not _callback_allowed(request.callbackUrl):
+        raise HTTPException(status_code=400, detail="callbackUrl no permitido")
     task_id = f"local_{uuid.uuid4()}"
-    TASKS[task_id] = {
-        "taskId": task_id,
-        "status": "queued",
-        "model": request.model or os.getenv("MUSIC_MODEL", "ace-step"),
-        "prompt": request.prompt,
-        "duration": min(max(request.duration, 5), 120),
-        "callbackUrl": request.callbackUrl,
-        "createdAt": datetime.now(timezone.utc).isoformat(),
-    }
-    threading.Thread(target=_finish, args=(task_id,), daemon=True).start()
+    with _LOCK:
+        TASKS[task_id] = {
+            "taskId": task_id,
+            "status": "queued",
+            "model": request.model or os.getenv("MUSIC_MODEL", "ace-step"),
+            "prompt": request.prompt,
+            "duration": min(max(request.duration, 5), 120),
+            "callbackUrl": request.callbackUrl,
+            "createdAt": datetime.now(timezone.utc).isoformat(),
+        }
+        _CREATED[task_id] = time.time()
+
+    def _run() -> None:
+        with _SEMAPHORE:
+            _finish(task_id)
+
+    threading.Thread(target=_run, daemon=True).start()
     return {"taskId": task_id, "model": TASKS[task_id]["model"], "status": "queued"}
 
 

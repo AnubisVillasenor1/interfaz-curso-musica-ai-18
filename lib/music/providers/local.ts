@@ -38,8 +38,9 @@ export class LocalMusicProvider implements MusicProvider {
       throw new Error(`El servidor local respondió ${response.status}: ${message.slice(0, 300)}`)
     }
     const data = (await response.json().catch(() => null)) as { taskId?: string; model?: string } | null
+    if (!data?.taskId) throw new Error('El servidor local no devolvió taskId')
     return {
-      taskId: data?.taskId ?? createTaskId('local'),
+      taskId: data.taskId,
       provider: this.id,
       model: data?.model ?? process.env.LOCAL_MUSIC_MODEL ?? 'ace-step',
       status: 'queued',

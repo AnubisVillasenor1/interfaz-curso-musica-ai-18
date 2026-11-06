@@ -210,6 +210,36 @@ export function LocalComposer({ initialPrompt = '' }: { initialPrompt?: string }
     link.click()
   }
 
+  async function createWithVoices() {
+    if (!title.trim() || !prompt.trim() || busy) return
+    setPhase('sending'); setDetail('Enviando al estudio con voces…')
+    try {
+      const response = await fetch('/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ engine: 'provider', title: title.trim(), prompt: prompt.trim(), genre: GENRES.find((g) => g.id === genreId)?.name ?? null, tempo: bpm || undefined }),
+      })
+      const data = await response.json().catch(() => null)
+      if (!response.ok) throw new Error(data?.error ?? 'El estudio con voces no está disponible ahora.')
+      const taskId = String(data.taskId ?? data.data?.taskId ?? '')
+      if (!taskId) throw new Error('El proveedor no devolvió tarea.')
+      setDetail('Generando con voces… vuelve a este panel en un momento.')
+      for (let i = 0; i < 40; i += 1) {
+        await new Promise((r) => setTimeout(r, 3000))
+        const polled = await fetch(`/api/task/${encodeURIComponent(taskId)}`).then((r) => r.json().catch(() => null)).catch(() => null)
+        const status = polled?.data?.status as string | undefined
+        if (status === 'completed' || status === 'failed') {
+          setDetail(status === 'completed' ? 'Lista: revisa tu biblioteca.' : 'La generación con voces falló; tu cupo no se descontó.')
+          setPhase(status === 'completed' ? 'done' : 'error')
+          break
+        }
+      }
+    } catch (error) {
+      setDetail(error instanceof Error ? error.message : 'Fallo de red.')
+      setPhase('error')
+    }
+  }
+
   return <form onSubmit={create} className="pg-card flex flex-col gap-4 p-5 sm:p-6" style={{ borderColor: 'color-mix(in srgb, var(--pg-cyan) 25%, transparent)' }}>
     <div className="flex items-start justify-between gap-4">
       <div>
@@ -260,6 +290,10 @@ export function LocalComposer({ initialPrompt = '' }: { initialPrompt?: string }
         className="pg-btn pg-btn-primary" style={{ padding: '0.7rem 1.3rem' }}>
         {busy ? <LoaderCircle className="animate-spin" size={16} /> : <Sparkles size={16} />}
         {busy ? PHASE_COPY[phase] : 'Componer y guardar'}
+      </button>
+      <button type="button" onClick={createWithVoices} disabled={busy || !title.trim() || !prompt.trim()}
+        className="pg-btn pg-btn-ghost pg-btn-sm">
+        Con voces (proveedor)
       </button>
       {arrangement && <button type="button" onClick={preview}
         className="pg-btn pg-btn-ghost pg-btn-sm">

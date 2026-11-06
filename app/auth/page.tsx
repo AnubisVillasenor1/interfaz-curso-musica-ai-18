@@ -60,8 +60,12 @@ export default function AuthPage() {
       )
     } else if (mode === 'signup') {
       say('Cuenta creada. Revisa tu correo para confirmar el acceso.')
-    } else {
-      window.location.href = '/'
+    } else if (mode === 'login') {
+      // Se respeta ?next= solo si es una ruta interna (sin //, sin http), y se
+      // descarta si camina fuera de la app: nunca redirigir a un host ajeno.
+      const next = new URLSearchParams(window.location.search).get('next')
+      const safe = next && next.startsWith('/') && !next.startsWith('//') ? next : '/'
+      window.location.href = safe
     }
   }
 
