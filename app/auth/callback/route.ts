@@ -17,5 +17,8 @@ export async function GET(request: Request) {
     const supabase = await createClient()
     if (supabase) await supabase.auth.exchangeCodeForSession(code)
   }
-  return NextResponse.redirect(new URL('/', request.url))
+  // Relativo a propósito: `new URL('/', request.url)` refleja el Host del
+  // header y convierte el callback en una redirección abierta. `/` queda en
+  // el mismo origen sin cabeceras.
+  return new NextResponse(null, { status: 302, headers: { Location: '/' } })
 }

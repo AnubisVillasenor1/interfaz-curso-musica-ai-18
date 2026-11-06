@@ -402,6 +402,10 @@ revoke all on function public.stale_generating(interval) from public;
 revoke all on function public.is_service_or_admin() from public;
 
 grant execute on function public.consume_generation_quota(uuid, text) to authenticated;
+-- refund_generation_quota la llama `/api/generate` con el cliente del usuario
+-- (no service_role): sin este grant, toda devolución de cuota fallaba con
+-- permission denied y el usuario perdía cupo por fallos del proveedor.
+grant execute on function public.refund_generation_quota(uuid, text) to authenticated;
 grant execute on function public.read_entitlement() to authenticated;
 grant execute on function public.complete_lesson(text) to authenticated;
 grant execute on function public.mark_song_ready(uuid, text) to authenticated;

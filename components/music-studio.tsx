@@ -18,7 +18,7 @@ export function MusicStudio() {
     event.preventDefault()
     setBusy(true); setMessage('Diseñando arreglo…')
     try {
-      const response = await fetch('/api/agent', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt }) })
+      const response = await fetch('/api/music/plan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt }) })
       const data = await response.json()
       if (!response.ok) throw new Error(data.error || 'No se pudo crear el plan.')
       setPlan(data.plan); setMessage(data.message)
@@ -49,7 +49,7 @@ export function MusicStudio() {
     } catch (error) { setCatalogMessage(error instanceof Error ? error.message : 'Error de red.') }
   }
 
-  return <main className="pg-shell min-h-screen px-5 py-10 sm:px-8" style={{ background: 'var(--pg-bg)' }}>
+  return <div className="pg-shell min-h-screen px-5 py-10 sm:px-8" style={{ background: 'var(--pg-bg)' }}>
     <div className="pg-container max-w-5xl">
       <a href="/" className="pg-navlink">← Volver a Play and Go</a>
       <header className="my-8"><p className="pg-eyebrow">Taller musical libre</p><h1 className="pg-title">Agente de composición</h1><p className="pg-lede">Convierte una idea en un plan de arreglo y exporta un boceto MIDI descargable. Funciona sin API de pago; Ollama local mejora el análisis cuando está configurado.</p></header>
@@ -73,5 +73,5 @@ export function MusicStudio() {
       </div>
       <aside className="pg-callout mt-6"><strong>Alcance:</strong> el exportador crea MIDI procedural con melodía y acordes, no audio renderizado ni stems. Usa un DAW/sintetizador propio para producir audio. El planificador sin Ollama es determinista y no utiliza un modelo de IA.</aside>
     </div>
-  </main>
+  </div>
 }

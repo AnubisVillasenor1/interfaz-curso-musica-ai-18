@@ -78,10 +78,12 @@ export async function POST(request: Request) {
 
   // La fila tiene que existir y ser del usuario. Se consulta con su propio
   // cliente: RLS ya filtra por dueño, así que un songId ajeno devuelve null.
+  // También se filtra por user_id en el código (defensa en profundidad).
   const { data: song } = await supabase
     .from('songs')
     .select('id, status, engine')
     .eq('id', songId)
+    .eq('user_id', user.id)
     .maybeSingle()
 
   if (!song) return NextResponse.json({ error: 'Esa canción no existe en tu biblioteca.', code: 'not_found' }, { status: 404 })
@@ -115,12 +117,27 @@ export async function POST(request: Request) {
   // listado. Lo que queda permanente en la fila es `storage_path`.
   const { data: signed } = await supabase.storage.from('song-audio').createSignedUrl(path, SIGNED_URL_TTL_SECONDS)
 
+  // Duración validada como en el callback del proveedor (finite, >0, <1h):
+  // sin esto, -5, 1e20 o Infinity quedaban persistidos en la fila.
+  const rawDuration = Number(form.get('duration'))
+  const duration = Number.isFinite(rawDuration) && rawDuration > 0 && rawDuration < 3600 ? Math.round(rawDuration * 100) / 100 : null
+
   const updated = await supabase
     .from('songs')
-    .update({ storage_path: path, duration_seconds: Number(form.get('duration')) || null })
+    .update({ storage_path: path, duration_seconds: duration })
     .eq('id', songId)
+    .eq('user_id', user.id)
 
-  if (updated.error) console.error('[songs/complete] no se guardó la ruta', updated.error.message)
+  // Si la fila no se actualizó, la canción no debe marcarse lista: marcarla
+  // dejaba una fila `ready` sin storage_path reproductible y sin forma de
+  // reintentar desde la biblioteca. 500 para que el cliente reintente.
+  if (updated.error) {
+    console.error('[songs/complete] no se guardó la ruta', updated.error.message)
+    return NextResponse.json(
+      { error: 'El audio quedó guardado pero no pudimos registrarlo; inténtalo otra vez.', code: 'update_failed' },
+      { status: 500 },
+    )
+  }
 
   const marked = await supabase.rpc('mark_song_ready', {
     p_song_id: songId,

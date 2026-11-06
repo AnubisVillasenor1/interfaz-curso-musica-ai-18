@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import { AdaptiveDpr, PerformanceMonitor } from '@react-three/drei'
-import { Bloom, EffectComposer, Vignette } from '@react-three/postprocessing'
 import * as THREE from 'three'
 
 import { actAt, CINEMATIC_ACTS, type CinematicAct } from '@/lib/cinematic/scenes'
@@ -60,7 +59,7 @@ interface StageProps {
   actIndex: number
   quality: QualityTier
   reducedMotion: boolean
-  env: React.MutableRefObject<CinematicEnv>
+  env: React.RefObject<CinematicEnv>
   onQualityDecline: () => void
 }
 
@@ -743,8 +742,6 @@ function Portal({ actIndex, reducedMotion, env }: Pick<StageProps, 'actIndex' | 
  */
 function Grade({ actIndex, quality, env }: Pick<StageProps, 'actIndex' | 'quality' | 'env'>) {
   const { gl } = useThree()
-  const bloom = useRef<{ intensity: number } | null>(null)
-  const vignette = useRef<{ darkness: number; offset: number } | null>(null)
   const state = useRef({ exposure: 1.1, bloom: 0.9, veil: 0.32 })
 
   useFrame((_, delta) => {
@@ -757,33 +754,14 @@ function Grade({ actIndex, quality, env }: Pick<StageProps, 'actIndex' | 'qualit
     state.current.bloom = THREE.MathUtils.damp(state.current.bloom, Math.min(ceiling, grade.bloom + env.current.bass * 0.3), 2.4, step)
     state.current.veil = THREE.MathUtils.damp(state.current.veil, grade.veil, 1.6, step)
 
+    // Solo exposición por frame. El postprocesado (Bloom/Vignette/DoF) vive en
+    // un único EffectComposer en `CinematicPost` de cinematic-intro.tsx:
+    // montar aquí un segundo composer escribía dos veces al mismo plano, con
+    // doble bloom y doble costo de GPU.
     gl.toneMappingExposure = state.current.exposure
-    if (bloom.current) bloom.current.intensity = state.current.bloom
-    if (vignette.current) {
-      // La vela de color se traduce en viñeta: más vela, más borde comido.
-      vignette.current.darkness = 0.5 + state.current.veil * 0.6
-      vignette.current.offset = 0.46 - state.current.veil * 0.14
-    }
   })
 
-  return (
-    <EffectComposer multisampling={quality === 'high' ? 2 : 0}>
-      <Bloom
-        ref={(node) => { bloom.current = node as unknown as { intensity: number } | null }}
-        intensity={0.9}
-        luminanceThreshold={0.4}
-        luminanceSmoothing={0.28}
-        mipmapBlur
-        radius={0.78}
-      />
-      <Vignette
-        ref={(node) => { vignette.current = node as unknown as { darkness: number; offset: number } | null }}
-        darkness={0.7}
-        offset={0.42}
-        eskil={false}
-      />
-    </EffectComposer>
-  )
+  return null
 }
 
 export default function CinematicStage({ actIndex, quality, reducedMotion, env, onQualityDecline }: StageProps) {

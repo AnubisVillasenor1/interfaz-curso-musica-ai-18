@@ -10,7 +10,7 @@ import {
   resolveUserId,
 } from '@/lib/fulfilment'
 import { findProduct } from '@/lib/products'
-import { SERVICE_NOT_CONFIGURED, createAdminClient } from '@/lib/supabase/admin'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 export const runtime = 'nodejs'
 
@@ -23,7 +23,13 @@ export async function POST(request: Request) {
   }
 
   const admin = createAdminClient()
-  if (!admin) return NextResponse.json({ error: SERVICE_NOT_CONFIGURED }, { status: 503 })
+  if (!admin) {
+    // Mensaje genérico al cliente: nombrar la variable que falta (como hacía
+    // SERVICE_NOT_CONFIGURED) fingerprinta el estado de configuración ante
+    // cualquier llamador no autenticado. El detalle va solo al log.
+    console.error('[webhook] admin no configurado: falta service_role')
+    return NextResponse.json({ error: 'El webhook no está configurado.' }, { status: 503 })
+  }
 
   const signature = request.headers.get('stripe-signature')
   if (!signature) return NextResponse.json({ error: 'Falta la firma.' }, { status: 400 })
@@ -45,7 +51,7 @@ export async function POST(request: Request) {
     let response: Response
 
     if (event.type === 'checkout.session.completed' || event.type === 'checkout.session.async_payment_succeeded') {
-      response = await handleCheckoutCompleted(admin, event.data.object as Stripe.Checkout.Session)
+      response = await handleCheckoutCompleted(admin, event.data.object as Stripe.Checkout.Session, event.type)
     } else if (event.type === 'customer.subscription.deleted') {
       response = await handleSubscriptionDeleted(admin, event.data.object as Stripe.Subscription)
     } else if (event.type === 'invoice.payment_failed') {
@@ -72,8 +78,16 @@ export async function POST(request: Request) {
 async function handleCheckoutCompleted(
   admin: NonNullable<ReturnType<typeof createAdminClient>>,
   session: Stripe.Checkout.Session,
+  eventType: string,
 ) {
-  const paid = session.payment_status === 'paid' || session.payment_status === 'succeeded'
+  // `async_payment_succeeded` ya implica pago confirmado: exigir además
+  // `payment_status === 'paid'` descartaba la entrega en variantes de cobro
+  // diferido donde Stripe reporta otro estado y la reclamación no se liberaba
+  // (ni reintento ni entrega).
+  const paid =
+    eventType === 'checkout.session.async_payment_succeeded' ||
+    session.payment_status === 'paid' ||
+    session.payment_status === 'succeeded'
   if (!paid) return NextResponse.json({ received: true, pending: session.payment_status })
 
   const product = findProduct(session.metadata?.productId)
@@ -87,6 +101,37 @@ async function handleCheckoutCompleted(
     return NextResponse.json({ received: true, unknownProduct: true })
   }
 
+  // La entrega no depende solo de la metadata: si el precio de Stripe cambió
+  // tras crear la Session, el monto cobrado no corresponde al producto. Se
+  // verifica moneda y, en compras únicas sin cupón, el monto. Con cupón
+  // (allow_promotion_codes) el monto puede ser menor de forma legítima, así
+  // que solo se bloquea sin descuentos aplicados.
+  const currency = (session.currency ?? '').toLowerCase()
+  if (currency && currency !== 'mxn') {
+    console.error('[webhook] moneda inesperada en la Session', { sessionId: session.id, currency })
+    return NextResponse.json({ received: true, amountMismatch: true })
+  }
+  const hasDiscount =
+    (session.total_details?.amount_discount ?? 0) > 0 ||
+    (Array.isArray(session.discounts) && session.discounts.length > 0) ||
+    (Array.isArray((session as unknown as { discounts?: unknown[] }).discounts) && (session as unknown as { discounts?: unknown[] }).discounts!.length > 0)
+  const amountTotal = typeof session.amount_total === 'number' ? session.amount_total : null
+  if (
+    product.mode === 'payment' &&
+    !product.stripePriceId &&
+    !hasDiscount &&
+    amountTotal !== null &&
+    amountTotal !== product.priceInCents
+  ) {
+    console.error('[webhook] monto no coincide con el precio del catálogo', {
+      sessionId: session.id,
+      productId: product.id,
+      amountTotal,
+      expected: product.priceInCents,
+    })
+    return NextResponse.json({ received: true, amountMismatch: true })
+  }
+
   const email = session.customer_details?.email ?? session.customer_email
   const userId = await resolveUserId(admin, {
     clientReferenceId: session.client_reference_id ?? session.metadata?.userId ?? null,
@@ -95,8 +140,12 @@ async function handleCheckoutCompleted(
 
   if (!userId) {
     if (!email) {
+      // No retryable: ningún reintento de Stripe hace aparecer un correo.
+      // Devolver 500 dejaba el endpoint en reintentos hasta que Stripe lo
+      // deshabilita; se reconoce el evento y queda en log para revisión
+      // manual con el sessionId.
       console.error('[webhook] pago sin correo ni referencia, no es reconciliable', { sessionId: session.id })
-      return NextResponse.json({ error: 'El pago no tiene correo ni referencia.' }, { status: 500 })
+      return NextResponse.json({ received: true, unreconcilable: true })
     }
     const queued = await queuePendingPayment(admin, {
       sessionId: session.id,

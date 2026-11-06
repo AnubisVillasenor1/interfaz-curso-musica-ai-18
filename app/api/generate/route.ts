@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 
 import { getAppUrl } from '@/lib/app-url'
 import { signCallbackUrl } from '@/lib/callback-signature'
+import { COURSE_LESSONS } from '@/lib/course'
 import { SUPABASE_NOT_CONFIGURED } from '@/lib/supabase/config'
 import { createClient } from '@/lib/supabase/server'
 
@@ -74,6 +75,10 @@ export async function POST(request: Request) {
   const vocalStyle = text(body?.vocalStyle, 120)
   const instrumentation = text(body?.instrumentation, 240)
   const lessonId = text(body?.lessonId, 64)
+  // El lesson_id se valida contra el catálogo, igual que en `/api/progress`:
+  // sin lista blanca, cualquier cadena persistía en `songs.lesson_id` y
+  // rompía joins/progreso del curso.
+  const validLessonId = lessonId && COURSE_LESSONS.some((lesson) => lesson.id === lessonId) ? lessonId : null
 
   // Reserva atómica de cupo.
   const quota = await supabase.rpc('consume_generation_quota', { p_owner: user.id, p_engine: engine })
@@ -105,7 +110,7 @@ export async function POST(request: Request) {
       instrumentation,
       lyrics,
       engine,
-      lesson_id: lessonId,
+      lesson_id: validLessonId,
       status: 'queued',
     })
     .select('id, title, status, created_at, engine')

@@ -23,7 +23,7 @@ export const runtime = 'nodejs'
 function readStatus(payload: Record<string, unknown>): 'ready' | 'error' | 'pending' {
   const raw = String(payload.status ?? payload.state ?? payload.taskStatus ?? '').toLowerCase()
   if (['error', 'failed', 'fail'].includes(raw)) return 'error'
-  if (['SUCCESS', 'complete', 'completed', 'succeeded', 'end', 'ready'].includes(raw)) return 'ready'
+  if (['success', 'complete', 'completed', 'succeeded', 'end', 'ready'].includes(raw)) return 'ready'
   return 'pending'
 }
 
@@ -77,10 +77,9 @@ export async function POST(request: Request) {
   if (status === 'ready' && !audioUrl) {
     // "Terminada sin audio" es un error del proveedor, no un estado propio: si
     // la dejáramos en generating se quedaría colgada para siempre.
-    return NextResponse.json({
-      received: true,
-      result: await applyResult(admin, songId, 'error', null, duration, 'El proveedor dio la tarea por terminada sin audio.'),
-    })
+    const result = await applyResult(admin, songId, 'error', null, duration, 'El proveedor dio la tarea por terminada sin audio.')
+    if (result === 'db_error') return NextResponse.json({ error: 'No se pudo registrar el resultado.', code: 'update_failed' }, { status: 500 })
+    return NextResponse.json({ received: true, result })
   }
 
   const result = await applyResult(admin, songId, status, audioUrl, duration, String(payload.errorMsg ?? payload.error ?? ''))

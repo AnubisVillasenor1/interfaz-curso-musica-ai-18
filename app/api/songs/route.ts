@@ -52,6 +52,10 @@ export async function GET(request: Request) {
   const { data: songs, error, count } = await supabase
     .from('songs')
     .select('id, title, prompt, genre, tempo, engine, status, audio_url, storage_path, duration_seconds, error, lesson_id, created_at', { count: 'exact' })
+    // RLS ya filtra por dueño, pero la defensa en profundidad va en el código:
+    // si la política se relaja o se usa por error un cliente con service_role,
+    // sin este filtro cualquier cuenta listaría la biblioteca ajena.
+    .eq('user_id', user.id)
     .order('created_at', { ascending: false })
     .range((page - 1) * take, page * take - 1)
 
@@ -116,7 +120,7 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ error: 'Identificador de canción inválido.', code: 'invalid_request' }, { status: 400 })
   }
 
-  const { data: song } = await supabase.from('songs').select('id, storage_path').eq('id', songId).maybeSingle()
+  const { data: song } = await supabase.from('songs').select('id, storage_path').eq('id', songId).eq('user_id', user.id).maybeSingle()
   if (!song) return NextResponse.json({ error: 'Esa canción no está en tu biblioteca.', code: 'not_found' }, { status: 404 })
 
   if (song.storage_path) {
@@ -124,11 +128,11 @@ export async function DELETE(request: Request) {
     if (removeError) console.error('[songs] audio huérfano tras el borrado', removeError.message)
   }
 
-  const { error } = await supabase.from('songs').delete().eq('id', songId)
+  const { error } = await supabase.from('songs').delete().eq('id', songId).eq('user_id', user.id)
   if (error) {
     console.error('[songs] borrado falló', error.message)
     return NextResponse.json({ error: 'No pudimos borrar la canción.', code: 'delete_failed' }, { status: 500 })
   }
 
-  return NextResponse.json({ deleted: songId })
+  return NextResponse.json({ deleted: songId }, { headers: PRIVATE_HEADERS })
 }

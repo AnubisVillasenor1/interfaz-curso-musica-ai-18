@@ -29,12 +29,15 @@ export async function resolveUserId(
   if (!email) return null
 
   const target = email.toLowerCase()
+  // Supabase Auth Admin limita perPage a 50: pedir 1000 devuelve como máximo
+  // 50 y `users.length < 1000` cortaba tras la primera página, dejando sin
+  // entregar a todo usuario más allá de los ~50 primeros.
   for (let page = 1; page <= 20; page += 1) {
-    const { data, error } = await admin.auth.admin.listUsers({ page, perPage: 1000 })
+    const { data, error } = await admin.auth.admin.listUsers({ page, perPage: 50 })
     if (error) return null
     const match = data.users.find((candidate) => candidate.email?.toLowerCase() === target)
     if (match) return match.id
-    if (data.users.length < 1000) break
+    if (data.users.length < 50) break
   }
 
   return null
@@ -129,8 +132,33 @@ export async function releaseEventClaim(admin: SupabaseClient, id: string): Prom
   return true
 }
 
-/** Revoca la suscripción que terminó. */
+/** Revoca la suscripción que terminó, sin tocar compras permanentes. */
 export async function deactivateSubscription(admin: SupabaseClient, userId: string): Promise<DeliveryResult> {
+  const { data: current, error: readError } = await admin
+    .from('entitlements')
+    .select('plan, active, access_expires_at')
+    .eq('user_id', userId)
+    .maybeSingle()
+  if (readError) return { status: 'error', detail: readError.message }
+  if (!current) return { status: 'granted', userId }
+
+  // Quien compró el curso (enrolled, acceso permanente sin vencimiento) no
+  // pierde ese acceso si además tenía una suscripción mensual que termina.
+  // `grantProduct` preserva el rango; aquí se hacía lo contrario: se pisaba
+  // todo a free/daily 0 y se borraba un pago único ya cobrado.
+  const permanent = Boolean(current.active) && current.access_expires_at === null && current.plan !== 'free'
+  if (permanent && current.plan !== 'pro') {
+    const { error } = await admin
+      .from('entitlements')
+      .update({
+        subscription_id: null,
+        current_period_end: null,
+      })
+      .eq('user_id', userId)
+    if (error) return { status: 'error', detail: error.message }
+    return { status: 'granted', userId }
+  }
+
   const { error } = await admin
     .from('entitlements')
     .update({

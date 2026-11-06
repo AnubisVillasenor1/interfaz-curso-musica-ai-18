@@ -103,7 +103,16 @@ export interface ChatTurn {
 /** Histórico acotado: sin límite, un hilo largo multiplica el costo por turno. */
 export function trimHistory(turns: ChatTurn[], max = 8): ChatTurn[] {
   const clean = turns
-    .filter((turn) => typeof turn.content === 'string' && turn.content.trim())
+    // La lista blanca de roles es el frontera contra inyección de prompt: el
+    // cliente manda JSON sin validar y un `role: 'system'` en el historial se
+    // colaba como segunda instrucción junto al `buildSystemPrompt()` de
+    // confianza. Solo user/assistant sobreviven; el resto se descarta.
+    .filter(
+      (turn) =>
+        (turn.role === 'user' || turn.role === 'assistant') &&
+        typeof turn.content === 'string' &&
+        turn.content.trim(),
+    )
     .map((turn) => ({ role: turn.role, content: turn.content.trim().slice(0, turn.role === 'user' ? 2000 : 4000) }))
   return clean.slice(-max)
 }

@@ -19,10 +19,9 @@ export async function POST(request: Request) {
 
   await supabase.auth.signOut()
 
-  const origin = new URL(request.url).origin
-  const target = /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/.test(origin)
-    ? origin
-    : process.env.NEXT_PUBLIC_APP_URL ?? process.env.NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL ?? origin
-
-  return NextResponse.redirect(`${target}/`, { status: 302 })
+  // Redirección relativa: construir el destino desde `request.url` confía en
+  // el header Host (`X-Forwarded-Host`), que un llamador puede fijar para
+  // producir un `Location: https://evil.com/` (phishing). `/` relativo queda
+  // en el mismo origen sin mirar cabeceras.
+  return new NextResponse(null, { status: 302, headers: { Location: '/' } })
 }

@@ -58,7 +58,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'No pudimos registrar tu progreso.', code: 'write_failed' }, { status: 500 })
   }
 
-  return NextResponse.json(result)
+  return NextResponse.json(result, { headers: PRIVATE_HEADERS })
 }
 
 /**
@@ -76,14 +76,20 @@ export async function GET() {
   } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Inicia sesión para ver tu ruta.', code: 'unauthorized' }, { status: 401 })
 
-  const { data, error } = await supabase.from('lesson_progress').select('lesson_id, completed_at').order('completed_at')
+  const { data, error } = await supabase.from('lesson_progress').select('lesson_id, completed_at').eq('user_id', user.id).order('completed_at')
 
   if (error) {
     console.error('[progress] lectura falló', error.message)
     return NextResponse.json({ error: 'No pudimos cargar tu progreso.', code: 'read_failed' }, { status: 500 })
   }
 
-  const { data: badges } = await supabase.from('badges').select('code, earned_at')
+  const { data: badges, error: badgesError } = await supabase.from('badges').select('code, earned_at').eq('user_id', user.id)
+  // Sin chequeo, una tabla ausente devolvía [] silencioso mientras el resto de
+  // la ruta falla cerrado: inconsistencia que esconde un deploy parcial.
+  if (badgesError) {
+    console.error('[progress] lectura de insignias falló', badgesError.message)
+    return NextResponse.json({ error: 'No pudimos cargar tu progreso.', code: 'read_failed' }, { status: 500 })
+  }
 
   return NextResponse.json(
     {

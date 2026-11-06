@@ -60,8 +60,18 @@ function rateCheck(key: string, limit: number): RateVerdict {
 }
 
 function ipOf(request: Request): string {
+  // `x-forwarded-for` lo escribe el cliente: la primera entrada es falsificable
+  // y con ella el límite anónimo se evade rotando el header. Los proxies de
+  // confianza añaden al final, así que la última entrada es la IP real vista
+  // por la plataforma; `x-real-ip` (Vercel) se prefiere cuando existe.
+  const realIp = request.headers.get('x-real-ip')?.trim()
+  if (realIp) return realIp.slice(0, 120)
   const forwarded = request.headers.get('x-forwarded-for')
-  return (forwarded?.split(',')[0].trim() || request.headers.get('x-real-ip') || 'sin-ip').slice(0, 120)
+  if (forwarded) {
+    const parts = forwarded.split(',').map((part) => part.trim()).filter(Boolean)
+    if (parts.length) return parts[parts.length - 1].slice(0, 120)
+  }
+  return 'sin-ip'
 }
 
 /**
@@ -87,20 +97,39 @@ async function askProvider(messages: ChatTurn[]): Promise<ProviderReply> {
   const base = (process.env.AI_AGENT_BASE_URL ?? 'https://api.openai.com/v1').replace(/\/+$/, '')
   const model = process.env.AI_AGENT_MODEL ?? 'gpt-4o-mini'
 
-  const response = await fetch(`${base}/chat/completions`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
-    signal: AbortSignal.timeout(20_000),
-    body: JSON.stringify({
-      model,
-      messages: [{ role: 'system', content: buildSystemPrompt() }, ...messages],
-      temperature: 0.4,
-      max_tokens: 500,
-      // Sin cabecera de identificación, muchos proveedores agrupan el tráfico
-      // en logs compartidos; el correo del alumno no debe entrar ahí.
-      stream: false,
-    }),
-  })
+  // Los modelos recientes (o-series, gpt-5) rechazan `max_tokens` y exigen
+  // `max_completion_tokens`; los antiguos rechazan el nuevo nombre. Se intenta
+  // con el moderno y, si el proveedor lo rechaza por parámetro no soportado,
+  // se reintenta con el legado. Sin esto, configurar un modelo actual dejaba
+  // cada llamada en 400 silencioso y siempre caía a la guía sin que nadie lo
+  // viera.
+  const payloadBase = {
+    model,
+    messages: [{ role: 'system', content: buildSystemPrompt() }, ...messages],
+    temperature: 0.4,
+    // Sin cabecera de identificación, muchos proveedores agrupan el tráfico
+    // en logs compartidos; el correo del alumno no debe entrar ahí.
+    stream: false,
+  }
+
+  async function callProvider(tokenField: 'max_completion_tokens' | 'max_tokens') {
+    return fetch(`${base}/chat/completions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+      signal: AbortSignal.timeout(20_000),
+      body: JSON.stringify({ ...payloadBase, [tokenField]: 500 }),
+    })
+  }
+
+  let response = await callProvider('max_completion_tokens')
+  if (response.status === 400) {
+    const detail = await response.text().catch(() => '')
+    if (/max_tokens|max_completion_tokens|unsupported_parameter/i.test(detail)) {
+      response = await callProvider('max_tokens')
+    } else {
+      throw new Error(`proveedor 400: ${detail.slice(0, 300)}`)
+    }
+  }
 
   if (!response.ok) {
     // El cuerpo del error del proveedor puede traer datos de la cuenta; se

@@ -330,3 +330,31 @@ vez pasada.
    (hoy devuelve 404) o sustituirla por el CNAME que dé Vercel. Después
    verificar `/robots.txt` y `/sitemap.xml` con el dominio puesto, porque con
    `NEXT_PUBLIC_APP_URL` vacío ambos están declarados apagados a propósito.
+
+---
+
+## Auditoría 6 de noviembre — fallas de código corregidas en esta rama
+
+`pnpm install --frozen-lockfile` + `tsc --noEmit` (0) + `next build` (35 rutas,
+antes 34) + prueba en runtime (`GET /` 200, `POST /api/music/plan` devuelve
+plan con tempo parseado, `POST /api/agent` 200 fallback). Fallas ya corregidas
+en `main`, confirmadas en código:
+
+| falla | corrección |
+|---|---|
+| callback `SUCCESS` nunca coincidía (lista con mayúscula tras `toLowerCase`) y dejaba canciones en `generating` | `app/api/generate/callback/route.ts`: lista en minúsculas; la rama "pagado sin audio" ahora devuelve 500 si la BD falla, para que el proveedor reintente |
+| `refund_generation_quota` sin `GRANT` a `authenticated`: el usuario perdía cupo por fallos ajenos | `20261105190200_functions.sql` + nueva `20261105190400_refund_grant.sql` (idempotente, para BDs ya migradas) |
+| `/studio` pedía `/api/agent` con `{prompt}` y esperaba `{plan}`; la ruta es el chat (`{message}` → `{answer}`) | Nueva `app/api/music/plan/route.ts` (usa `planMusic()` de Ollama/local, que existía sin llamador); `MusicStudio` apunta allí; se eliminó el `<main>` duplicado |
+| Doble `EffectComposer` (Grade + CinematicPost) y doble rig de cámara (CinematicCamera + CameraRig) en el mismo Canvas | `Grade` solo ajusta exposición; `CinematicCamera` eliminado, `CameraRig` es el único conductor de cámara |
+| `deactivateSubscription` degradaba a free a quien tenía compra única permanente | `lib/fulfilment.ts`: si el plan es permanente (sin vencimiento, no free/pro) solo se limpian campos de suscripción |
+| Inyección de `role: 'system'` por historial + límite evadible rotando el primer `x-forwarded-for` | `trimHistory` lista blanca user/assistant; `ipOf` usa `x-real-ip` y, si no, la última entrada (la que añaden los proxies de confianza) |
+| Modelos nuevos (o-series/gpt-5) rechazaban `max_tokens` → 400 silencioso siempre | Reintento con `max_completion_tokens` y caída a `max_tokens` |
+| `active: false` mataba planes permanentes; `listUsers perPage:1000` (tope 50) cortaba tras 50 usuarios | Ver arriba; paginación a 50 × 20 páginas |
+| `title: 'Aplicar'` o similar sin validar en `/api/songs/complete` (duración libre, `storage_path` en silencio) | Rango finite/(0,3600), 500 si el update falla, `user_id` también en código |
+| Webhook 500 eterno en pago irreconciliable, `async_payment_succeeded` descartado, sin verificación de monto/moneda, fuga de nombre de variable | 200 + log en irreconciliable; async cuenta como pagado; moneda MXN y monto (sin cupón) verificados; 503 genérico |
+| Redirección abierta por header Host en logout y auth/callback | `Location: /` relativo, sin construir URL desde cabeceras |
+| Sin CI ni pin de versión (el patrón que rompió `main` tres veces) | `.github/workflows/ci.yml` (pnpm frozen + typecheck + build), `.nvmrc` (24), `engines.node >=20` |
+| `scripts/check-openapi.py` con ruta absoluta de otra carpeta | Raíz derivada del propio archivo; PyYAML con mensaje claro si falta |
+
+Siguen abiertas las fallas 3 (variables), 4 (aplicar migraciones) y 5 (dominio),
+que requieren escrituras fuera del código — ver "Orden para salir" arriba.

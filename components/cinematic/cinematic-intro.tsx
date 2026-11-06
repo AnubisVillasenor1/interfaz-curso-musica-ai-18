@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
-import { Canvas, useFrame, useThree } from '@react-three/fiber'
+import { Canvas, useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import {
   Bloom,
@@ -41,44 +41,6 @@ const cssVars = (vars: Record<string, string>): CSSProperties =>
   vars as unknown as CSSProperties
 
 /* -------------------------------------------------------------------------- */
-/*  Cámara cinematográfica: respiración, parallax y micro-sacadas             */
-/* -------------------------------------------------------------------------- */
-
-function CinematicCamera({
-  env,
-  reducedMotion,
-}: {
-  env: React.MutableRefObject<CinematicEnv>
-  reducedMotion: boolean
-}) {
-  const { camera } = useThree()
-  const target = useRef(new THREE.Vector3(0, 0.25, 0))
-
-  useFrame((state, delta) => {
-    const time = state.clock.elapsedTime
-    const e = env.current
-
-    const breathe = reducedMotion ? 0 : 1
-    const bass = e.bass ?? 0
-    const treble = e.treble ?? 0
-
-    const driftX = Math.sin(time * 0.23) * 0.55 * breathe
-    const driftY = Math.cos(time * 0.19) * 0.32 * breathe
-    const push = 13.2 - bass * 0.9 - Math.sin(time * 0.17) * 0.35 * breathe
-
-    camera.position.x += (driftX - camera.position.x) * Math.min(1, delta * 1.8)
-    camera.position.y += (0.4 + driftY + treble * 0.18 - camera.position.y) * Math.min(1, delta * 1.8)
-    camera.position.z += (push - camera.position.z) * Math.min(1, delta * 1.4)
-
-    target.current.x = Math.sin(time * 0.11) * 0.22 * breathe
-    target.current.y = 0.18 + Math.cos(time * 0.13) * 0.1 * breathe
-    camera.lookAt(target.current)
-  })
-
-  return null
-}
-
-/* -------------------------------------------------------------------------- */
 /*  Postprocesado adaptativo                                                   */
 /* -------------------------------------------------------------------------- */
 
@@ -89,7 +51,7 @@ function CinematicPost({
 }: {
   tier: QualityTier
   reducedMotion: boolean
-  env: React.MutableRefObject<CinematicEnv>
+  env: React.RefObject<CinematicEnv>
 }) {
   const aberration = useRef<{ offset: THREE.Vector2 } | null>(null)
 
@@ -485,7 +447,10 @@ export default function CinematicIntro({
             }}
             camera={{ position: [0, 0.4, 13.2], fov: 48, near: 0.1, far: 140 }}
           >
-            <CinematicCamera env={env} reducedMotion={reduced} />
+            {/* La cámara vive solo en CameraRig (CinematicStage): el antiguo
+                CinematicCamera escribía position/lookAt cada frame y CameraRig
+                lo sobrescribía después en el mismo orden de montaje, con lo que
+                la "respiración" nunca se veía y dos rigs peleaban. */}
             <CinematicStage
               actIndex={act}
               quality={tier}
