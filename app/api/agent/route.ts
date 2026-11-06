@@ -94,8 +94,8 @@ async function askProvider(messages: ChatTurn[]): Promise<ProviderReply> {
   const apiKey = process.env.AI_AGENT_API_KEY
   if (!apiKey) throw new Error('sin AI_AGENT_API_KEY')
 
-  const base = (process.env.AI_AGENT_BASE_URL ?? 'https://api.openai.com/v1').replace(/\/+$/, '')
-  const model = process.env.AI_AGENT_MODEL ?? 'gpt-4o-mini'
+  const base = (process.env.AI_AGENT_BASE_URL ?? 'https://api.bazaarlink.ai/v1').replace(/\/+$/, '')
+  const model = process.env.AI_AGENT_MODEL ?? 'nvidia/nemotron-3.5-lightning-free'
 
   // Los modelos recientes (o-series, gpt-5) rechazan `max_tokens` y exigen
   // `max_completion_tokens`; los antiguos rechazan el nuevo nombre. Se intenta
