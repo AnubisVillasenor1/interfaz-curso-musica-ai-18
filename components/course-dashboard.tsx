@@ -1,20 +1,45 @@
 'use client'
 
 import { useRef, useState } from 'react'
-import { ArrowRight, Award, BadgeCheck, BookOpen, Check, ChevronRight, Clock3, Headphones, LockKeyhole, Menu, MessageCircle, Music2, Play, Send, Sparkles, Star, Trophy, Video, X, Zap } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import {
+  ArrowRight,
+  Award,
+  BadgeCheck,
+  Check,
+  ChevronRight,
+  Copy,
+  Headphones,
+  LockKeyhole,
+  Menu,
+  MessageCircle,
+  Music2,
+  Pause,
+  Play,
+  Send,
+  Sparkles,
+  Trophy,
+  X,
+  Zap,
+  type LucideIcon,
+} from 'lucide-react'
+
+import { Dialog } from '@/components/ui/dialog'
+import { Reveal } from '@/components/reveal'
 import { COURSE_PRODUCT } from '@/lib/products'
-import { createClient } from '@/lib/supabase/client'
 
 /**
- * Ambos recursos eran enlaces a `*.public.blob.vercel-storage.com`, un bucket
- * ajeno al proyecto: si se limpia o caduca, la portada se queda en blanco y el
- * logotipo desaparece. Ahora son archivos locales versionados con el código,
- * y la muestra de audio es la pista real del intro cinemático.
+ * Marca local.
+ *
+ * El comentario de la versión anterior prometía archivos locales y el JSX
+ * seguía apuntando a `*.public.blob.vercel-storage.com`: un bucket ajeno al
+ * proyecto que, si se limpia, deja la portada en blanco y el logotipo fuera.
+ * `/brand/logo.svg` y `/brand/hero-studio.svg` están versionados con el código,
+ * son vectoriales (nítidos en cualquier pantalla y pesan una fracción) y usan
+ * los mismos colores que el resto de la interfaz. El lockup de TAMV vuelve a
+ * ser tipografía real, no una JPG con el fondo recortado.
  */
-const heroImage = 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Gemini_Generated_Image_hi55a9hi55a9hi55-OPBoBGaw8KYoHSuXcugNi9LtKJeZlm.jpg'
-const logoImage = 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logoplayandgo-8ZZZTdsW2ueYIcVxJscglJWiPeHgov.jpg'
-const tamvLogoImage = 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/tamvlogo1-i0HazgHWGLPPtgpiy0SnmCir2lextV.jpg'
+const logoMark = '/brand/logo.svg'
+const heroImage = '/brand/hero-studio.svg'
 const sampleAudio = '/audio/pista2.mp3'
 
 /**
@@ -25,17 +50,17 @@ const sampleAudio = '/audio/pista2.mp3'
 const coursePrice = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', maximumFractionDigits: 0 }).format(COURSE_PRODUCT.priceInCents / 100)
 
 const modules = [
-  ['01', 'Fundamentos de música con IA', '3 lecciones · 42 min', 'done'],
-  ['02', 'Tu primer prompt musical', '4 lecciones · 1 h 15 min', 'current'],
-  ['03', 'Voces, letras y emoción', '3 lecciones · 58 min', 'locked'],
-  ['04', 'Géneros, instrumentación y tempo', '3 lecciones · 1 h 08 min', 'locked'],
-  ['05', 'Producción: de idea a canción', '3 lecciones · 1 h 20 min', 'locked'],
+  { number: '01', title: 'Fundamentos de música con IA', meta: '3 lecciones · 42 min', state: 'done' },
+  { number: '02', title: 'Tu primer prompt musical', meta: '4 lecciones · 1 h 15 min', state: 'current' },
+  { number: '03', title: 'Voces, letras y emoción', meta: '3 lecciones · 58 min', state: 'locked' },
+  { number: '04', title: 'Géneros, instrumentación y tempo', meta: '3 lecciones · 1 h 08 min', state: 'locked' },
+  { number: '05', title: 'Producción: de idea a canción', meta: '3 lecciones · 1 h 20 min', state: 'locked' },
 ]
 
 const prompts = [
-  ['Pop cinematográfico', '96 BPM · voz femenina íntima · piano felt · cuerdas amplias', 'Pop alternativo cinematográfico, 96 BPM, voz femenina íntima y aireada, versos minimalistas con piano felt, pre-coro ascendente, coro amplio con cuerdas y batería orgánica, mezcla cálida y dinámica.'],
-  ['Reggaetón nocturno', '92 BPM · voz masculina suave · dembow profundo', 'Reggaetón oscuro y elegante, 92 BPM, voz masculina suave con flow conversado, dembow profundo, synth bass cálido, percusión seca, atmósfera nocturna y hook memorable.'],
-  ['Lo-fi para estudiar', '78 BPM · instrumental · Rhodes · swing humano', 'Lo-fi hip hop instrumental, 78 BPM, acordes de jazz en Rhodes, batería con swing humano, textura de vinilo, bajo redondo, ambiente de cafetería y dinámica relajada.'],
+  { name: 'Pop cinematográfico', meta: '96 BPM · voz femenina íntima · piano felt', copy: 'Pop alternativo cinematográfico, 96 BPM, voz femenina íntima y aireada, versos minimalistas con piano felt, pre-coro ascendente, coro amplio con cuerdas y batería orgánica, mezcla cálida y dinámica.' },
+  { name: 'Reggaetón nocturno', meta: '92 BPM · voz masculina suave · dembow profundo', copy: 'Reggaetón oscuro y elegante, 92 BPM, voz masculina suave con flow conversado, dembow profundo, synth bass cálido, percusión seca, atmósfera nocturna y hook memorable.' },
+  { name: 'Lo-fi para estudiar', meta: '78 BPM · instrumental · Rhodes · swing', copy: 'Lo-fi hip hop instrumental, 78 BPM, acordes de jazz en Rhodes, batería con swing humano, textura de vinilo, bajo redondo, ambiente de cafetería y dinámica relajada.' },
 ]
 
 const curriculum = [
@@ -46,23 +71,50 @@ const curriculum = [
   { module: 'Módulo 05', title: 'De idea a release', duration: '1 h 20 min', objective: 'Pasar de una generación prometedora a una entrega presentable y trazable.', lessons: ['Sesión 14 · Selección, edición y control de versiones', 'Sesión 15 · Brief profesional para colaborar y publicar', 'Sesión 16 · Proyecto final: produce dos canciones y presenta tu portafolio'], deliverable: 'Portafolio final con dos canciones, prompts, decisiones y reflexión de aprendizaje.' },
 ]
 
+/** Cifras antes que adjetivos: el visitante entiende el tamaño del curso de un vistazo. */
+const metrics = [
+  { value: '5', label: 'módulos' },
+  { value: '16', label: 'sesiones prácticas' },
+  { value: '5 h 23', label: 'de material' },
+  { value: '2', label: 'canciones en tu portafolio' },
+]
+
+const badges: { label: string; icon: LucideIcon; state: string; tone: 'amber' | 'mint' | 'violet' }[] = [
+  { label: 'Primer beat', icon: Zap, state: 'Completado', tone: 'mint' },
+  { label: 'Oído crítico', icon: Award, state: 'Desbloqueada', tone: 'violet' },
+  { label: 'Productor IA', icon: Trophy, state: '24% del camino', tone: 'amber' },
+]
+
+type ChatMessage = { from: 'user' | 'bot'; text: string; source: 'user' | 'model' | 'guide' }
+
+/**
+ * Qué dice la burbuja de su propio origen.
+ *
+ * El guía muchas veces respondía con contenido del curso sin que ningún modelo
+ * estuviera implicado. `source` ya llegaba del servidor; lo que faltaba era
+ * mostrarlo. Etiqueta corta para no competir con la respuesta.
+ */
+const PROVENANCE: Record<ChatMessage['source'], string> = {
+  user: 'Tú',
+  model: 'Respuesta de modelo',
+  guide: 'Contenido del curso',
+}
+
 export function CourseDashboard() {
   const [menuOpen, setMenuOpen] = useState(false)
-  const [prompt, setPrompt] = useState<string | null>(null)
+  const [template, setTemplate] = useState<{ name: string; copy: string } | null>(null)
+  const [copied, setCopied] = useState(false)
   const [showRegister, setShowRegister] = useState(false)
   const [email, setEmail] = useState('')
   const [status, setStatus] = useState('')
   const [playing, setPlaying] = useState(false)
   const audioRef = useRef<HTMLAudioElement | null>(null)
-  const [user, setUser] = useState<{ email?: string } | null>(null)
-  const [studioOpen, setStudioOpen] = useState(false)
-  const [songTitle, setSongTitle] = useState('')
-  const [songPrompt, setSongPrompt] = useState('')
-  const [songStatus, setSongStatus] = useState('')
   const [chatOpen, setChatOpen] = useState(false)
   const [chatInput, setChatInput] = useState('')
   const [chatBusy, setChatBusy] = useState(false)
-  const [chatMessages, setChatMessages] = useState([{ from: 'bot', text: 'Hola, soy el guía de Play and Go. Pregúntame por el curso, el precio, los pagos, tu idea musical o tus letras.', source: 'guide' }])
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
+    { from: 'bot', text: 'Hola, soy el guía de Play and Go. Pregúntame por el curso, el precio, los pagos, tu idea musical o tus letras.', source: 'guide' },
+  ])
 
   /**
    * Pregunta al guía del curso.
@@ -71,7 +123,7 @@ export function CourseDashboard() {
    * sí misma "asistente de IA" y nunca llamaba a un modelo. Ahora la respuesta
    * viene de `/api/agent`, que usa el proveedor configurado y, si falta o
    * falla, contesta con el contenido real del curso. La procedencia viaja en
-   * `source` para que la burbuja lo diga, en lugar de fingir IA.
+   * `source` y la burbuja la imprime, en lugar de fingir IA.
    */
   async function sendChat(event: React.FormEvent) {
     event.preventDefault()
@@ -93,7 +145,7 @@ export function CourseDashboard() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: text, history }),
       })
-      const data = await response.json().catch(() => null)
+      const data: { answer?: string; source?: string } | null = await response.json().catch(() => null)
       const answer = data?.answer ?? 'No pude responder ahora. Prueba otra vez en un minuto.'
       setChatMessages((messages) => [...messages, { from: 'bot', text: answer, source: data?.source === 'llm' ? 'model' : 'guide' }])
     } catch {
@@ -106,7 +158,7 @@ export function CourseDashboard() {
   /**
    * La muestra del hero antes solo movía una animación: el botón prometía audio
    * y no sonaba nada. Ahora reproduce la pista real del intro cinemático y el
-   * ecualizador se aparta de la animación genérica al estado del elemento.
+   * ecualizador sigue el estado del elemento, no una promesa.
    */
   function toggleSample() {
     const el = audioRef.current
@@ -124,58 +176,512 @@ export function CourseDashboard() {
     }
   }
 
-  async function openStudio() {
-    const supabase = createClient()
-    if (!supabase) { window.location.href = '/auth'; return }
-    const { data } = await supabase.auth.getUser()
-    if (!data.user) { window.location.href = '/auth'; return }
-    setUser(data.user); setStudioOpen(true)
-  }
-
-  async function generateSong(event: React.FormEvent) {
-    event.preventDefault(); setSongStatus('Guardando y enviando al motor musical...')
-    const response = await fetch('/api/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: songTitle, prompt: songPrompt, genre: 'Pop alternativo', tempo: 96, vocalStyle: 'Voz íntima y aireada', instrumentation: 'Piano, cuerdas y batería orgánica' }) })
-    const result = await response.json(); setSongStatus(result.error || result.warning || 'Proyecto enviado. Revisa tu biblioteca en unos instantes.')
+  /**
+   * Copiar y personalizar: el botón existía y no copiaba nada, sólo cerraba el
+   * diálogo. Ahora escribe al portapapeles y lo confirma; si el navegador exige
+   * un contexto seguro o un permiso y falla, el texto sigue seleccionable.
+   */
+  async function copyTemplate() {
+    if (!template) return
+    try {
+      await navigator.clipboard.writeText(template.copy)
+      setCopied(true)
+      setStatus('')
+      window.setTimeout(() => setCopied(false), 2400)
+    } catch {
+      setCopied(false)
+      setStatus('Tu navegador no permitió copiar automáticamente: selecciona el texto y usa Ctrl+C.')
+    }
   }
 
   async function startCheckout(event: React.FormEvent) {
-    event.preventDefault(); setStatus('Preparando tu acceso...')
+    event.preventDefault()
+    setStatus('Preparando tu acceso...')
     const response = await fetch('/api/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ productId: COURSE_PRODUCT.id }) })
-    const data = await response.json()
+    const data: { url?: string; error?: string } = await response.json()
     if (data.url) window.location.href = data.url
     else setStatus(data.error ?? 'Revisa tus datos e intenta de nuevo.')
   }
 
-  return <main className="min-h-screen overflow-hidden bg-[#07121f] text-[#edfaff] selection:bg-[#6feaff]/30">
-    <div className="fixed inset-0 -z-0 bg-[radial-gradient(circle_at_75%_5%,rgba(88,213,230,.18),transparent_30%),radial-gradient(circle_at_15%_80%,rgba(155,92,226,.16),transparent_32%)]" />
-    <header className="relative z-20 mx-auto flex max-w-7xl items-center justify-between px-5 py-5 lg:px-10">
-      <div className="flex items-center gap-3"><img src={logoImage} alt="Play and Go by TAMV ONLINE" className="size-11 rounded-xl object-cover object-center" /><div><p className="font-semibold tracking-tight">PLAY <span className="text-[#75e9f2]">AND GO</span></p><p className="text-[9px] uppercase tracking-[.24em] text-[#9fb8c7]">by TAMV ONLINE</p></div></div>
-      <nav aria-label="Navegación principal" className="hidden items-center gap-5 text-xs font-medium text-[#a9c0ca] md:flex"><a className="nav-link" href="/curso">Curso</a><a className="nav-link" href="/studio">Crear música</a><a className="nav-link" href="/biblioteca">Biblioteca</a><a className="nav-link" href="/precios">Membresías</a><a className="nav-link" href="/informacion">Información</a><Button onClick={openStudio} className="crystal-button rounded-full px-5 text-[#06131e]">Entrar al estudio</Button></nav>
-      <button className="md:hidden" aria-label="Abrir menú" onClick={() => setMenuOpen(!menuOpen)}>{menuOpen ? <X /> : <Menu />}</button>
-    </header>
-    {menuOpen && <nav aria-label="Navegación móvil" className="relative z-20 flex flex-col gap-4 border-y border-white/10 bg-[#0a1b2b]/95 px-5 py-5 text-sm backdrop-blur-xl md:hidden"><a href="/curso">Programa completo</a><a href="/studio">Crear música</a><a href="/biblioteca">Biblioteca</a><a href="/precios">Membresías</a><a href="/informacion">Información</a><a href="/ajustes">Ajustes</a><Button onClick={() => setShowRegister(true)} className="crystal-button rounded-full text-[#06131e]">Inscribirme</Button></nav>}
+  const navLinks = [
+    ['Curso', '/curso'],
+    ['Crear música', '/studio'],
+    ['Biblioteca', '/biblioteca'],
+    ['Membresías', '/precios'],
+    ['Información', '/informacion'],
+  ] as const
 
-    <section className="relative z-10 mx-auto grid max-w-7xl items-center gap-12 px-5 pb-16 pt-8 lg:grid-cols-[1.05fr_.95fr] lg:px-10 lg:pb-24 lg:pt-20">
-      <div><div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#75e9f2]/30 bg-[#75e9f2]/10 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[.2em] text-[#8cecf3]"><Sparkles size={13} /> Música aumentada por IA</div><h1 className="max-w-2xl text-5xl font-semibold leading-[.95] tracking-[-.065em] sm:text-7xl">Convierte tus ideas en <span className="bg-gradient-to-r from-[#78eaf0] via-[#b4a5ff] to-[#ff9eea] bg-clip-text text-transparent">canciones.</span></h1><p className="mt-7 max-w-xl text-base leading-7 text-[#aac3ce]">Aprende desde cero a crear música con inteligencia artificial y desarrolla un criterio profesional para dirigir voces, géneros, tempos e instrumentaciones.</p><div className="mt-8 flex flex-wrap gap-3"><Button onClick={() => setShowRegister(true)} className="crystal-button rounded-full px-6 py-6 font-semibold text-[#06131e]">Comenzar la ruta <ArrowRight data-icon="inline-end" /></Button><a href="/studio" className="crystal-button crystal-button-secondary flex items-center gap-2 rounded-full px-6 py-3 text-sm">Crear mi primera canción <Music2 size={16} /></a><a href="#ruta" className="crystal-link flex items-center gap-2 rounded-full px-3 py-3 text-sm text-[#c4d8df]">Explorar programa</a></div><div className="mt-10 flex items-center gap-6 text-xs text-[#7f9aa7]"><span className="flex items-center gap-2"><BadgeCheck className="text-[#75e9f2]" /> Certificado final</span><span className="flex items-center gap-2"><Headphones className="text-[#c09eff]" /> Audio + video</span></div></div>
-      <div className="relative"><div className="absolute -inset-6 rounded-[2rem] bg-[#75e9f2]/10 blur-3xl" /><div className="relative overflow-hidden rounded-[2rem] border border-[#75e9f2]/25 bg-[#0c2432] p-2 shadow-2xl shadow-[#55d4ee]/10"><img src={heroImage} alt="Productor explorando música con inteligencia artificial" className="aspect-[4/3] w-full rounded-[1.5rem] object-cover" /><audio ref={audioRef} src={sampleAudio} loop preload="none" onEnded={() => setPlaying(false)} /><div className="absolute bottom-7 left-7 right-7 flex items-center justify-between rounded-2xl border border-white/15 bg-[#071522]/80 p-4 backdrop-blur-xl"><div><p className="text-[10px] uppercase tracking-[.2em] text-[#75e9f2]">Ahora sonando</p><p className="mt-1 text-sm font-medium">Diseña tu primer universo sonoro</p></div><button aria-label={playing ? 'Pausar muestra' : 'Reproducir muestra'} aria-pressed={playing} onClick={toggleSample} className="flex size-10 items-center justify-center rounded-full bg-[#75e9f2] text-[#06131e]">{playing ? <span className="text-xs">||</span> : <Play size={16} fill="currentColor" />}</button></div></div><div className="equalizer absolute -bottom-5 -right-5 flex h-16 items-end gap-1 rounded-xl border border-white/10 bg-[#0d2030]/95 p-3 shadow-[0_0_28px_rgba(117,233,242,.18)]">{[3,7,5,9,4,8,6,10,5,7].map((height, i) => <span key={i} className={`equalizer-bar w-1 rounded-full bg-gradient-to-t from-[#9a72e8] via-[#75e9f2] to-[#ffcf72] ${playing ? 'equalizer-bar-active' : ''}`} style={{ height: `${height * 4}px`, animationDelay: `${i * 80}ms` }} />)}</div></div>
+  return <main className="pg-shell relative min-h-screen overflow-x-clip" style={{ background: 'var(--pg-bg)', color: 'var(--pg-ink)' }}>
+    {/* Capa ambiental dentro del sistema: cambiar la paleta cambia también el
+        fondo. Antes usaba `-z-0`, que ni siquiera es una clase válida. */}
+    <div
+      aria-hidden="true"
+      className="pointer-events-none fixed inset-0 -z-10"
+      style={{
+        background:
+          'radial-gradient(circle at 76% 4%, rgba(117,233,242,.17), transparent 31%), radial-gradient(circle at 14% 82%, rgba(192,158,255,.15), transparent 33%)',
+      }}
+    />
+
+    <header className="sticky top-0 z-30 backdrop-blur-xl" style={{ borderBottom: '1px solid var(--pg-hairline)', background: 'rgba(7,18,31,.78)' }}>
+      <div className="pg-container flex items-center justify-between py-4">
+        <a href="/" className="flex items-center gap-3">
+          <img src={logoMark} alt="" width={40} height={40} className="size-10 rounded-xl" />
+          <span className="block">
+            <span className="block text-sm font-semibold tracking-[0.14em]">PLAY <span style={{ color: 'var(--pg-cyan)' }}>AND GO</span></span>
+            <span className="pg-eyebrow" style={{ letterSpacing: '.24em' }}>by TAMV ONLINE</span>
+          </span>
+        </a>
+        <nav aria-label="Navegación principal" className="hidden items-center gap-6 md:flex">
+          {navLinks.map(([label, href]) => <a key={href} className="pg-navlink" href={href}>{label}</a>)}
+          <a href="/studio" className="pg-btn pg-btn-primary" style={{ padding: '0.6rem 1.2rem' }}>Entrar al estudio</a>
+        </nav>
+        <button
+          type="button"
+          className="md:hidden"
+          aria-label={menuOpen ? 'Cerrar menú' : 'Abrir menú'}
+          aria-expanded={menuOpen}
+          onClick={() => setMenuOpen((value) => !value)}
+        >
+          {menuOpen ? <X size={22} /> : <Menu size={22} />}
+        </button>
+      </div>
+      {menuOpen && (
+        <nav aria-label="Navegación móvil" className="pg-container md:hidden" style={{ paddingBottom: '1.25rem' }}>
+          <span className="pg-rule mb-4 block" />
+          <ul className="flex flex-col gap-3">
+            {navLinks.map(([label, href]) => <li key={href}><a className="pg-navlink" href={href}>{label}</a></li>)}
+            <li><a className="pg-navlink" href="/ajustes">Ajustes</a></li>
+          </ul>
+          <button type="button" className="pg-btn pg-btn-primary mt-5 w-full" onClick={() => { setMenuOpen(false); setShowRegister(true) }}>Inscribirme</button>
+        </nav>
+      )}
+    </header>
+
+    {/* ---------------------------------------------------------- HERO */}
+    <section className="pg-section">
+      <div className="pg-container grid items-center gap-12 lg:grid-cols-[1.05fr_.95fr]">
+        <div>
+          <span className="pg-chip"><Sparkles size={12} /> Música aumentada por IA</span>
+          <h1 className="pg-title pg-title-display" style={{ marginTop: '1.25rem' }}>
+            Convierte tus ideas en{' '}
+            <span
+              className="bg-clip-text text-transparent"
+              style={{ backgroundImage: 'linear-gradient(96deg, #8ff0f6, var(--pg-violet) 52%, var(--pg-magenta))' }}
+            >
+              canciones.
+            </span>
+          </h1>
+          <p className="pg-lede" style={{ maxWidth: '52ch' }}>
+            Aprende desde cero a crear música con inteligencia artificial y desarrolla un criterio profesional
+            para dirigir voces, géneros, tempos e instrumentaciones.
+          </p>
+          <div className="mt-9 flex flex-wrap items-center gap-3">
+            <button type="button" className="pg-btn pg-btn-primary" onClick={() => setShowRegister(true)}>
+              Comenzar la ruta <ArrowRight size={15} />
+            </button>
+            <a href="/studio" className="pg-btn pg-btn-ghost">Crear mi primera canción <Music2 size={15} /></a>
+            <a href="#ruta" className="pg-navlink" style={{ color: 'var(--pg-text)' }}>Explorar el programa</a>
+          </div>
+          <div className="mt-10 flex flex-wrap items-center gap-6" style={{ fontSize: 'var(--pg-step--1)', color: 'var(--pg-muted)' }}>
+            <span className="flex items-center gap-2"><BadgeCheck size={15} style={{ color: 'var(--pg-cyan)' }} /> Certificado final</span>
+            <span className="flex items-center gap-2"><Headphones size={15} style={{ color: 'var(--pg-violet)' }} /> Audio + video</span>
+            <span className="flex items-center gap-2 font-mono">{coursePrice} · pago único</span>
+          </div>
+        </div>
+
+        <Reveal>
+          <div className="pg-frame">
+            <img
+              src={heroImage}
+              alt="Productor dirigiendo una generación musical con inteligencia artificial"
+              width={1600}
+              height={1200}
+              className="aspect-[4/3] w-full object-cover"
+            />
+            <audio ref={audioRef} src={sampleAudio} loop preload="none" onEnded={() => setPlaying(false)} />
+            <div
+              className="absolute inset-x-5 bottom-5 flex items-center justify-between gap-4 rounded-2xl p-4 backdrop-blur-xl"
+              style={{ border: '1px solid var(--pg-hairline)', background: 'rgba(7,21,34,.82)' }}
+            >
+              <span className="block">
+                <span className="pg-eyebrow" style={{ letterSpacing: '.22em' }}>Ahora suena</span>
+                <span className="mt-1 block text-sm font-medium">Diseña tu primer universo sonoro</span>
+              </span>
+              <button
+                type="button"
+                aria-label={playing ? 'Pausar muestra' : 'Reproducir muestra'}
+                aria-pressed={playing}
+                onClick={toggleSample}
+                className="flex size-10 shrink-0 items-center justify-center rounded-full"
+                style={{ background: 'var(--pg-cyan)', color: '#06131e' }}
+              >
+                {playing ? <Pause size={15} fill="currentColor" /> : <Play size={15} fill="currentColor" />}
+              </button>
+            </div>
+            <div
+              className="absolute right-5 -bottom-5 flex h-16 items-end gap-1 rounded-xl p-3"
+              style={{ border: '1px solid var(--pg-hairline)', background: 'rgba(13,32,48,.95)', boxShadow: '0 0 28px rgba(117,233,242,.16)' }}
+              aria-hidden="true"
+            >
+              {[3, 7, 5, 9, 4, 8, 6, 10, 5, 7].map((height, index) => (
+                <span
+                  key={index}
+                  className={`equalizer-bar w-1 rounded-full ${playing ? 'equalizer-bar-active' : ''}`}
+                  style={{
+                    height: `${height * 4}px`,
+                    animationDelay: `${index * 80}ms`,
+                    backgroundImage: 'linear-gradient(to top, #9a72e8, var(--pg-cyan), var(--pg-amber))',
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+        </Reveal>
+      </div>
+
+      <div className="pg-container mt-16 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        {metrics.map((metric, index) => (
+          <Reveal key={metric.label} delay={index * 70}>
+            <div className="pg-metric">
+              <b>{metric.value}</b>
+              <span>{metric.label}</span>
+            </div>
+          </Reveal>
+        ))}
+      </div>
     </section>
 
-    <section id="ruta" className="relative z-10 mx-auto max-w-7xl px-5 py-16 lg:px-10"><div className="mb-8 flex flex-wrap items-end justify-between gap-4"><div><p className="text-[10px] uppercase tracking-[.24em] text-[#75e9f2]">Tu recorrido</p><h2 className="mt-2 text-3xl font-semibold tracking-tight">De la primera idea al release</h2></div><div className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs text-[#a9c0ca]">24% completado · nivel 1</div></div><div className="grid gap-3">{modules.map(([number, title, meta, state]) => <button key={number} className={`group flex items-center gap-4 rounded-2xl border p-4 text-left transition hover:-translate-y-0.5 ${state === 'current' ? 'border-[#75e9f2]/50 bg-[#75e9f2]/[.08]' : 'border-white/10 bg-white/[.035] hover:border-white/20'}`}><span className={`flex size-11 shrink-0 items-center justify-center rounded-xl text-sm font-semibold ${state === 'done' ? 'bg-[#83d7b4]/15 text-[#83d7b4]' : state === 'current' ? 'bg-[#75e9f2] text-[#06131e]' : 'bg-white/10 text-white/40'}`}>{state === 'done' ? <Check /> : state === 'locked' ? <LockKeyhole size={17} /> : number}</span><span className="min-w-0 flex-1"><strong className="block text-sm">{title}</strong><small className="mt-1 block text-xs text-[#7f9aa7]">{meta}</small></span>{state === 'current' && <span className="hidden rounded-full bg-[#75e9f2]/15 px-3 py-1 text-[10px] text-[#8cecf3] sm:block">Siguiente</span>}<ChevronRight className="text-[#6f8995]" size={18} /></button>)}</div></section>
+    {/* ---------------------------------------------------------- RUTA */}
+    <section id="ruta" className="pg-section">
+      <div className="pg-container">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p className="pg-eyebrow">Tu recorrido</p>
+            <h2 className="pg-title">De la primera idea al release</h2>
+          </div>
+          <span className="pg-chip" data-tone="mint">24% completado · nivel 1</span>
+        </div>
+        <div className="mt-9 grid gap-3">
+          {modules.map((item, index) => (
+            <Reveal key={item.number} delay={index * 60}>
+              <a
+                href={item.state === 'locked' ? '/precios' : '/curso'}
+                className="pg-card pg-card-hover flex items-center gap-4 p-4"
+                style={item.state === 'current' ? { borderColor: 'rgba(117,233,242,.45)' } : undefined}
+              >
+                <span
+                  className="flex size-11 shrink-0 items-center justify-center rounded-xl text-sm font-semibold"
+                  style={
+                    item.state === 'done'
+                      ? { background: 'rgba(131,215,180,.15)', color: '#83d7b4' }
+                      : item.state === 'current'
+                        ? { background: 'var(--pg-cyan)', color: '#06131e' }
+                        : { background: 'rgba(255,255,255,.06)', color: 'rgba(237,250,255,.42)' }
+                  }
+                >
+                  {item.state === 'done' ? <Check size={18} /> : item.state === 'locked' ? <LockKeyhole size={17} /> : item.number}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <strong className="block text-sm font-medium">{item.title}</strong>
+                  <small className="mt-1 block" style={{ fontSize: 'var(--pg-step--1)', color: 'var(--pg-muted)' }}>{item.meta}</small>
+                </span>
+                {item.state === 'current' && <span className="pg-chip hidden sm:inline-flex">Siguiente</span>}
+                <ChevronRight size={18} className="shrink-0" style={{ color: 'var(--pg-muted)' }} />
+              </a>
+            </Reveal>
+          ))}
+        </div>
+      </div>
+    </section>
 
-    <section id="sesiones" className="relative z-10 mx-auto max-w-7xl px-5 py-16 lg:px-10"><div className="mb-8"><p className="text-[10px] uppercase tracking-[.24em] text-[#75e9f2]">Programa completo · 5 módulos</p><h2 className="mt-2 text-3xl font-semibold tracking-tight">Cada sesión termina en una práctica.</h2><p className="mt-3 max-w-2xl text-sm leading-6 text-[#8fa9b5]">Lecciones breves, ejemplos guiados y ejercicios con entregables para pasar de explorar herramientas a tomar decisiones de productor.</p></div><div className="grid gap-4 lg:grid-cols-2">{curriculum.map((item, index) => <details key={item.module} className="group rounded-2xl border border-white/10 bg-white/[.035] p-5 open:border-[#75e9f2]/40 open:bg-[#75e9f2]/[.05]"><summary className="flex cursor-pointer list-none items-start gap-4"><span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[#c09eff]/15 text-xs font-semibold text-[#d4c7ff]">0{index + 1}</span><span className="flex-1"><span className="text-[10px] uppercase tracking-[.18em] text-[#ff9eea]">{item.module} · {item.duration}</span><strong className="mt-1 block text-lg">{item.title}</strong><span className="mt-2 block text-xs leading-5 text-[#8fa9b5]">{item.objective}</span></span><ChevronRight className="mt-2 text-[#75e9f2] transition group-open:rotate-90" /></summary><ol className="mt-5 flex flex-col gap-3 border-l border-[#75e9f2]/20 pl-14">{item.lessons.map((lesson, lessonIndex) => <li key={lesson} className="text-sm leading-6 text-[#b5cbd4]"><span className="mr-2 text-xs text-[#75e9f2]">{lessonIndex + 1}.</span>{lesson}</li>)}</ol><div className="mt-5 rounded-xl border border-[#ffcf72]/20 bg-[#ffcf72]/5 p-3 text-xs leading-5 text-[#d8c99d]"><strong className="text-[#ffcf72]">Entregable:</strong> {item.deliverable}</div></details>)}</div></section>
+    {/* ------------------------------------------------------ PROGRAMA */}
+    <section id="sesiones" className="pg-section">
+      <div className="pg-container">
+        <div className="max-w-2xl">
+          <p className="pg-eyebrow">Programa completo · 5 módulos</p>
+          <h2 className="pg-title">Cada sesión termina en una práctica.</h2>
+          <p className="pg-lede">
+            Lecciones breves, ejemplos guiados y ejercicios con entregables para pasar de explorar herramientas a
+            tomar decisiones de productor.
+          </p>
+        </div>
+        <div className="mt-10 grid gap-4 lg:grid-cols-2">
+          {curriculum.map((item, index) => (
+            <Reveal key={item.module} delay={(index % 2) * 90}>
+              <details className="pg-card group h-full p-5">
+                <summary className="flex cursor-pointer list-none items-start gap-4">
+                  <span
+                    className="flex size-10 shrink-0 items-center justify-center rounded-xl font-mono text-xs"
+                    style={{ background: 'rgba(192,158,255,.14)', color: '#d9c9ff' }}
+                  >
+                    0{index + 1}
+                  </span>
+                  <span className="flex-1">
+                    <span className="pg-eyebrow" style={{ color: 'var(--pg-magenta)', letterSpacing: '.2em' }}>
+                      {item.module} · {item.duration}
+                    </span>
+                    <strong className="mt-1.5 block" style={{ fontSize: 'var(--pg-step-1)', fontWeight: 600 }}>{item.title}</strong>
+                    <span className="mt-2 block leading-5" style={{ fontSize: 'var(--pg-step--1)', color: 'var(--pg-muted)' }}>{item.objective}</span>
+                  </span>
+                  <ChevronRight size={18} className="mt-1 shrink-0 transition group-open:rotate-90" style={{ color: 'var(--pg-cyan)' }} />
+                </summary>
+                <ol className="mt-5 flex flex-col gap-3 border-l pl-5" style={{ borderColor: 'var(--pg-hairline)' }}>
+                  {item.lessons.map((lesson, lessonIndex) => (
+                    <li key={lesson} className="leading-6" style={{ fontSize: 'var(--pg-step--1)', color: 'var(--pg-text)' }}>
+                      <span className="mr-2 font-mono" style={{ color: 'var(--pg-cyan)' }}>{String(lessonIndex + 1).padStart(2, '0')}</span>
+                      {lesson}
+                    </li>
+                  ))}
+                </ol>
+                <div
+                  className="mt-5 rounded-2xl p-3 leading-5"
+                  style={{ border: '1px solid rgba(255,207,114,.22)', background: 'rgba(255,207,114,.05)', fontSize: 'var(--pg-step--1)', color: '#e6d4a8' }}
+                >
+                  <strong style={{ color: 'var(--pg-amber)' }}>Entregable · </strong>{item.deliverable}
+                </div>
+              </details>
+            </Reveal>
+          ))}
+        </div>
+      </div>
+    </section>
 
-    <section id="prompts" className="relative z-10 mx-auto max-w-7xl px-5 py-16 lg:px-10"><div className="mb-8"><p className="text-[10px] uppercase tracking-[.24em] text-[#ff9eea]">Laboratorio creativo</p><h2 className="mt-2 text-3xl font-semibold tracking-tight">Prompts que sí producen resultados</h2><p className="mt-3 max-w-xl text-sm text-[#8fa9b5]">Plantillas con dirección de voz, BPM, instrumentación, dinámica y mezcla para dejar de improvisar.</p></div><div className="grid gap-4 lg:grid-cols-3">{prompts.map(([name, meta, copy]) => <button key={name} onClick={() => setPrompt(copy)} className="group rounded-2xl border border-white/10 bg-white/[.035] p-5 text-left transition hover:-translate-y-1 hover:border-[#75e9f2]/40"><div className="mb-8 flex items-center justify-between"><span className="rounded-full border border-[#c09eff]/25 bg-[#c09eff]/10 px-2.5 py-1 text-[9px] uppercase tracking-wider text-[#d4c7ff]">Plantilla pro</span><Music2 className="text-[#75e9f2]" size={20} /></div><h3 className="font-medium">{name}</h3><p className="mt-2 text-xs text-[#75e9f2]">{meta}</p><p className="mt-4 line-clamp-2 text-xs leading-5 text-[#829ca8]">{copy}</p><span className="mt-5 flex items-center gap-1 text-xs text-[#ffb1ed]">Usar plantilla <ArrowRight size={13} /></span></button>)}</div></section>
+    {/* ------------------------------------------------------- PROMPTS */}
+    <section id="prompts" className="pg-section">
+      <div className="pg-container">
+        <div className="max-w-2xl">
+          <p className="pg-eyebrow" style={{ color: 'var(--pg-magenta)' }}>Laboratorio creativo</p>
+          <h2 className="pg-title">Prompts que sí producen resultados</h2>
+          <p className="pg-lede">
+            Plantillas con dirección de voz, BPM, instrumentación, dinámica y mezcla. Ábrelas en el estudio local y
+            modifícalas una variable a la vez.
+          </p>
+        </div>
+        <div className="mt-10 grid gap-4 lg:grid-cols-3">
+          {prompts.map((item, index) => (
+            <Reveal key={item.name} delay={index * 80}>
+              <button
+                type="button"
+                onClick={() => { setTemplate({ name: item.name, copy: item.copy }); setCopied(false); setStatus('') }}
+                className="pg-card pg-card-hover h-full p-5 text-left"
+              >
+                <span className="flex items-center justify-between">
+                  <span className="pg-chip" data-tone="violet">Plantilla</span>
+                  <Music2 size={18} style={{ color: 'var(--pg-cyan)' }} />
+                </span>
+                <strong className="mt-7 block" style={{ fontSize: 'var(--pg-step-1)', fontWeight: 600, color: 'var(--pg-ink)' }}>{item.name}</strong>
+                <span className="mt-2 block font-mono" style={{ fontSize: 'var(--pg-step--1)', color: 'var(--pg-cyan)' }}>{item.meta}</span>
+                <span className="mt-4 line-clamp-2 block leading-5" style={{ fontSize: 'var(--pg-step--1)', color: 'var(--pg-muted)' }}>{item.copy}</span>
+                <span className="mt-6 flex items-center gap-2" style={{ fontSize: 'var(--pg-step--1)', color: 'var(--pg-magenta)' }}>
+                  Abrir plantilla <ArrowRight size={13} />
+                </span>
+              </button>
+            </Reveal>
+          ))}
+        </div>
+      </div>
+    </section>
 
-    <section id="estudio" className="relative z-10 mx-auto max-w-7xl px-5 py-16 lg:px-10"><div className="overflow-hidden rounded-[2rem] border border-[#75e9f2]/30 bg-[#0b1f2e] p-6 shadow-2xl shadow-[#75e9f2]/10 sm:p-10"><div className="flex flex-wrap items-start justify-between gap-5"><div><p className="text-[10px] uppercase tracking-[.24em] text-[#75e9f2]">Estudio Play and Go</p><h2 className="mt-2 text-3xl font-semibold tracking-tight">Pon a prueba lo aprendido</h2><p className="mt-3 max-w-xl text-sm leading-6 text-[#9fb8c7]">Crea hasta 2 canciones diarias con tu inscripción activa. El motor recibe tu dirección de voz, tempo, género e instrumentación para convertirla en una producción real.</p></div><div className="rounded-2xl border border-[#ffcf72]/25 bg-[#ffcf72]/10 px-4 py-3 text-center"><p className="text-2xl font-semibold text-[#ffcf72]">2 / día</p><p className="text-[10px] uppercase tracking-wider text-[#cdbd8a]">Inscripción Pro</p></div></div><Button onClick={openStudio} className="mt-7 rounded-full bg-[#75e9f2] px-6 py-5 font-semibold text-[#06131e]">Abrir compositor <Music2 data-icon="inline-start" /></Button></div></section>
+    {/* ------------------------------------------------------- ESTUDIO */}
+    <section id="estudio" className="pg-section">
+      <div className="pg-container">
+        <Reveal>
+          <div className="pg-card p-6 sm:p-10" style={{ borderColor: 'rgba(117,233,242,.3)' }}>
+            <div className="flex flex-wrap items-start justify-between gap-6">
+              <div className="max-w-xl">
+                <p className="pg-eyebrow">Estudio Play and Go</p>
+                <h2 className="pg-title">Pon a prueba lo aprendido</h2>
+                <p className="pg-lede">
+                  El motor local compone y renderiza en tu navegador sin costo: tu dirección de voz, tempo, género e
+                  instrumentación se convierte en audio descargable. Con inscripción activa se añaden voces y mezcla
+                  completa.
+                </p>
+              </div>
+              <div className="rounded-2xl px-5 py-4 text-center" style={{ border: '1px solid rgba(255,207,114,.24)', background: 'rgba(255,207,114,.07)' }}>
+                <p className="font-mono" style={{ fontSize: 'var(--pg-step-2)', color: 'var(--pg-amber)' }}>2 / día</p>
+                <p className="pg-eyebrow mt-1" style={{ color: '#d9c79a', letterSpacing: '.18em' }}>Inscripción Pro</p>
+              </div>
+            </div>
+            <div className="mt-8 flex flex-wrap items-center gap-3">
+              <a href="/studio" className="pg-btn pg-btn-primary">Abrir el compositor <Music2 size={15} /></a>
+              <a href="/biblioteca" className="pg-btn pg-btn-ghost">Ver mi biblioteca</a>
+            </div>
+          </div>
+        </Reveal>
+      </div>
+    </section>
 
-    <section id="logros" className="relative z-10 mx-auto max-w-7xl px-5 py-16 lg:px-10"><div className="rounded-[2rem] border border-[#c09eff]/20 bg-gradient-to-br from-[#171b39] to-[#0e2130] p-6 sm:p-10"><div className="grid gap-10 lg:grid-cols-[.8fr_1.2fr] lg:items-center"><div><p className="text-[10px] uppercase tracking-[.24em] text-[#ffcf72]">Progreso visible</p><h2 className="mt-3 text-3xl font-semibold tracking-tight">Cada práctica desbloquea una nueva frecuencia.</h2><p className="mt-4 text-sm leading-6 text-[#a6bbc5]">Colecciona insignias, construye tu portafolio y demuestra que puedes dirigir una producción completa.</p></div><div className="grid grid-cols-3 gap-3">{[['Primer beat', Zap, 'Completado'], ['Oído crítico', Award, 'Desbloqueada'], ['Productor IA', Trophy, '24%']].map(([label, Icon, state]) => <div key={label as string} className="rounded-2xl border border-white/10 bg-white/5 p-4 text-center"><div className="mx-auto flex size-12 items-center justify-center rounded-2xl bg-[#ffcf72]/15 text-[#ffcf72]"><Icon /></div><p className="mt-3 text-xs font-medium">{label as string}</p><p className="mt-1 text-[10px] text-[#7f9aa7]">{state as string}</p></div>)}</div></div></div></section>
-    <footer className="relative z-10 border-t border-white/10 px-5 py-10 text-center text-xs text-[#78919d]"><div className="mx-auto mb-4 flex items-center justify-center gap-3"><img src={tamvLogoImage} alt="TAMV ONLINE" className="size-10 rounded-lg object-cover ring-1 ring-[#ffcf72]/30" /><span className="text-left"><strong className="block text-sm tracking-[.16em] text-[#d8c99d]">TAMV ONLINE</strong><span className="text-[9px] uppercase tracking-[.18em] text-[#75e9f2]">Tecnología · música · futuro</span></span></div><span>Play and Go by TAMV ONLINE</span> <span className="mx-2 text-[#75e9f2]">•</span> Orgullosamente Realmontenses</footer>
+    {/* -------------------------------------------------------- LOGROS */}
+    <section id="logros" className="pg-section">
+      <div className="pg-container">
+        <div className="grid gap-10 lg:grid-cols-[.85fr_1.15fr] lg:items-center">
+          <div>
+            <p className="pg-eyebrow" style={{ color: 'var(--pg-amber)' }}>Progreso visible</p>
+            <h2 className="pg-title">Cada práctica desbloquea una frecuencia nueva.</h2>
+            <p className="pg-lede">
+              Colecciona insignias, construye tu portafolio y demuestra que puedes dirigir una producción completa.
+            </p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-3">
+            {badges.map((badge, index) => (
+              <Reveal key={badge.label} delay={index * 90}>
+                <div className="pg-card h-full p-5 text-center">
+                  <span
+                    className="mx-auto flex size-12 items-center justify-center rounded-2xl"
+                    style={{ background: 'rgba(255,207,114,.13)', color: 'var(--pg-amber)' }}
+                  >
+                    <badge.icon size={20} />
+                  </span>
+                  <p className="mt-4" style={{ fontSize: 'var(--pg-step-0)', fontWeight: 500, color: 'var(--pg-ink)' }}>{badge.label}</p>
+                  <p className="mt-2"><span className="pg-chip" data-tone={badge.tone}>{badge.state}</span></p>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
 
-    <button aria-label="Abrir asistente del curso" onClick={() => setChatOpen(!chatOpen)} className="assistant-orb fixed bottom-5 right-5 z-40 flex items-center gap-2 rounded-full border border-[#75e9f2]/70 bg-[#0b2635]/95 px-4 py-3 text-[#75e9f2] shadow-2xl backdrop-blur-xl transition hover:scale-105"><span className="hidden text-[10px] font-semibold uppercase tracking-[.16em] sm:inline">Pregúntale a la guía</span><MessageCircle /></button>
-    {chatOpen && <aside className="fixed bottom-24 right-5 z-40 flex w-[min(92vw,380px)] flex-col overflow-hidden rounded-3xl border border-[#75e9f2]/35 bg-[#0b1d2b]/95 shadow-2xl shadow-[#75e9f2]/15 backdrop-blur-xl"><div className="flex items-center justify-between border-b border-white/10 p-4"><div><p className="text-[10px] uppercase tracking-[.2em] text-[#75e9f2]">Guía Play and Go</p><h2 className="mt-1 font-semibold">Asistente del curso</h2></div><button aria-label="Cerrar asistente" onClick={() => setChatOpen(false)}><X size={18} /></button></div><div className="flex max-h-80 flex-col gap-3 overflow-y-auto p-4">{chatMessages.map((message, index) => <div key={index} className={`max-w-[88%] rounded-2xl px-3 py-2 text-xs leading-5 ${message.from === 'user' ? 'self-end bg-[#75e9f2] text-[#06131e]' : 'self-start border border-white/10 bg-white/5 text-[#c5d8df]'}`}>{message.text}</div>)}</div><form onSubmit={sendChat} className="flex gap-2 border-t border-white/10 p-3"><input aria-label="Pregunta al asistente" value={chatInput} onChange={event => setChatInput(event.target.value)} placeholder="¿Qué quieres saber?" className="min-w-0 flex-1 rounded-xl border border-white/10 bg-black/20 px-3 text-xs outline-none focus:border-[#75e9f2]" /><Button type="submit" aria-label="Enviar pregunta" className="size-10 shrink-0 rounded-xl bg-[#75e9f2] p-0 text-[#06131e]"><Send size={16} /></Button></form></aside>}
+    <footer className="pg-section" style={{ paddingTop: '3.5rem' }}>
+      <div className="pg-container">
+        <span className="pg-rule mb-8 block" />
+        <div className="flex flex-wrap items-center justify-between gap-6">
+          <div className="flex items-center gap-4">
+            <img src={logoMark} alt="" width={44} height={44} className="size-11 rounded-xl" />
+            <span className="block">
+              <strong className="block tracking-[0.18em]" style={{ fontSize: 'var(--pg-step-0)', color: '#e7d9b4' }}>TAMV ONLINE</strong>
+              <span className="pg-eyebrow" style={{ letterSpacing: '.2em' }}>Tecnología · música · futuro</span>
+            </span>
+          </div>
+          <p style={{ fontSize: 'var(--pg-step--1)', color: 'var(--pg-muted)' }}>
+            Play and Go by TAMV ONLINE · Orgullosamente Realmontenses
+          </p>
+        </div>
+      </div>
+    </footer>
 
-    {prompt && <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#02080e]/80 p-4 backdrop-blur-sm" onClick={() => setPrompt(null)}><div className="w-full max-w-lg rounded-3xl border border-[#75e9f2]/30 bg-[#0d2230] p-6 shadow-2xl" onClick={e => e.stopPropagation()}><div className="flex items-start justify-between"><div><p className="text-[10px] uppercase tracking-[.2em] text-[#75e9f2]">Prompt listo para adaptar</p><h2 className="mt-2 text-xl font-semibold">Biblioteca Play and Go</h2></div><button aria-label="Cerrar prompt" onClick={() => setPrompt(null)}><X className="text-[#8fa9b5]" /></button></div><p className="mt-6 rounded-2xl border border-white/10 bg-black/20 p-5 text-sm leading-6 text-[#c5d8df]">{prompt}</p><Button className="mt-5 w-full rounded-full bg-[#75e9f2] text-[#06131e]" onClick={() => setPrompt(null)}>Copiar y personalizar <Sparkles data-icon="inline-end" /></Button></div></div>}
-    {studioOpen && <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#02080e]/85 p-4 backdrop-blur-sm" onClick={() => setStudioOpen(false)}><div className="w-full max-w-2xl rounded-3xl border border-[#75e9f2]/30 bg-[#0d2230] p-6 shadow-2xl" onClick={e => e.stopPropagation()}><div className="flex items-start justify-between"><div><p className="text-[10px] uppercase tracking-[.2em] text-[#75e9f2]">{user?.email}</p><h2 className="mt-2 text-2xl font-semibold">Nuevo universo sonoro</h2></div><button aria-label="Cerrar compositor" onClick={() => setStudioOpen(false)}><X className="text-[#8fa9b5]" /></button></div><form onSubmit={generateSong} className="mt-6 flex flex-col gap-4"><input required value={songTitle} onChange={e => setSongTitle(e.target.value)} placeholder="Título de la canción" className="h-12 rounded-xl border border-white/10 bg-black/20 px-4 text-sm outline-none focus:border-[#75e9f2]" /><textarea required value={songPrompt} onChange={e => setSongPrompt(e.target.value)} placeholder="Describe la canción: género, emoción, estructura, voz, tempo e instrumentos..." className="min-h-36 rounded-2xl border border-white/10 bg-black/20 p-4 text-sm leading-6 outline-none focus:border-[#75e9f2]" /><div className="grid gap-3 sm:grid-cols-3"><div className="rounded-xl border border-white/10 bg-white/5 p-3 text-xs"><span className="text-[#75e9f2]">96 BPM</span><p className="mt-1 text-[#8fa9b5]">Tempo sugerido</p></div><div className="rounded-xl border border-white/10 bg-white/5 p-3 text-xs"><span className="text-[#ff9eea]">Voz aireada</span><p className="mt-1 text-[#8fa9b5]">Perfil vocal</p></div><div className="rounded-xl border border-white/10 bg-white/5 p-3 text-xs"><span className="text-[#ffcf72]">Piano + cuerdas</span><p className="mt-1 text-[#8fa9b5]">Instrumentación</p></div></div><Button type="submit" className="h-12 rounded-full bg-[#75e9f2] font-semibold text-[#06131e]">Generar canción <Sparkles data-icon="inline-end" /></Button>{songStatus && <p className="rounded-xl bg-[#75e9f2]/10 p-3 text-center text-xs text-[#8cecf3]">{songStatus}</p>}</form></div></div>}
-    {showRegister && <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#02080e]/80 p-4 backdrop-blur-sm" onClick={() => setShowRegister(false)}><div className="w-full max-w-md rounded-3xl border border-[#75e9f2]/30 bg-[#0d2230] p-6 shadow-2xl" onClick={e => e.stopPropagation()}><div className="flex items-start justify-between"><div><p className="text-[10px] uppercase tracking-[.2em] text-[#75e9f2]">Inscripción segura</p><h2 className="mt-2 text-2xl font-semibold">Activa tu acceso Pro</h2></div><button aria-label="Cerrar registro" onClick={() => setShowRegister(false)}><X className="text-[#8fa9b5]" /></button></div><div className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-4"><div className="flex items-center justify-between"><span className="text-sm">Curso completo</span><strong className="text-xl">{coursePrice}</strong></div><p className="mt-2 text-xs text-[#8fa9b5]">Acceso a lecciones, prompts, ejercicios, audio, video e insignias.</p></div><form onSubmit={startCheckout} className="mt-5 flex flex-col gap-3"><label className="text-xs text-[#a9c0ca]" htmlFor="email">Tu correo electrónico</label><input id="email" type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="tu@correo.com" className="h-12 rounded-xl border border-white/10 bg-black/20 px-4 text-sm outline-none placeholder:text-[#58717e] focus:border-[#75e9f2]" /><Button type="submit" className="h-12 rounded-full bg-[#75e9f2] font-semibold text-[#06131e] hover:bg-[#a0f4f9]">Continuar al pago <ArrowRight data-icon="inline-end" /></Button>{status && <p className="text-center text-xs text-[#ffcf72]">{status}</p>}</form><p className="mt-4 text-center text-[10px] text-[#6f8995]">Pago procesado de forma segura por Stripe.</p></div></div>}
+    {/* ------------------------------------------------------ ASISTENTE */}
+    <button
+      type="button"
+      aria-label={chatOpen ? 'Cerrar asistente del curso' : 'Abrir asistente del curso'}
+      aria-expanded={chatOpen}
+      onClick={() => setChatOpen((value) => !value)}
+      className="assistant-orb fixed bottom-5 right-5 z-40 flex items-center gap-2 rounded-full px-4 py-3 shadow-2xl backdrop-blur-xl transition hover:scale-[1.04]"
+      style={{ border: '1px solid rgba(117,233,242,.55)', background: 'rgba(11,38,53,.95)', color: 'var(--pg-cyan)' }}
+    >
+      <span className="hidden font-mono uppercase tracking-[.16em] sm:inline" style={{ fontSize: 'var(--pg-step--2)' }}>Pregúntale a la guía</span>
+      <MessageCircle size={18} />
+    </button>
+
+    {chatOpen && (
+      <aside
+        aria-label="Asistente del curso"
+        className="pg-shell fixed bottom-24 right-5 z-40 flex w-[min(92vw,380px)] flex-col overflow-hidden rounded-3xl shadow-2xl backdrop-blur-xl"
+        style={{ border: '1px solid rgba(117,233,242,.32)', background: 'rgba(11,29,43,.96)' }}
+      >
+        <div className="flex items-center justify-between gap-4 p-4" style={{ borderBottom: '1px solid var(--pg-hairline)' }}>
+          <div>
+            <p className="pg-eyebrow">Guía Play and Go</p>
+            <h2 className="mt-1 text-sm font-semibold">Asistente del curso</h2>
+          </div>
+          <button type="button" aria-label="Cerrar asistente" onClick={() => setChatOpen(false)} style={{ color: 'var(--pg-muted)' }}>
+            <X size={18} />
+          </button>
+        </div>
+        <div className="flex max-h-80 flex-col gap-3 overflow-y-auto p-4">
+          {chatMessages.map((message, index) => (
+            <div key={index} className="pg-bubble" data-from={message.from}>
+              {message.text}
+              <span className="pg-provenance">{PROVENANCE[message.source]}</span>
+            </div>
+          ))}
+          {chatBusy && <p className="pg-provenance" style={{ margin: 0 }}>Consultando…</p>}
+        </div>
+        <form onSubmit={sendChat} className="flex items-center gap-2 p-3" style={{ borderTop: '1px solid var(--pg-hairline)' }}>
+          <label className="sr-only" htmlFor="pg-chat-input">Pregunta al asistente</label>
+          <input
+            id="pg-chat-input"
+            autoFocus
+            value={chatInput}
+            onChange={(event) => setChatInput(event.target.value)}
+            placeholder="¿Qué quieres saber?"
+            className="pg-field flex-1"
+            style={{ fontSize: 'var(--pg-step--1)' }}
+          />
+          <button
+            type="submit"
+            aria-label="Enviar pregunta"
+            disabled={chatBusy}
+            className="flex size-10 shrink-0 items-center justify-center rounded-xl disabled:opacity-60"
+            style={{ background: 'var(--pg-cyan)', color: '#06131e' }}
+          >
+            <Send size={16} />
+          </button>
+        </form>
+      </aside>
+    )}
+
+    {/* --------------------------------------------------------- MODALES */}
+    <Dialog
+      open={Boolean(template)}
+      onClose={() => setTemplate(null)}
+      eyebrow="Prompt listo para adaptar"
+      title={template?.name ?? 'Plantilla'}
+      className="max-w-lg"
+    >
+      <p
+        className="pg-field leading-6"
+        style={{ height: 'auto', padding: '1.1rem 1.2rem', color: '#c9dde4', whiteSpace: 'pre-wrap' }}
+      >
+        {template?.copy}
+      </p>
+      <p className="mt-3" style={{ fontSize: 'var(--pg-step--1)', color: 'var(--pg-muted)' }}>
+        Cinco decisiones: género, emoción, instrumentación, tempo y estructura. Cambia una sola por iteración para
+        poder comparar.
+      </p>
+      {status && <p role="status" className="mt-3" style={{ fontSize: 'var(--pg-step--1)', color: 'var(--pg-amber)' }}>{status}</p>}
+      <div className="mt-5 flex flex-wrap gap-3">
+        <button type="button" className="pg-btn pg-btn-ghost" onClick={copyTemplate}>
+          {copied ? <><Check size={15} /> Copiado</> : <><Copy size={15} /> Copiar prompt</>}
+        </button>
+        <a className="pg-btn pg-btn-primary" href={`/studio?prompt=${encodeURIComponent(template?.copy ?? '')}`}>
+          Abrir en el estudio <ArrowRight size={15} />
+        </a>
+      </div>
+    </Dialog>
+
+    <Dialog open={showRegister} onClose={() => setShowRegister(false)} eyebrow="Inscripción segura" title="Activa tu acceso Pro" className="max-w-md">
+      <div className="pg-card p-4">
+        <div className="flex items-baseline justify-between gap-4">
+          <span style={{ fontSize: 'var(--pg-step-0)' }}>Curso completo</span>
+          <strong style={{ fontSize: 'var(--pg-step-2)', letterSpacing: '-0.03em' }}>{coursePrice}</strong>
+        </div>
+        <p className="mt-2" style={{ fontSize: 'var(--pg-step--1)', color: 'var(--pg-muted)' }}>
+          Acceso a lecciones, prompts, ejercicios, audio, video e insignias.
+        </p>
+      </div>
+      <form onSubmit={startCheckout} className="mt-5 flex flex-col gap-3">
+        <label htmlFor="pg-email" style={{ fontSize: 'var(--pg-step--1)', color: 'var(--pg-text)' }}>
+          Tu correo electrónico
+        </label>
+        <input
+          id="pg-email"
+          type="email"
+          required
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+          placeholder="tu@correo.com"
+          className="pg-field"
+        />
+        <button type="submit" className="pg-btn pg-btn-primary w-full">
+          Continuar al pago <ArrowRight size={15} />
+        </button>
+        {status && <p role="status" className="text-center" style={{ fontSize: 'var(--pg-step--1)', color: 'var(--pg-amber)' }}>{status}</p>}
+      </form>
+      <p className="mt-4 text-center" style={{ fontSize: 'var(--pg-step--2)', color: 'var(--pg-muted)' }}>
+        Pago procesado de forma segura por Stripe.
+      </p>
+    </Dialog>
   </main>
 }

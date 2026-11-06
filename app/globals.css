@@ -976,9 +976,374 @@ html[data-theme='dark'] {
   .intro-fade {
     animation: intro-fade-up 0.9s cubic-bezier(0.16, 0.84, 0.24, 1) both;
   }
+
+  /* ==================================================================
+     SISTEMA EDITORIAL «PLAY AND GO»
+     ------------------------------------------------------------------
+     La landing estaba escrita con una cuarentena de hex sueltos en el
+     JSX: cada sección tenía su propio cian y su propio gris. Aquí vive
+     el vocabulario una sola vez (tokens en `.pg-shell`) y las clases
+     descienden de ellos. Cambiar la marca es cambiar seis líneas.
+     ================================================================== */
+  .pg-shell {
+    --pg-cyan: #75e9f2;
+    --pg-cyan-soft: #8cecf3;
+    --pg-violet: #c09eff;
+    --pg-magenta: #ff9eea;
+    --pg-amber: #ffcf72;
+    --pg-ink: #edfaff;
+    --pg-text: #adc4d0;
+    --pg-muted: #7f9aa7;
+    --pg-bg: #07121f;
+    --pg-surface: #0b1f2e;
+    --pg-hairline: rgba(150, 214, 232, 0.14);
+    --pg-keyline: rgba(150, 214, 232, 0.3);
+    --pg-rise: cubic-bezier(0.16, 0.84, 0.24, 1);
+    /* Un solo paso de escala tipográfica, no tamaños inventados por sección. */
+    --pg-step--2: 9.5px;
+    --pg-step--1: 11px;
+    --pg-step-0: 14px;
+    --pg-step-1: 17px;
+    --pg-step-2: 22px;
+    --pg-step-3: clamp(2rem, 1.3rem + 2.6vw, 3.1rem);
+    --pg-step-4: clamp(2.9rem, 1.6rem + 5.4vw, 5.2rem);
+    color: var(--pg-ink);
+  }
+
+  .pg-container {
+    width: 100%;
+    max-width: 80rem;
+    margin-inline: auto;
+    padding-inline: 1.25rem;
+  }
+  @media (min-width: 1024px) {
+    .pg-container { padding-inline: 2.5rem; }
+  }
+
+  /* Ritmo vertical idéntico en todas las secciones: antes cada una tenía su
+     propio py arbitrario y la página perdía el compás al hacer scroll. */
+  .pg-section {
+    padding-block: clamp(3.5rem, 2.2rem + 6vw, 6.5rem);
+    position: relative;
+  }
+  .pg-section + .pg-section::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--pg-hairline) 18%, var(--pg-hairline) 82%, transparent);
+  }
+
+  .pg-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-family: var(--font-mono);
+    font-size: var(--pg-step--2);
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--pg-cyan);
+  }
+  /* La regla del ojo: 18 px de hairline antes del texto, como en una lámina de
+     estudio. Ancla visual de todas las cabeceras. */
+  .pg-eyebrow::before {
+    content: '';
+    width: 18px;
+    height: 1px;
+    background: currentColor;
+    opacity: 0.55;
+  }
+
+  .pg-title {
+    margin-top: 0.85rem;
+    font-size: var(--pg-step-3);
+    font-weight: 600;
+    line-height: 1.04;
+    letter-spacing: -0.035em;
+    text-wrap: balance;
+  }
+  .pg-title-display {
+    font-size: var(--pg-step-4);
+    line-height: 0.92;
+    letter-spacing: -0.06em;
+  }
+
+  .pg-lede {
+    margin-top: 1.15rem;
+    max-width: 46ch;
+    font-size: var(--pg-step-0);
+    line-height: 1.75;
+    color: var(--pg-text);
+    text-wrap: pretty;
+  }
+
+  .pg-rule {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--pg-keyline), transparent);
+  }
+
+  /* Superficie: hairline exterior + brillo de 1 px arriba, que es lo que hace
+     que un panel de vidrio parezca sólido y no una mancha borrosa. */
+  .pg-card {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid var(--pg-hairline);
+    border-radius: 1.5rem;
+    background:
+      linear-gradient(158deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.018) 46%, rgba(117, 233, 242, 0.03)),
+      var(--pg-surface);
+    box-shadow: 0 30px 80px -50px rgba(0, 0, 0, 0.95);
+    transition: border-color 0.45s var(--pg-rise), box-shadow 0.55s var(--pg-rise), transform 0.55s var(--pg-rise);
+  }
+  .pg-card::after {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+    opacity: 0.5;
+  }
+  .pg-card-hover:hover,
+  .pg-card-hover:focus-visible {
+    border-color: rgba(117, 233, 242, 0.4);
+    box-shadow: 0 40px 90px -46px rgba(0, 0, 0, 0.95), 0 0 0 1px rgba(117, 233, 242, 0.12);
+    transform: translateY(-2px);
+  }
+
+  .pg-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    border: 1px solid var(--pg-hairline);
+    border-radius: 999px;
+    padding: 0.34rem 0.75rem;
+    font-family: var(--font-mono);
+    font-size: var(--pg-step--2);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--pg-cyan-soft);
+    background: rgba(117, 233, 242, 0.06);
+  }
+  .pg-chip[data-tone='violet'] { color: #d9c9ff; border-color: rgba(192, 158, 255, 0.28); background: rgba(192, 158, 255, 0.08); }
+  .pg-chip[data-tone='amber'] { color: #f0dcae; border-color: rgba(255, 207, 114, 0.26); background: rgba(255, 207, 114, 0.07); }
+  .pg-chip[data-tone='mint'] { color: #a9e6cc; border-color: rgba(131, 215, 180, 0.28); background: rgba(131, 215, 180, 0.08); }
+
+  /* Botones: el primario lleva el barrido de luz lento (el mismo gesto que el
+     CTA de la intro); el secundario no compite, sólo se abre el hairline. */
+  .pg-btn {
+    position: relative;
+    overflow: hidden;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    border-radius: 999px;
+    padding: 0.9rem 1.5rem;
+    font-size: var(--pg-step-0);
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    transition: transform 0.5s var(--pg-rise), box-shadow 0.5s var(--pg-rise), background-color 0.35s ease, border-color 0.35s ease, color 0.35s ease;
+  }
+  .pg-btn-primary {
+    color: #06131e;
+    background: linear-gradient(104deg, #8ff0f6, var(--pg-cyan) 44%, #6fd8e6);
+    box-shadow: 0 18px 44px -22px rgba(117, 233, 242, 0.8);
+  }
+  .pg-btn-primary::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(110deg, transparent 22%, rgba(255, 255, 255, 0.42) 50%, transparent 78%);
+    transform: translateX(-130%);
+    animation: cta-sheen 5.8s ease-in-out infinite;
+  }
+  .pg-btn-primary:hover { transform: translateY(-1px); box-shadow: 0 26px 60px -24px rgba(117, 233, 242, 0.9); }
+  .pg-btn-ghost {
+    color: #d6eaf1;
+    border: 1px solid var(--pg-hairline);
+    background: rgba(255, 255, 255, 0.03);
+  }
+  .pg-btn-ghost:hover { border-color: rgba(117, 233, 242, 0.45); color: #fff; background: rgba(117, 233, 242, 0.07); }
+  .pg-btn:disabled { opacity: 0.55; transform: none; }
+
+  /* Foco visible y consistente: sin esto la navegación por teclado depende de
+     la suerte del orden de DOM. */
+  .pg-shell :is(a, button, input, textarea, select, summary, [tabindex]):focus-visible {
+    outline: 1px solid rgba(117, 233, 242, 0.85);
+    outline-offset: 3px;
+    border-radius: 0.6rem;
+  }
+
+  /* Marco de medio: esquinas de 1 px tipo visor, igual que en la intro. */
+  .pg-frame {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid var(--pg-keyline);
+    border-radius: 1.75rem;
+    background: #0c2432;
+  }
+  .pg-frame::after {
+    content: '';
+    position: absolute;
+    inset: 0.75rem;
+    border-radius: 1.25rem;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    pointer-events: none;
+  }
+
+  /* Revelado por scroll: 8 px y opacidad, nunca más; si el movimiento es grande
+     deja de ser elegancia y parece presentación. */
+  .pg-reveal {
+    opacity: 0;
+    transform: translate3d(0, 8px, 0);
+    transition: opacity 0.7s var(--pg-rise), transform 0.7s var(--pg-rise);
+    transition-delay: var(--pg-reveal-delay, 0ms);
+  }
+  .pg-reveal[data-shown='true'] {
+    opacity: 1;
+    transform: none;
+  }
+
+  .pg-metric {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+  .pg-metric b {
+    font-family: var(--font-mono);
+    font-size: var(--pg-step-2);
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    color: var(--pg-amber);
+  }
+  .pg-metric span {
+    font-size: var(--pg-step--1);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--pg-muted);
+  }
+
+  /* Diálogo accesible: panel con la misma superficie que las tarjetas y
+     entrada corta de 220 ms. */
+  .pg-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    background: rgba(2, 8, 14, 0.78);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    animation: pg-backdrop-in 0.28s ease both;
+  }
+  .pg-panel {
+    position: relative;
+    width: 100%;
+    /* `margin: auto` en lugar de sólo centrar con flex: si el contenido supera
+       la ventana, el panel sigue teniendo su borde superior alcanzable. */
+    margin: auto;
+    border: 1px solid rgba(117, 233, 242, 0.28);
+    border-radius: 1.75rem;
+    background: var(--pg-surface);
+    box-shadow: 0 60px 140px -60px rgba(0, 0, 0, 0.95);
+    padding: 1.5rem;
+    animation: pg-panel-in 0.3s var(--pg-rise) both;
+  }
+  @media (min-width: 640px) {
+    .pg-panel { padding: 1.75rem; }
+  }
+  @keyframes pg-backdrop-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes pg-panel-in {
+    from { opacity: 0; transform: translate3d(0, 10px, 0) scale(0.985); }
+    to { opacity: 1; transform: none; }
+  }
+
+  /* Procedencia de la respuesta del asistente: la burbuja dice si habló un
+     modelo o el contenido del curso. No es adorno, es honestidad. */
+  .pg-bubble {
+    max-width: 88%;
+    border-radius: 1.1rem;
+    padding: 0.6rem 0.75rem 0.5rem;
+    font-size: var(--pg-step--1);
+    line-height: 1.6;
+  }
+  .pg-bubble[data-from='user'] {
+    align-self: flex-end;
+    background: linear-gradient(120deg, #8ff0f6, var(--pg-cyan));
+    color: #06131e;
+  }
+  .pg-bubble[data-from='bot'] {
+    align-self: flex-start;
+    border: 1px solid var(--pg-hairline);
+    background: rgba(255, 255, 255, 0.04);
+    color: #c9dde4;
+  }
+  .pg-provenance {
+    display: block;
+    margin-top: 0.35rem;
+    font-family: var(--font-mono);
+    font-size: 8.5px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    opacity: 0.62;
+  }
+
+  /* Enlace de navegación: subrayado que crece desde la izquierda, 1 px. */
+  .pg-navlink {
+    position: relative;
+    font-size: var(--pg-step--1);
+    letter-spacing: 0.04em;
+    color: #a9c0ca;
+    padding-block: 0.25rem;
+    transition: color 0.3s ease;
+  }
+  .pg-navlink::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    height: 1px;
+    width: 100%;
+    background: currentColor;
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.4s var(--pg-rise);
+  }
+  .pg-navlink:hover { color: #fff; }
+  .pg-navlink:hover::after,
+  .pg-navlink[aria-current='page']::after { transform: scaleX(1); }
+
+  .pg-field {
+    width: 100%;
+    border: 1px solid var(--pg-hairline);
+    border-radius: 0.9rem;
+    background: rgba(0, 0, 0, 0.28);
+    padding: 0.7rem 0.85rem;
+    font-size: var(--pg-step-0);
+    color: var(--pg-ink);
+    transition: border-color 0.3s ease, background 0.3s ease;
+  }
+  .pg-field::placeholder { color: rgba(120, 145, 157, 0.8); }
+  .pg-field:focus { border-color: rgba(117, 233, 242, 0.6); background: rgba(0, 0, 0, 0.38); }
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .pg-reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .pg-btn-primary::before {
+    animation: none;
+    opacity: 0;
+  }
   *,
   *::before,
   *::after {

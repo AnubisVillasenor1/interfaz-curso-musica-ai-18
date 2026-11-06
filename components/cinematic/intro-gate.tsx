@@ -2,6 +2,7 @@
 
 import dynamic from 'next/dynamic'
 import { useCallback, useEffect, useState } from 'react'
+import { Film } from 'lucide-react'
 
 import { CourseDashboard } from '@/components/course-dashboard'
 import { markIntroSeen, replayIntro, shouldRunIntro } from '@/lib/cinematic/gate'
@@ -35,9 +36,10 @@ export function IntroGate() {
         <button
           type="button"
           onClick={replay}
-          className="crystal-button crystal-button-secondary fixed bottom-24 right-5 z-40 hidden rounded-full px-5 py-3 font-mono text-[10px] uppercase tracking-[0.18em] text-[#dffbff] backdrop-blur-xl transition hover:text-white md:flex"
+          className="pg-shell pg-btn pg-btn-ghost fixed bottom-24 right-5 z-40 hidden font-mono text-[9.5px] uppercase tracking-[0.2em] md:inline-flex"
+          style={{ padding: '0.6rem 1.05rem' }}
         >
-          Ver la intro
+          <Film size={13} /> Ver la intro
         </button>
       )}
     </>

@@ -210,12 +210,12 @@ export function LocalComposer({ initialPrompt = '' }: { initialPrompt?: string }
     link.click()
   }
 
-  return <form onSubmit={create} className="flex flex-col gap-4 rounded-3xl border border-[#75e9f2]/25 bg-[#0b1f2e]/80 p-5 sm:p-6">
+  return <form onSubmit={create} className="pg-card flex flex-col gap-4 p-5 sm:p-6" style={{ borderColor: 'rgba(117,233,242,.25)' }}>
     <div className="flex items-start justify-between gap-4">
       <div>
-        <p className="text-[10px] uppercase tracking-[.24em] text-[#75e9f2]">Motor local · sin costo</p>
+        <p className="pg-eyebrow">Motor local · sin costo</p>
         <h3 className="mt-1.5 text-xl font-semibold">Escribe tu primera dirección musical</h3>
-        <p className="mt-1.5 max-w-xl text-xs leading-5 text-[#8fa9b5]">
+        <p className="mt-1.5 max-w-xl text-xs leading-5" style={{ color: 'var(--pg-muted, #8fa9b5)' }}>
           El arreglo se compone aquí y el audio se renderiza en tu navegador. No usa el servicio de pago, así que
           puedes practicar cuantas veces te permita tu cupo gratuito.
         </p>
@@ -227,21 +227,21 @@ export function LocalComposer({ initialPrompt = '' }: { initialPrompt?: string }
       Título
       <input value={title} onChange={(event) => setTitle(event.target.value)} maxLength={80} required
         placeholder="Ej. Mapa sonoro nº1"
-        className="h-11 rounded-xl border border-white/10 bg-black/25 px-3 text-sm text-[#edfaff] outline-none focus:border-[#75e9f2]" />
+        className="pg-field h-11 text-sm" />
     </label>
 
     <label className="flex flex-col gap-1.5 text-xs text-[#a9c0ca]">
       Dirección musical
       <textarea value={prompt} onChange={(event) => setPrompt(event.target.value)} maxLength={2000} required rows={4}
         placeholder="Género, emoción, instrumentación, tempo y estructura. Sé específico: el motor atiende cinco decisiones, no adjetivos."
-        className="rounded-xl border border-white/10 bg-black/25 p-3 text-sm leading-6 text-[#edfaff] outline-none focus:border-[#75e9f2]" />
+        className="pg-field p-3 text-sm leading-6" />
     </label>
 
     <div className="grid gap-3 sm:grid-cols-2">
       <label className="flex flex-col gap-1.5 text-xs text-[#a9c0ca]">
         ADN de género (opcional)
         <select value={genreId} onChange={(event) => setGenreId(event.target.value)}
-          className="h-11 rounded-xl border border-white/10 bg-black/25 px-3 text-sm outline-none focus:border-[#75e9f2]">
+          className="pg-field h-11 text-sm">
           <option value="">Que lo decida el prompt</option>
           {GENRES.map((genre) => <option key={genre.id} value={genre.id}>{genre.name}</option>)}
         </select>
@@ -251,33 +251,38 @@ export function LocalComposer({ initialPrompt = '' }: { initialPrompt?: string }
         <input type="number" min={40} max={200} value={bpm || ''}
           onChange={(event) => setBpm(Number(event.target.value) || 0)}
           placeholder="Auto"
-          className="h-11 rounded-xl border border-white/10 bg-black/25 px-3 text-sm outline-none focus:border-[#75e9f2]" />
+          className="pg-field h-11 text-sm" />
       </label>
     </div>
 
     <div className="flex flex-wrap items-center gap-3">
       <button type="submit" disabled={busy}
-        className="flex items-center gap-2 rounded-full bg-[#75e9f2] px-5 py-2.5 text-sm font-semibold text-[#06131e] transition hover:bg-[#a0f4f9] disabled:opacity-60">
+        className="pg-btn pg-btn-primary" style={{ padding: '0.7rem 1.3rem' }}>
         {busy ? <LoaderCircle className="animate-spin" size={16} /> : <Sparkles size={16} />}
         {busy ? PHASE_COPY[phase] : 'Componer y guardar'}
       </button>
       {arrangement && <button type="button" onClick={preview}
-        className="flex items-center gap-2 rounded-full border border-white/15 px-4 py-2.5 text-sm text-[#c4d8df] transition hover:bg-white/5">
+        className="pg-btn pg-btn-ghost" style={{ padding: '0.7rem 1.15rem' }}>
         <AudioLines size={16} /> {playing ? 'Detener vista previa' : 'Escuchar en vivo'}
       </button>}
       {audioUrl && <button type="button" onClick={download}
-        className="flex items-center gap-2 rounded-full border border-[#75e9f2]/40 px-4 py-2.5 text-sm text-[#8cecf3] transition hover:bg-[#75e9f2]/10">
+        className="pg-btn pg-btn-ghost" style={{ padding: '0.7rem 1.15rem', color: 'var(--pg-cyan-soft, #8cecf3)', borderColor: 'rgba(117,233,242,.4)' }}>
         <Download size={16} /> Descargar WAV
       </button>}
     </div>
 
     {phase === 'rendering' && progress > 0 && (
-      <div className="h-1 overflow-hidden rounded-full bg-white/10" role="progressbar" aria-valuenow={Math.round(progress * 100)} aria-valuemin={0} aria-valuemax={100}>
-        <div className="h-full rounded-full bg-[#75e9f2] transition-[width]" style={{ width: `${Math.round(progress * 100)}%` }} />
+      <div>
+        <div className="h-1 overflow-hidden rounded-full bg-white/10" role="progressbar" aria-valuenow={Math.round(progress * 100)} aria-valuemin={0} aria-valuemax={100} aria-label="Renderizado del audio">
+          <div className="h-full rounded-full transition-[width]" style={{ width: `${Math.round(progress * 100)}%`, background: 'var(--pg-cyan, #75e9f2)' }} />
+        </div>
+        <p className="mt-2 font-mono text-[10px] uppercase tracking-[.18em] text-[#7f9aa7]">
+          Renderizando · {Math.round(progress * 100)}%
+        </p>
       </div>
     )}
 
-    {arrangement && <p className="text-[11px] text-[#7f9aa7]">
+    {arrangement && <p className="font-mono text-[11px] tracking-[.06em] text-[#7f9aa7]">
       {arrangement.sections.length} secciones · {Math.round(arrangement.durationSeconds)} s · {arrangement.bpm} BPM · {arrangement.key.tonic} {arrangement.key.mode}
     </p>}
 
