@@ -193,6 +193,17 @@ Tres lecturas, sin redondear hacia arriba:
   **cero** `radial-gradient` inline. La diferencia de 15 B entre el chunk local y el
   desplegado es del pipeline de la plataforma, no del fuente.
 - `tsc --noEmit` → exit 0.
+- Tras el push de `d9289c7` (los 15 literales convertidos), medido **en el navegador
+  real de producción** con `getComputedStyle` sobre `/`: la barra «Ahora suena» devuelve
+  `rgba(7, 21, 34, 0.82)`, la peana del ecualizador `rgba(13, 32, 48, 0.95)` con sombra
+  `color(srgb .4588 .9137 .949 / .16)` —que es `rgba(117, 233, 242, .16)` canal por
+  canal—, la esfera del asistente `rgba(11, 38, 53, 0.95)` con borde
+  `color(srgb .4588 .9137 .949 / .55)`; del panel del asistente no llegó a medirse el
+  elemento (no estaba abierto), pero la variable que usa, `--pg-console`, se resuelve en
+  `.pg-shell` a `#0b1d2bf5` = `rgba(11, 29, 43, .96)`.
+  Ninguno de los cinco valores se movió: el `color-mix` con `transparent` multiplica
+  canal y no oscurece, y ese era el riesgo de la limpieza. La hoja desplegada pasó a
+  79 557 B y expone los cuatro tokens nuevos en `.pg-shell`.
 
 ## 7. Lo que falta (no está construido)
 
