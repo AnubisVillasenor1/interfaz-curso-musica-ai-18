@@ -106,7 +106,7 @@ export function Dialog({
         aria-modal="true"
         aria-label={title}
         tabIndex={-1}
-        className={`pg-panel outline-none ${className}`.trim()}
+        className={`pg-dialog outline-none ${className}`.trim()}
       >
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">

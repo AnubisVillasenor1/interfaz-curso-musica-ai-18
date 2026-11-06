@@ -250,7 +250,7 @@ export function PricingTable() {
         })}
       </div>
 
-      <p aria-live="polite" className="pg-note text-center" style={{ color: 'var(--pg-amber)' }}>
+      <p aria-live="polite" className="pg-note text-center" data-tone="error">
         {message}
       </p>
 

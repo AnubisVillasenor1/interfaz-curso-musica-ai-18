@@ -18,3 +18,10 @@ node_modules
 # Build artefacts y lockfiles ajenos al gestor del proyecto (pnpm)
 tsconfig.tsbuildinfo
 package-lock.json
+
+# docs/stack-reference/pipeline.py se ejecuta como referencia local: ni su caché de
+# bytecode ni sus salidas (pesos y audio) pertenecen al repo.
+__pycache__/
+*.pyc
+.weights/
+.audio-out/

@@ -1,0 +1,1093 @@
+# API interna de "Play and Go" (repo interfaz-curso-musica-ai-18).
+# Generado por auditoría: cada campo, error y cabecera descritos aquí fueron
+# leídos del código de los 12 route handlers. Donde el código no garantiza algo
+# se marca con x-no-verificado: true en lugar de inventarlo.
+#
+# ADVERTENCIA DE DERIVA: los "(línea NN)" de los comentarios entre # apuntan a
+# la revisión en la que se hizo la lectura. Tras aplicar los códigos de error y
+# las cabeceras Cache-Control el desplazamiento es real, así que la referencia
+# fiable es el nombre de la ruta, no el número. La versión 0.2.0 documenta el
+# estado ya corregido; lo que sigue sin verificarse sigue marcando x-no-verificado.
+#
+# EXCLUCION deliberada: app/api/stripe/webhook/route.ts (POST /api/stripe/webhook)
+# no se documenta como superficie pública porque solo debe recibir a Stripe:
+# exige la cabecera stripe-signature verificada con STRIPE_WEBHOOK_SECRET,
+# procesa checkout.session.completed / checkout.session.async_payment_succeeded /
+# customer.subscription.deleted / invoice.payment_failed, y responde 503
+# {error} si no está configurado, 400 si falta o es inválida la firma,
+# 200 {received:true, duplicate:true} en eventos repetidos y 500 a propósito
+# para forzar reintentos cuando la entrega falla (evidencia:
+# app/api/stripe/webhook/route.ts:29-64, 95, 104, 118, 143).
+openapi: 3.1.0
+info:
+  title: Play and Go — API interna del curso de música con IA
+  version: 0.2.0
+  description: |
+    Capa HTTP interna de la app Next.js (App Router, runtime nodejs) que da
+    servicio al curso "Play and Go by TAMV ONLINE": generación musical con dos
+    motores (local en el navegador y proveedor de pago con voces), catálogo de
+    dominio público, cuota por plan, cobro con Stripe y chat del curso.
+
+    Regla de negocio del producto (verificada contra el código): cada respuesta
+    de generación informa su procedencia. /api/generate etiqueta engine
+    'local' o 'provider' en la canción y en el bloque render; /api/agent
+    etiqueta source 'llm' o 'fallback' y nunca finge IA. La CUOTA RESTANTE se
+    devuelve en el rechazo 402 de /api/generate ({limit, used}) y también en
+    el éxito ({quota: {limit, used}}), de modo que un agente ya no necesita
+    una segunda llamada a /api/entitlement para saber cuánto le queda.
+    /api/entitlement sigue siendo la fuente completa del plan. Los endpoints
+    que consumen cuota (/api/music/compose) siguen sin exigir sesión ni
+    informar límite: no descuentan cupo, solo componen MIDI local.
+
+    Autenticación: sesión de Supabase en cookies de servidor (@supabase/ssr,
+    supabase.auth.getUser()). No hay esquema Bearer ni claves de API para
+    consumidores de terceros.
+  termsOfService: https://tamvonline-weboficial.com
+  contact:
+    name: TAMV ONLINE
+    url: https://tamvonline-weboficial.com
+    x-no-verificado: true # No existe email de soporte en el repo (package.json: "private": true, sin LICENSE).
+  license:
+    name: Propietaria — sin licencia publicada
+    x-no-verificado: true # package.json:15 "private": true; no hay fichero LICENSE en el repo.
+externalDocs:
+  description: Auditoría técnica y registro de fallos de despliegue del propio repo
+  url: https://github.com (docs/TECHNICAL_AUDIT.md y docs/DEPLOY_FAILURES.md en este repo)
+servers:
+  - url: https://interfaz-curso-musica-ai.vercel.app
+    description: Producción en Vercel
+tags:
+  - name: music
+    description: Compositor MIDI local y búsqueda en catálogos abiertos
+  - name: generation
+    description: Ciclo de creación de canciones (reserva de cuota, motores, callback)
+  - name: library
+    description: Biblioteca privada del usuario
+  - name: billing
+    description: Inicio de cobro con Stripe
+  - name: account
+    description: Plan, cupo, sesión
+  - name: course
+    description: Progreso del curso y chat guía
+security: [] # Casi todas las rutas son públicas o declaran su security propia.
+
+paths:
+  /api/music/compose:
+    post:
+      operationId: compose_midi
+      tags: [music]
+      summary: Composición MIDI local desde una idea textual
+      description: |
+        Construye un plan musical determinista en el servidor (createLocalPlan)
+        y devuelve el archivo MIDI como descarga. NO requiere sesión y NO
+        descuenta ni informa cuota. El prompt solo parametriza el plan local;
+        no hay proveedor externo en esta ruta.
+        (evidencia: app/api/music/compose/route.ts:7-25)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                prompt:
+                  type: string
+                  minLength: 1
+                  maxLength: 1200
+                  description: Idea musical. Se rechaza vacía (400) y >1200 caracteres (413).
+                tempo:
+                  type: integer
+                  minimum: 50
+                  maximum: 180
+                  description: Entero fuera de rango o no-numérico se ignora silenciosamente y se usa el tempo del plan local (createLocalPlan) como default efectivo.
+                  examples: [92]
+                key:
+                  type: string
+                  pattern: '^[A-G](?:#|b)?\s*(?:major|minor)$'
+                  description: Ignorada si no casa el patrón (regex /i); se usa la tonalidad del plan local.
+                  examples: ["F# minor"]
+            examples:
+              compose_basic:
+                value: { prompt: "bossa suave con batería lo-fi", tempo: 92, key: "F# minor" }
+      responses:
+        '200':
+          description: MIDI generado como descarga.
+          headers:
+            Content-Type:
+              schema: { type: string, const: audio/midi }
+            Content-Disposition:
+              schema: { type: string }
+              description: 'attachment; filename="<slug>.mid" — slug derivado del título del plan local.'
+            Cache-Control:
+              schema: { type: string, const: no-store }
+          content:
+            audio/midi:
+              schema: { type: string, contentEncoding: binary }
+        '400':
+          $ref: '#/components/responses/ErrorText' # { error: 'Escribe una idea musical.' } (línea 10)
+        '413':
+          $ref: '#/components/responses/ErrorText' # { error: 'La idea no puede superar 1.200 caracteres.' } (línea 11)
+
+  /api/music/search:
+    get:
+      operationId: search_music_catalog
+      tags: [music]
+      summary: Búsqueda agregada en Internet Archive y Jamendo
+      description: |
+        Ruta pública sin sesión. Consulta ambos catálogos en paralelo con
+        timeout de 7s y caché server-side de 1h en el fetch de upstream
+        (next.revalidate:3600). La respuesta propia fija
+        `public, max-age=60, stale-while-revalidate=300`: no depende de la
+        sesión y un caché corto además protege a Internet Archive de golpes
+        repetidos.
+        Si un catálogo cae, se degrada en silencio y se informa por flags en
+        providers. Solo 502 cuando ambos fallan. Jamendo devuelve 0 resultados
+        si JAMENDO_CLIENT_ID no está configurado (se ignora, sin error).
+        (evidencia: app/api/music/search/route.ts)
+      security: []
+      parameters:
+        - name: q
+          in: query
+          required: true
+          description: Consulta de búsqueda, 2-100 caracteres tras trim.
+          schema: { type: string, minLength: 2, maxLength: 100 }
+          examples: { example_basic: { value: 'piano ambiental' } }
+      responses:
+        '200':
+          description: Resultados agregados y bandera de disponibilidad por proveedor.
+          headers:
+            Cache-Control:
+              schema: { type: string, const: 'public, max-age=60, stale-while-revalidate=300' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SearchResults' }
+              examples:
+                ok:
+                  value:
+                    results:
+                      - id: ia-1234
+                        title: Piano Sessions
+                        creator: Internet Archive
+                        source: Internet Archive
+                        license: https://creativecommons.org/publicdomain/mark/1.0/
+                        url: https://archive.org/details/1234
+                    providers: { internetArchive: true, jamendo: false }
+                    notice: Verifica los términos y la licencia de cada obra antes de usarla en proyectos públicos o comerciales.
+        '400':
+          $ref: '#/components/responses/ErrorText' # 'La búsqueda debe tener al menos 2 caracteres.' / '...no puede superar 100 caracteres.' (líneas 43-44)
+        '502':
+          $ref: '#/components/responses/ErrorText' # { error: 'Los catálogos no están disponibles en este momento.' } solo si ambos catálogos fallan (línea 52)
+
+  /api/checkout:
+    post:
+      operationId: create_checkout_session
+      tags: [billing]
+      summary: Inicia una Session de cobro Stripe para un producto del catálogo
+      description: |
+        Requiere sesión Supabase con email verificado en la cookie. El email del
+        comprador se lee de la sesión, NUNCA del cuerpo. Idempotencia real de 1
+        minuto por usuario y producto (idempotencyKey 'pg:<userId>:<productId>:<minuto>').
+        Errores de Stripe se quedan en el log del servidor; el cliente recibe
+        frase genérica 502. (evidencia: app/api/checkout/route.ts:26-111)
+      security:
+        - SupabaseSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                productId:
+                  $ref: '#/components/schemas/ProductId'
+            examples:
+              buy_course: { value: { productId: play-and-go-course } }
+      responses:
+        '200':
+          description: URL de redirección a Stripe Checkout.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [url, sessionId]
+                properties:
+                  url: { type: string, format: uri, description: URL de Stripe Checkout. }
+                  sessionId: { type: string, description: 'cs_... de la Session creada.' }
+              examples:
+                ok: { value: { url: 'https://checkout.stripe.com/c/pay/cs_test_a1B2', sessionId: 'cs_test_a1B2C3' } }
+        '400':
+          description: Producto no válido. Único 4xx del repo con datos de recuperación (lista blanca disponible).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+              examples:
+                bad_product: { value: { error: 'Producto no válido.', available: ['play-and-go-course', 'play-and-go-extension', 'play-and-go-pro'] } }
+        '401':
+          $ref: '#/components/responses/ErrorText' # { error: 'Inicia sesión para inscribirte.' } (línea 34)
+        '503':
+          description: Sin Supabase configurado, sin STRIPE_SECRET_KEY, o sin NEXT_PUBLIC_APP_URL (envuelta como {error:...}).
+          $ref: '#/components/responses/ErrorText'
+        '502':
+          description: Stripe no devolvió URL o rechazó la sesión (frase genérica, sin detalle interno).
+          $ref: '#/components/responses/ErrorText'
+
+  /api/generate:
+    post:
+      operationId: create_generation
+      tags: [generation]
+      summary: Crea una canción reservando cuota atómica; motor local o proveedor
+      description: |
+        Requiere sesión. La reserva de cuota la hace la RPC
+        consume_generation_quota (security definer, FOR UPDATE) y se devuelve
+        (refund_generation_quota) si la fila, el proveedor o la config fallan.
+        PROCEDENCIA: la respuesta siempre etiqueta el motor (song.engine y, en
+        local, render.engine). CUOTA RESTANTE: solo se informa en el 402
+        ({limit, used}); en 200 hay que volver a /api/entitlement (laguna de
+        la regla de negocio, documentada en info.description).
+        En modo provider la ruta es asincrónica: 200 con status 'queued' o
+        'generating' + taskId; el audio llega después por /api/generate/callback.
+        (evidencia: app/api/generate/route.ts:52-213)
+      security:
+        - SupabaseSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, prompt]
+              properties:
+                title: { type: string, minLength: 1, maxLength: 80, description: Se recorta a 80; vacío tras trim = 400. }
+                prompt: { type: string, minLength: 1, maxLength: 2000, description: Se recorta a 2000; vacío = 400. }
+                engine:
+                  type: string
+                  enum: [local, provider]
+                  default: local
+                  description: Cualquier valor distinto de 'provider' se trata como 'local' (coerción, no error).
+                genre: { type: string, maxLength: 60, description: Opcional; null si vacío. }
+                lyrics: { type: string, maxLength: 4000 }
+                tempo: { type: integer, minimum: 40, maximum: 200, description: clamp(40,200); no numérico ⇒ null. }
+                vocalStyle: { type: string, maxLength: 120 }
+                instrumentation: { type: string, maxLength: 240 }
+                lessonId: { type: string, maxLength: 64 }
+                genreId: { type: string, maxLength: 40, description: Solo se reenvía al render local; ausente ⇒ undefined (omitido). }
+                instrumental: { type: boolean, default: false, description: Solo afecta la llamada al proveedor. }
+            examples:
+              local: { value: { title: 'Lluvia en CDMX', prompt: 'jazz nocturno, piano suave, 88 bpm', engine: local, tempo: 88 } }
+              provider: { value: { title: 'Corazón de reggaetón', prompt: 'corro con voces', engine: provider, lyrics: '...', vocalStyle: 'femenina, registro medio' } }
+      responses:
+        '200':
+          description: >
+            Canción creada. Con engine=local devuelve la RECETA (el audio lo
+            renderiza el navegador y se sube por /api/songs/complete). Con
+            engine=provider devuelve song en estado queued/generating + taskId.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - { $ref: '#/components/schemas/LocalRenderReply' }
+                  - { $ref: '#/components/schemas/ProviderQueuedReply' }
+              examples:
+                local:
+                  value:
+                    song: { id: '0f12ab34-5678-4c9d-be0f-1a2b3c4d5e6f', title: 'Lluvia en CDMX', status: queued, created_at: '2026-11-21T18:04:00.000Z', engine: local }
+                    render:
+                      engine: local
+                      prompt: 'jazz nocturno, piano suave, 88 bpm'
+                      seed: 'play-and-go-local-v1:0f12ab34-5678-4c9d-be0f-1a2b3c4d5e6f'
+                      bpm: 88
+                      title: 'Lluvia en CDMX'
+                    message: Receta lista. El navegador renderiza y guarda tu canción.
+                    quota: { limit: 10, used: 3 }
+                provider:
+                  value:
+                    song: { id: '0f12ab34-...', title: 'Corazón de reggaetón', status: queued, created_at: '2026-11-21T18:04:00.000Z', engine: provider }
+                    taskId: 'task_9f8e7d'
+                    quota: { limit: 3, used: 1 }
+                    x-no-verificado: true # el paso queued→generating ocurre tras la update posterior; la respuesta puede capturar status 'queued'.
+        '400':
+          $ref: '#/components/responses/ErrorText' # { error: 'Completa el título y la dirección musical.' } (línea 67)
+        '401':
+          $ref: '#/components/responses/ErrorText' # { error: 'Inicia sesión para crear música.' } (línea 60)
+        '402':
+          description: Cupo agotado. limit/used llegan desde la RPC; el éxito de /api/generate repite el bloque como quota.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+              examples:
+                quota: { value: { error: 'Sin cupo disponible.', code: quota_exceeded, limit: 10, used: 10 } }
+        '500':
+          $ref: '#/components/responses/ErrorText' # inserción de songs falló; cuota devuelta (líneas 114-121)
+        '502':
+          $ref: '#/components/responses/ErrorText' # proveedor no respondió; proyecto queda guardado en error, cuota devuelta (líneas 202-212)
+        '503':
+          description: >
+            Cuatro causas, todas {error:...} y la primera además {song, fallback:'local'}:
+            RPC de cuota falló; API_KEY de proveedor ausente (líneas 141-155);
+            falta NEXT_PUBLIC_APP_URL (158-162); falta GENERATOR_CALLBACK_SECRET (164-169).
+            En las tres de proveedor, el cupo se devuelve.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+              examples:
+                provider_unconfigured:
+                  value:
+                    song: { id: '0f12ab34-...', title: 'x', status: queued, created_at: '2026-11-21T18:04:00.000Z', engine: provider }
+                    error: 'El estudio con voces no está disponible ahora. Puedes crear con el motor local gratis.'
+                    fallback: local
+
+  /api/generate/callback:
+    post:
+      operationId: receive_generation_callback
+      tags: [generation]
+      summary: Retorno firmado del proveedor de generación (solo servidor a servidor)
+      description: |
+        La autenticación NO es sesión: es un HMAC-SHA256 del songId con el
+        secreto GENERATOR_CALLBACK_SECRET, pasado como query param `sig`
+        (lib/callback-signature.ts:43-61). Sin secreto configurado toda firma
+        se rechaza con 401. El endpoint escribe via service_role RPC
+        apply_generation_result. Un fallo de BD devuelve 500 para que el
+        proveedor reintente. Estados 'pending' se responden 200 sin tocar la
+        fila. "terminada sin audio" se registra como error.
+        NO es una ruta para clientes: es el contrato con sunoapi.org.
+        (evidencia: app/api/generate/callback/route.ts:45-116)
+      security:
+        - CallbackHmac: []
+      parameters:
+        - name: songId
+          in: query
+          required: true
+          description: UUID de 36 caracteres de la canción.
+          schema: { type: string, pattern: '^[0-9a-fA-F-]{36}$' }
+        - name: sig
+          in: query
+          required: true
+          description: HMAC-SHA256 hex (64) del songId con GENERATOR_CALLBACK_SECRET.
+          schema: { type: string, pattern: '^[0-9a-fA-F]{64}$' }
+      requestBody:
+        required: true
+        description: >
+          Payload del proveedor, sin esquema estable: el código acepta los
+          campos status|state|taskStatus y audio_url|audioUrl|duration
+          (readStatus/readAudio, líneas 23-43). Aquí se documenta lo que el
+          código lee de verdad; el resto es opaque.
+        content:
+          application/json:
+            schema:
+              type: object
+              x-no-verificado: true # El proveedor no publica esquema; estos son los campos que el handler consume.
+              properties:
+                status: { type: string, description: 'SUCCESS/complete/completed/succeeded/end/ready ⇒ ready; error/failed/fail ⇒ error; otro ⇒ pending (se ignora).' }
+                audio_url: { type: string, format: uri, description: 'Debe empezar con http(s):// para aceptarse.' }
+                duration: { type: number, description: 'Segundos; se descarta fuera de (0, 3600).' }
+                errorMsg: { type: string }
+            examples:
+              done: { value: { status: 'SUCCESS', data: { audio_url: 'https://cdn.sunoapi.org/a.mp3', duration: 184 } } }
+      responses:
+        '200':
+          description: Recibido. result es el string que devuelve la RPC (grabado|unknown|...).
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [received]
+                properties:
+                  received: { type: boolean, const: true }
+                  ignored: { type: string, enum: [pending], description: 'Tarea viva; no se tocó la fila.' }
+                  result: { type: string, description: 'Salida de apply_generation_result; "error" cuando el proveedor terminó sin audio.' }
+              examples:
+                ok: { value: { received: true, result: 'grabado' } }
+                pending: { value: { received: true, ignored: pending } }
+        '400':
+          description: '{ error: "songId requerido." } | { error: "payload inválido." } (líneas 57-59, 67)'
+          $ref: '#/components/responses/ErrorText'
+        '401':
+          $ref: '#/components/responses/ErrorText' # { error: 'firma inválida.' } — firma ausente, mal formada o secreto no configurado (línea 61)
+        '500':
+          $ref: '#/components/responses/ErrorText' # { error: 'no se pudo registrar el resultado.' } — fallo de RPC, deliberately para forzar reintento (línea 90)
+        '503':
+          description: 'error: "not_configured" — token de máquina, ÚNICO error no-narrativo del repo (línea 50).'
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [error, code]
+                properties:
+                  error: { type: string, description: 'Frase para humanos; el token de máquina viaja en code.' }
+                  code: { type: string, const: not_configured }
+
+  /api/songs/complete:
+    post:
+      operationId: complete_local_song
+      tags: [generation, library]
+      summary: Subida del audio renderizado por el motor local (multipart)
+      description: |
+        Cierra el ciclo del motor local: el navegador renderiza la receta de
+        /api/generate y sube aquí el WAV/MP3 con su sesión (no service_role).
+        Validaciones literales en app/api/songs/complete/route.ts: songId
+        UUID, archivo presente y no vacío, ≤25 MB, MIME en la lista
+        blanca, propiedad via RLS, engine debe ser 'local', estado no ready/error.
+        Emite Cache-Control: private, no-store (la audioUrl es una firma de
+        Storage de una sola cuenta). La respuesta informa storagePath y la
+        firma con su expiración, pero NO repite la procedencia ni la cuota:
+        sigue siendo la única ruta de generación que no devuelve cuánto cupo
+        queda, laguna conocida y deliberadamente no cerrada aquí porque
+        requeriría una lectura extra de entitlements en cada subida.
+      security:
+        - SupabaseSession: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [songId, audio]
+              properties:
+                songId: { type: string, pattern: '^[0-9a-fA-F-]{36}$' }
+                audio:
+                  type: string
+                  format: binary
+                  description: 'MIME admitido: audio/mpeg, audio/wav, audio/x-wav, audio/ogg, audio/mp4 (⇒ mp3/wav/ogg/m4a).'
+                duration: { type: string, description: 'Segundos; Number() || null — no numérico se guarda como null sin error.' }
+            examples:
+              upload_wav: { value: { songId: '0f12ab34-5678-4c9d-be0f-1a2b3c4d5e6f', duration: '184' } }
+      responses:
+        '200':
+          description: Audio guardado y canción marcada ready (salvo fallo parcial, ver 500).
+          headers:
+            Cache-Control: { schema: { type: string, const: 'private, no-store' } }
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [songId, storagePath, audioUrl, expiresAt]
+                properties:
+                  songId: { type: string, format: uuid }
+                  storagePath: { type: string, description: '<userId>/<songId>.<ext>' }
+                  audioUrl: { type: ['string', 'null'], format: uri, description: 'null si createSignedUrl falló.' }
+                  expiresAt: { type: integer, description: 'epoch segundos (ahora+3600). ÚNICO formato unix de fechas del repo; el resto es ISO-8601.' }
+        '400':
+          $ref: '#/components/responses/ErrorText' # no-multipart / songId inválido / falta archivo / archivo vacío (líneas 55-66)
+        '401':
+          $ref: '#/components/responses/ErrorText' # 'Inicia sesión para guardar tu canción.' (línea 52)
+        '404':
+          $ref: '#/components/responses/ErrorText' # 'Esa canción no existe en tu biblioteca.' (línea 84)
+        '409':
+          $ref: '#/components/responses/ErrorText' # engine=provider (línea 88), ya guardada (91), o en estado error (94)
+        '413':
+          $ref: '#/components/responses/ErrorText' # 'El audio supera el límite de 25 MB.' (línea 68)
+        '415':
+          $ref: '#/components/responses/ErrorText' # 'Formato no admitido: <mime>.' (línea 73)
+        '500':
+          $ref: '#/components/responses/ErrorText' # subida OK pero mark_song_ready falló (líneas 127-133)
+        '502':
+          $ref: '#/components/responses/ErrorText' # Storage rechazó la subida (líneas 103-109)
+        '503':
+          $ref: '#/components/responses/ErrorText' # Supabase sin configurar (línea 47)
+
+  /api/songs:
+    get:
+      operationId: list_songs
+      tags: [library]
+      summary: Lista paginada de canciones propias con URLs de audio firmadas
+      description: |
+        Requiere sesión. Paginación page/limit (máx 50 por página, page máx
+        1000). Cada listing renueva las firmas de Storage (TTL 1h, confirmado
+        también en el cuerpo como signedUrlsExpireIn).
+        playableUrl = firma de storage_path si existe, si no audio_url del
+        proveedor, si no null. Emite Cache-Control: private, no-store porque
+        son URLs firmadas de una sola cuenta; intermediario que las cachee
+        entregaría un enlace ajeno.
+        (evidencia: app/api/songs/route.ts, PRIVATE_HEADERS)
+      security:
+        - SupabaseSession: []
+      parameters:
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 50, default: 20 } }
+        - { name: page, in: query, schema: { type: integer, minimum: 1, maximum: 1000, default: 1 } }
+      responses:
+        '200':
+          description: Página de canciones.
+          headers:
+            Cache-Control: { schema: { type: string, const: 'private, no-store' } }
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [songs, page, perPage, signedUrlsExpireIn]
+                x-no-verificado: true # No hay total ni cursor: sin COUNT, un agente no sabe si hay más página que la que devuelve.
+                properties:
+                  songs: { type: array, items: { $ref: '#/components/schemas/SongListItem' } }
+                  page: { type: integer }
+                  perPage: { type: integer }
+                  signedUrlsExpireIn:
+                    type: integer
+                    description: Segundos de validez de las playableUrl de esta página (3600).
+              examples:
+                ok:
+                  value:
+                    songs:
+                      - id: '0f12ab34-5678-4c9d-be0f-1a2b3c4d5e6f'
+                        title: 'Lluvia en CDMX'
+                        prompt: 'jazz nocturno'
+                        genre: jazz
+                        tempo: 88
+                        engine: local
+                        status: ready
+                        audio_url: null
+                        storage_path: 'd87f...-uuid/0f12ab34-....wav'
+                        duration_seconds: 184
+                        error: null
+                        lesson_id: null
+                        created_at: '2026-11-21T18:04:00.000Z'
+                        playableUrl: 'https://xyz.supabase.co/storage/v1/object/sign/song-audio/...?token=...'
+                    page: 1
+                    perPage: 20
+                    signedUrlsExpireIn: 3600
+        '401':
+          $ref: '#/components/responses/ErrorText' # (línea 38)
+        '500':
+          $ref: '#/components/responses/ErrorText' # 'No pudimos cargar tu biblioteca.' (línea 52)
+        '503':
+          $ref: '#/components/responses/ErrorText' # SUPABASE_NOT_CONFIGURED (línea 33)
+    delete:
+      operationId: delete_song
+      tags: [library]
+      summary: Borra una canción propia y su objeto de Storage
+      description: |
+        songId se acepta en cuerpo JSON ({songId}) o en query (?songId=); el
+        cuerpo en DELETE es inusual para clientes HTTP genéricos (notar en
+        auditoría). Primero se elimina el objeto de Storage, luego la fila.
+        Si la fila de Storage no existía se ignora el error (huérfano tolerado,
+        línea 107). (evidencia: app/api/songs/route.ts:85-117)
+      security:
+        - SupabaseSession: []
+      parameters:
+        - name: songId
+          in: query
+          required: false
+          schema: { type: string, pattern: '^[0-9a-fA-F-]{36}$' }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                songId: { type: string, pattern: '^[0-9a-fA-F-]{36}$' }
+            examples:
+              by_body: { value: { songId: '0f12ab34-5678-4c9d-be0f-1a2b3c4d5e6f' } }
+      responses:
+        '200':
+          description: Borrada.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [deleted]
+                properties:
+                  deleted: { type: string, format: uuid }
+        '400':
+          $ref: '#/components/responses/ErrorText' # 'Identificador de canción inválido.' (línea 99)
+        '401':
+          $ref: '#/components/responses/ErrorText' # (línea 92)
+        '404':
+          $ref: '#/components/responses/ErrorText' # 'Esa canción no está en tu biblioteca.' (línea 103)
+        '500':
+          $ref: '#/components/responses/ErrorText' # (línea 113)
+        '503':
+          $ref: '#/components/responses/ErrorText' # (línea 87)
+
+  /api/entitlement:
+    get:
+      operationId: read_entitlement
+      tags: [account]
+      summary: Plan, cupo diario y contadores de quien llama (fuente de la cuota restante)
+      description: |
+        Una sola RPC security-definer read_entitlement() sin parámetros,
+        filtrada por auth.uid() — no consultable para otra cuenta. Si no hay
+        fila, se responde el plan gratuito explícito (FREE_TIER en
+        lib/products.ts:147-159) para que la UI no adivine.
+        El esquema de `entitlement` que devuelve la RPC NO está verificado en
+        este repo (vive en una migración SQL); el fallback del handler fija las
+        claves y tipos que se documentan. Emite Cache-Control: private,
+        no-store: es el plan y el consumo de una cuenta.
+        (evidencia: app/api/entitlement/route.ts)
+      security:
+        - SupabaseSession: []
+      responses:
+        '200':
+          description: Estado de cuenta.
+          headers:
+            Cache-Control: { schema: { type: string, const: 'private, no-store' } }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EntitlementReply' }
+              x-no-verificado: true
+              examples:
+                free:
+                  value:
+                    entitlement:
+                      plan: free
+                      active: false
+                      daily_limit: 0
+                      used_today: 0
+                      local_daily_limit: 10
+                      local_used_today: 3
+                      role: user
+                      songs_total: 12
+                      songs_ready: 11
+                      lessons_done: 4
+                    userId: 'd87f...'
+                    email: 'alumna@correo.com'
+        '401':
+          $ref: '#/components/responses/ErrorText' # 'Inicia sesión para ver tu plan.' (línea 27)
+        '500':
+          $ref: '#/components/responses/ErrorText' # RPC falló (línea 33)
+        '503':
+          $ref: '#/components/responses/ErrorText' # (línea 22)
+
+  /api/progress:
+    get:
+      operationId: read_course_progress
+      tags: [course]
+      summary: Lecciones completadas e insignias del usuario
+      description: |
+        Lee lesson_progress y badges bajo RLS. Ojo: el fallo de la lectura de
+        badges se ignora silenciosamente (sin comprobación de error). Mezcla
+        casing: lessonId/earnedAt camelCase pero el resto snake en otras rutas.
+        Emite Cache-Control: private, no-store.
+        (evidencia: app/api/progress/route.ts)
+      security:
+        - SupabaseSession: []
+      responses:
+        '200':
+          description: Ruta del curso.
+          headers:
+            Cache-Control: { schema: { type: string, const: 'private, no-store' } }
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [completed, badges, total]
+                properties:
+                  completed:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        lessonId: { type: string, pattern: '^m0[1-5]-l0[1-9]$|^m0[1-5]-l1[0-6]$' }
+                        at: { type: ['string', 'null'], format: date-time }
+                  badges:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        code: { type: string }
+                        earnedAt: { type: ['string', 'null'], format: date-time }
+                  total: { type: integer, description: 'Número de lecciones del catálogo lib/course.ts (16).' }
+        '401':
+          $ref: '#/components/responses/ErrorText' # (línea 66)
+        '500':
+          $ref: '#/components/responses/ErrorText' # (línea 72)
+        '503':
+          $ref: '#/components/responses/ErrorText' # (línea 61)
+    post:
+      operationId: complete_lesson
+      tags: [course]
+      summary: Registra una lección completada (con lista blanca del catálogo)
+      description: |
+        lessonId debe existir en COURSE_LESSONS o se devuelve 400 sin tocar la
+        BD (anti-inflado de insignias). El resto lo hace la RPC transaccional
+        complete_lesson(): upsert, recuento e insignias. Los valores de badges
+        (códigos) los define la BD, no este código: x-no-verificado.
+        (evidencia: app/api/progress/route.ts:21-51)
+      security:
+        - SupabaseSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [lessonId]
+              properties:
+                lessonId: { type: string, maxLength: 64, examples: ['m03-l09'] }
+      responses:
+        '200':
+          description: Progreso recalculado.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [lessons_done, lessons_total, percent, badges]
+                properties:
+                  lessons_done: { type: integer }
+                  lessons_total: { type: integer }
+                  percent: { type: number }
+                  badges:
+                    type: array
+                    items: { type: string }
+                    x-no-verificado: true # Los códigos de insignia los emite complete_lesson() en SQL; este repo solo los tipa como string[].
+              examples:
+                ok: { value: { lessons_done: 5, lessons_total: 16, percent: 31, badges: ['primeras_notas'] } }
+        '400':
+          $ref: '#/components/responses/ErrorText' # 'Esa lección no existe en el programa.' (línea 34)
+        '401':
+          $ref: '#/components/responses/ErrorText' # (línea 28)
+        '500':
+          $ref: '#/components/responses/ErrorText' # RPC falló o respuesta con forma inesperada (41, 47 — mismo mensaje en ambos casos)
+        '503':
+          $ref: '#/components/responses/ErrorText' # (línea 23)
+
+  /api/agent:
+    post:
+      operationId: chat_course_agent
+      tags: [course]
+      summary: Chat del curso; responde modelo real o guía determinista, rotulada
+      description: |
+        Pública (funciona sin sesión; la sesión solo eleva el techo de tasa y
+        la ruta NUNCA exige sesión). Regla de honestidad cumplida: source
+        'llm' implica proveedor real con `model`; sin clave o con fallo, la
+        rama determinista responde con source 'fallback' y `note` explicando
+        que el modelo no respondió — la interfaz nunca finge IA.
+        Límite de tasa REAL implementado: por nodo en memoria, ventana 60s,
+        6 req/min anónimo por IP, 20 req/min autenticado por userId
+        (app/api/agent/route.ts). El 429 emite Retry-After, X-RateLimit-Limit
+        y X-RateLimit-Remaining, y las respuestas de éxito con modelo emiten
+        X-RateLimit-Limit/Remaining; al ser por instancia no es un cortafuegos
+        global. El 429 conserva el shape de éxito (answer/source/lessonIds con
+        rateLimited:true) porque la interfaz del chat lo lee, y añade además
+        error + code 'rate_limited' + retryAfter para que un agente reintente
+        sin adivinar.
+      security: []
+      x-rate-limit:
+        window_ms: 60000
+        anonymous_per_window: 6
+        authenticated_per_window: 20
+        scope: por instancia de función (en memoria), no global
+      x-no-verificado: true # El techo efectivo global lo pone el panel del proveedor de IA, no este código.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [message]
+              properties:
+                message: { type: string, minLength: 1, maxLength: 2000 }
+                history:
+                  type: array
+                  maxItems: 8 # trimHistory corta al último tramo; cada turno se recorta 2000 (user) / 4000 (assistant)
+                  items:
+                    type: object
+                    required: [role, content]
+                    properties:
+                      role: { type: string, enum: [user, assistant] }
+                      content: { type: string }
+            examples:
+              ask_price: { value: { message: '¿Cuánto cuesta el curso?', history: [] } }
+      responses:
+        '200':
+          description: Respuesta del agente o de la guía determinista.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AgentReply' }
+              examples:
+                llm: { value: { answer: 'El curso cuesta...', source: llm, model: 'gpt-4o-mini', lessonIds: [] } }
+                fallback: { value: { answer: 'Los precios reales del catálogo son...', source: fallback, lessonIds: [] } }
+        '400':
+          $ref: '#/components/responses/ErrorText' # 'Escribe una pregunta.' (línea 132)
+        '413':
+          $ref: '#/components/responses/ErrorText' # 'Tu mensaje es demasiado largo.' >2000 chars (línea 134)
+        '429':
+          description: Techo de la ventana alcanzado. Mantiene el shape de AgentReply (rateLimited:true) por contrato con la UI y añade error + code + retryAfter. Con cabeceras de reintento.
+          headers:
+            Retry-After:
+              schema: { type: string }
+              description: Segundos hasta la ventana siguiente; lo calcula rateCheck() y viaja también en el cuerpo como retryAfter.
+            X-RateLimit-Limit: { schema: { type: string }, description: '6 anónimo, 20 autenticado, por ventana de 60 s.' }
+            X-RateLimit-Remaining: { schema: { type: string, const: '0' } }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AgentReply' }
+              examples:
+                limited:
+                  value:
+                    answer: 'Varios mensajes seguidos desde el mismo sitio: espera un minuto y vuelve a preguntar.'
+                    source: fallback
+                    lessonIds: []
+                    rateLimited: true
+                    error: 'Demasiadas preguntas seguidas. Espera antes de volver a intentar.'
+                    code: rate_limited
+                    retryAfter: 47
+
+  /api/auth/logout:
+    post:
+      operationId: logout_session
+      tags: [account]
+      summary: Cierra la sesión Supabase y redirige a la home
+      description: |
+        No valida sesión: POST sin cookie activa simplemente limpia y redirige.
+        Destino localhost directo; en producción usa NEXT_PUBLIC_APP_URL (o
+        fallback de Vercel). Sin CSRF explícito en la ruta.
+        (evidencia: app/api/auth/logout/route.ts:16-28)
+      security: []
+      responses:
+        '302':
+          description: Redirección a la página principal.
+          headers:
+            Location:
+              schema: { type: string, format: uri }
+          content:
+            application/json:
+              schema: { type: object } # cuerpo vacío del redirect
+        '503':
+          $ref: '#/components/responses/ErrorText' # SUPABASE_NOT_CONFIGURED (línea 18)
+
+components:
+  securitySchemes:
+    SupabaseSession:
+      type: apiKey
+      in: cookie
+      name: sb-*-auth-token (cookies emitidas por @supabase/ssr)
+      description: |
+        Sesión de usuario verificada en el servidor con supabase.auth.getUser()
+        en cada handler autenticado. No existe token Bearer: una herramienta
+        externa sin navegador no puede autenticarse salvo replicando las
+        cookies del flujo de Supabase. Las rutas 503 "no configurado" se
+        devuelven ANTES de la comprobación de sesión.
+    CallbackHmac:
+      type: apiKey
+      in: query
+      name: sig
+      description: |
+        HMAC-SHA256 (hex, 64) del songId con el secreto de servidor
+        GENERATOR_CALLBACK_SECRET; lo genera signCallbackUrl() en /api/generate
+        y lo verifica verifyCallbackSignature() en el callback con
+        comparación time-safe. Sin secreto configurado, todo callback se
+        rechaza con 401.
+      x-no-verificado: true # El proveedor externo (sunoapi.org) no firma; esta firma es de la app hacia sí misma vía el proveedor.
+
+  schemas:
+    ErrorResponse:
+      type: object
+      description: |
+        Esquema de error común REAL del repo: { error, code } con mensaje
+        legible en español y un código estable de máquina. El campo `code` se
+        añadió tras la auditoría de agent-readiness (fallos E2/E3): antes no
+        existía en ningún endpoint salvo el token 'not_configured' del
+        callback, y eso obligaba a un agente a parear frases. `code` es ahora
+        obligatorio en los errores de las 12 rutas; una herramienta debe
+        ramificar por `code` y tratar `error` como texto para humanos.
+      required: [error, code]
+      properties:
+        error:
+          type: string
+          description: Mensaje para humanos en español; puede cambiar de redacción sin avisar, el contrato es `code`.
+        code:
+          type: string
+          description: Token estable. Lista completa emitida por el código (no teórica).
+          enum:
+            - unauthorized # 401: sin sesión de Supabase
+            - invalid_request # 400: cuerpo o parámetros mal formados
+            - unknown_lesson # 400: lessonId fuera de lib/course.ts
+            - query_too_short # 400: /api/music/search con q < 2
+            - query_too_long # 400: /api/music/search con q > 100
+            - prompt_too_long # 413: /api/music/compose con prompt > 1200
+            - message_too_long # 413: /api/agent con mensaje > 2000
+            - missing_audio # 400: /api/songs/complete sin campo audio
+            - empty_audio # 400: audio de 0 bytes
+            - audio_too_large # 413: audio > 25 MB (ver limit)
+            - unsupported_media_type # 415: MIME fuera de ALLOWED_TYPES (ver allowed)
+            - engine_mismatch # 409: la canción es del estudio con voces
+            - already_ready # 409: la canción ya está guardada
+            - needs_recreate # 409: la fila quedó en 'error'
+            - not_found # 404: id válido pero ajeno a la biblioteca
+            - quota_exceeded # 402: sin cupo (ver limit/used)
+            - quota_unavailable # 500: la RPC de cupo no respondió
+            - rate_limited # 429: ventana de tasa del chat (ver retryAfter)
+            - storage_error # 500/502: fallo de Supabase Storage
+            - read_failed # 500: lectura de datos propia
+            - write_failed # 500: escritura de progreso
+            - update_failed # 500/502: no se pudo marcar el resultado
+            - delete_failed # 500: borrado rechazado
+            - provider_unreachable # 502: Stripe o el proveedor musical
+            - upstream_unavailable # 502: ambos catálogos de búsqueda
+            - signature_invalid # 401: callback sin HMAC válido
+            - not_configured # 503: credenciales/variables ausentes en el entorno
+        available:
+          type: array
+          items: { $ref: '#/components/schemas/ProductId' }
+          description: 'Solo en 400 de /api/checkout: productos válidos, útil para auto-corregirse.'
+        allowed:
+          type: array
+          items: { type: string }
+          description: 'Solo en 415 de /api/songs/complete: MIME admitidos por el bucket.'
+        limit:
+          type: integer
+          description: 'Solo en 402 de /api/generate (cupo total del plan), 413 de /api/agent y 413 de /api/songs/complete (bytes).'
+        used: { type: integer, description: 'Solo en 402 de /api/generate: cupo usado hoy.' }
+        retryAfter:
+          type: integer
+          description: 'Solo en 429 de /api/agent: segundos hasta la siguiente ventana; viaja duplicado en la cabecera Retry-After.'
+        fallback:
+          type: string
+          enum: [local]
+          description: "Solo en 503 de /api/generate (engine=provider): sugiere reintentar con motor local."
+
+    ProductId:
+      type: string
+      enum: [play-and-go-course, play-and-go-extension, play-and-go-pro]
+      description: 'Lista blanca estricta de lib/products.ts:55-99 (findProduct, 108-112).'
+
+    SongStatus:
+      type: string
+      enum: [queued, generating, ready, error]
+      description: 'Valados observados en generate/complete/callback. apply_generation_result (SQL) fija ready/error; x-no-verificado: la BD podría admitir otros.'
+
+    Song:
+      type: object
+      description: 'Proyección de generate al crear: select id,title,status,created_at,engine (route.ts:111).'
+      required: [id, title, status, created_at, engine]
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string, maxLength: 80 }
+        status: { $ref: '#/components/schemas/SongStatus' }
+        created_at: { type: string, format: date-time }
+        engine: { type: string, enum: [local, provider], description: 'PROCEDENCIA: siempre presente.' }
+
+    LocalRenderReply:
+      type: object
+      description: 'engine=local: el servidor devuelve receta, el navegador renderiza (app/api/generate/route.ts).'
+      required: [song, render, message, quota]
+      properties:
+        song: { $ref: '#/components/schemas/Song' }
+        render:
+          type: object
+          required: [engine, prompt, title]
+          properties:
+            engine: { type: string, const: local }
+            prompt: { type: string }
+            seed: { type: string, description: 'play-and-go-local-v1:<songId> — determinista por id.' }
+            genreId: { type: string, maxLength: 40 }
+            bpm: { type: integer, minimum: 40, maximum: 200 }
+            title: { type: string }
+        message: { type: string }
+        quota: { $ref: '#/components/schemas/QuotaRemaining' }
+
+    ProviderQueuedReply:
+      type: object
+      required: [song, taskId, quota]
+      properties:
+        song: { $ref: '#/components/schemas/Song' }
+        taskId: { type: string, description: 'Id de tarea del proveedor; el progreso real se consulta por /api/songs (polling), no hay endpoint de estado dedicado ni 202.' }
+        quota: { $ref: '#/components/schemas/QuotaRemaining' }
+
+    QuotaRemaining:
+      type: object
+      description: |
+        Cupo del plan tras descontar la generación que se acaba de aceptar.
+        Se añade en la respuesta de éxito para que un agente no tenga que
+        llamar a /api/entitlement para saber cuánto le queda. Es la vista de
+        la RPC consume_generation_quota, por motor: limit_total el techo y
+        limit_used lo consumido en la ventana.
+      required: [limit, used]
+      properties:
+        limit: { type: integer, minimum: 0 }
+        used: { type: integer, minimum: 0 }
+      examples:
+        after_one: { value: { limit: 10, used: 1 } }
+
+    SongListItem:
+      type: object
+      description: 'Camel/snake mezclado: las columnas llegan en snake_case de Supabase y solo playableUrl es camel (route.ts:69-72).'
+      required: [id, title, status, engine, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        prompt: { type: string }
+        genre: { type: ['string', 'null'] }
+        tempo: { type: ['integer', 'null'] }
+        engine: { type: string, enum: [local, provider] }
+        status: { $ref: '#/components/schemas/SongStatus' }
+        audio_url: { type: ['string', 'null'], format: uri, description: 'URL del proveedor (CDN, caduca); null en motor local.' }
+        storage_path: { type: ['string', 'null'] }
+        duration_seconds: { type: ['number', 'null'] }
+        error: { type: ['string', 'null'], description: 'Texto de error de proveedor guardado en la fila; puede exponer frases internas como "Proveedor musical no configurado."' }
+        lesson_id: { type: ['string', 'null'] }
+        created_at: { type: string, format: date-time }
+        playableUrl: { type: ['string', 'null'], format: uri, description: 'Firma de Storage (TTL 1h) o audio_url de respaldo.' }
+
+    SearchResults:
+      type: object
+      required: [results, providers, notice]
+      properties:
+        results:
+          type: array
+          maxItems: 24
+          items:
+            type: object
+            required: [id, title, creator, source, url]
+            properties:
+              id: { type: string, description: 'Prefijado por origen: "ia-<identifier>" | "jamendo-<id>". Formato de id distinto al UUID del resto de la API (documentado en N4/P4 del informe).' }
+              title: { type: string }
+              creator: { type: string }
+              source: { type: string, enum: [Internet Archive, Jamendo] }
+              license: { type: string, description: 'URL o frase advirtiendo de consultar la licencia.' }
+              url: { type: string, format: uri }
+        providers:
+          type: object
+          description: 'Disponibilidad real de cada catálogo en ESTA llamada; false ⇒ se degradó en silencio (solo 502 si ambos fallan).'
+          required: [internetArchive, jamendo]
+          properties:
+            internetArchive: { type: boolean }
+            jamendo: { type: boolean, description: 'Falso si JAMENDO_CLIENT_ID no está o si la llamada falló; no distinguibles.' }
+        notice: { type: string }
+
+    EntitlementReply:
+      type: object
+      required: [entitlement, userId, email]
+      properties:
+        entitlement:
+          type: object
+          x-no-verificado: true # read_entitlement() vive en una migración SQL; esta forma es la del fallback FREE_TIER del handler (route.ts:40-51).
+          required: [plan, active, daily_limit, used_today, local_daily_limit, local_used_today, role, songs_total, songs_ready, lessons_done]
+          properties:
+            plan: { type: string, enum: [free, enrolled, extension, pro], description: 'Valores de grant.plan en lib/products.ts; x-no-verificado para el valor devuelto por la RPC.' }
+            active: { type: boolean }
+            daily_limit: { type: integer, description: 'Cupo diario con proveedor (pagado).' }
+            used_today: { type: integer }
+            local_daily_limit: { type: integer, description: 'Cupo diario motor local (gratis: 10).' }
+            local_used_today: { type: integer }
+            role: { type: string, description: 'user u otro rol definido en SQL (x-no-verificado).' }
+            songs_total: { type: integer }
+            songs_ready: { type: integer }
+            lessons_done: { type: integer }
+        userId: { type: string, format: uuid }
+        email: { type: ['string', 'null'], format: email }
+
+    AgentReply:
+      type: object
+      description: 'Contrato de honestidad: source indica quién respondió.'
+      required: [answer, source, lessonIds]
+      properties:
+        answer: { type: string, maxLength: 4000 }
+        source:
+          type: string
+          enum: [llm, fallback]
+          description: "'llm' ⇒ proveedor real con `model`; 'fallback' ⇒ guía determinista del repo. Nunca se etiqueta determinista como IA."
+        model: { type: string, description: 'Presente solo con source=llm (nombre del modelo del proveedor).' }
+        lessonIds: { type: array, items: { type: string }, description: 'Lecciones que sustentan la respuesta; vacío si ninguna.' }
+        note: { type: string, description: 'Presente solo en fallback con proveedor configurado: "El modelo no respondió; te contesto con el contenido del curso."' }
+        rateLimited: { type: boolean, const: true, description: 'Solo en 429.' }
+
+  responses:
+    ErrorText:
+      description: 'Error con la forma real del repo: {error: "frase en español", code: "token_estable"}.'
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+          examples:
+            example_generic:
+              value: { error: 'Inicia sesión para crear música.', code: unauthorized }

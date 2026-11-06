@@ -11,6 +11,9 @@ const MAX_BYTES = 25 * 1024 * 1024
 /** Un día basta para escuchar; la biblioteca renueva la firma en cada listado. */
 const SIGNED_URL_TTL_SECONDS = 3600
 
+/** Datos de una sola cuenta, con URL firmada incluida: nada intermedio debe guardarlo. */
+const PRIVATE_HEADERS = { 'Cache-Control': 'private, no-store' } as const
+
 const ALLOWED_TYPES: Record<string, string> = {
   'audio/mpeg': 'mp3',
   'audio/wav': 'wav',
@@ -44,33 +47,33 @@ function extensionFor(type: string): string | null {
  */
 export async function POST(request: Request) {
   const supabase = await createClient()
-  if (!supabase) return NextResponse.json({ error: SUPABASE_NOT_CONFIGURED }, { status: 503 })
+  if (!supabase) return NextResponse.json({ error: SUPABASE_NOT_CONFIGURED, code: 'not_configured' }, { status: 503 })
 
   const {
     data: { user },
   } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Inicia sesión para guardar tu canción.' }, { status: 401 })
+  if (!user) return NextResponse.json({ error: 'Inicia sesión para guardar tu canción.', code: 'unauthorized' }, { status: 401 })
 
   const form = await request.formData().catch(() => null)
-  if (!form) return NextResponse.json({ error: 'Envía el audio como multipart.' }, { status: 400 })
+  if (!form) return NextResponse.json({ error: 'Envía el audio como multipart.', code: 'invalid_request' }, { status: 400 })
 
   const songId = String(form.get('songId') ?? '')
   if (!/^[0-9a-f-]{36}$/i.test(songId)) {
-    return NextResponse.json({ error: 'Identificador de canción inválido.' }, { status: 400 })
+    return NextResponse.json({ error: 'Identificador de canción inválido.', code: 'invalid_request' }, { status: 400 })
   }
 
   const file = form.get('audio')
   if (!(file instanceof File)) {
-    return NextResponse.json({ error: 'Falta el archivo de audio.' }, { status: 400 })
+    return NextResponse.json({ error: 'Falta el archivo de audio.', code: 'missing_audio' }, { status: 400 })
   }
-  if (file.size === 0) return NextResponse.json({ error: 'El audio llegó vacío.' }, { status: 400 })
+  if (file.size === 0) return NextResponse.json({ error: 'El audio llegó vacío.', code: 'empty_audio' }, { status: 400 })
   if (file.size > MAX_BYTES) {
-    return NextResponse.json({ error: 'El audio supera el límite de 25 MB.' }, { status: 413 })
+    return NextResponse.json({ error: 'El audio supera el límite de 25 MB.', code: 'audio_too_large', limit: 26214400 }, { status: 413 })
   }
 
   const extension = extensionFor(file.type)
   if (!extension) {
-    return NextResponse.json({ error: `Formato no admitido: ${file.type || 'desconocido'}.` }, { status: 415 })
+    return NextResponse.json({ error: `Formato no admitido: ${file.type || 'desconocido'}.`, code: 'unsupported_media_type', allowed: Object.keys(ALLOWED_TYPES) }, { status: 415 })
   }
 
   // La fila tiene que existir y ser del usuario. Se consulta con su propio
@@ -81,17 +84,17 @@ export async function POST(request: Request) {
     .eq('id', songId)
     .maybeSingle()
 
-  if (!song) return NextResponse.json({ error: 'Esa canción no existe en tu biblioteca.' }, { status: 404 })
+  if (!song) return NextResponse.json({ error: 'Esa canción no existe en tu biblioteca.', code: 'not_found' }, { status: 404 })
   if (song.engine !== 'local') {
     // El audio del proveedor llega por su callback; subirlo por aquí permitiría
     // pisar el resultado de una tarea que aún está en curso.
-    return NextResponse.json({ error: 'Esa canción pertenece al estudio con voces.' }, { status: 409 })
+    return NextResponse.json({ error: 'Esa canción pertenece al estudio con voces.', code: 'engine_mismatch' }, { status: 409 })
   }
   if (song.status === 'ready') {
-    return NextResponse.json({ error: 'La canción ya está guardada.' }, { status: 409 })
+    return NextResponse.json({ error: 'La canción ya está guardada.', code: 'already_ready' }, { status: 409 })
   }
   if (song.status === 'error') {
-    return NextResponse.json({ error: 'El proyecto quedó en error; créalo de nuevo.' }, { status: 409 })
+    return NextResponse.json({ error: 'El proyecto quedó en error; créalo de nuevo.', code: 'needs_recreate' }, { status: 409 })
   }
 
   const path = `${user.id}/${songId}.${extension}`
@@ -103,7 +106,7 @@ export async function POST(request: Request) {
   if (uploadError) {
     console.error('[songs/complete] subida rechazada', uploadError.message)
     return NextResponse.json(
-      { error: 'No pudimos guardar tu audio. Inténtalo otra vez.' },
+      { error: 'No pudimos guardar tu audio. Inténtalo otra vez.', code: 'storage_error' },
       { status: 502 },
     )
   }
@@ -127,15 +130,18 @@ export async function POST(request: Request) {
   if (marked.error) {
     console.error('[songs/complete] mark_song_ready falló', marked.error.message)
     return NextResponse.json(
-      { error: 'El audio quedó guardado pero no pudimos marcar la canción; refléjala desde la biblioteca.' },
+      { error: 'El audio quedó guardado pero no pudimos marcar la canción; refléjala desde la biblioteca.', code: 'update_failed' },
       { status: 500 },
     )
   }
 
-  return NextResponse.json({
-    songId,
-    storagePath: path,
-    audioUrl: signed?.signedUrl ?? null,
-    expiresAt: Math.floor(Date.now() / 1000) + SIGNED_URL_TTL_SECONDS,
-  })
+  return NextResponse.json(
+    {
+      songId,
+      storagePath: path,
+      audioUrl: signed?.signedUrl ?? null,
+      expiresAt: Math.floor(Date.now() / 1000) + SIGNED_URL_TTL_SECONDS,
+    },
+    { headers: PRIVATE_HEADERS },
+  )
 }

@@ -47,7 +47,7 @@ export async function POST(request: Request) {
   if (!admin) {
     // Responder 500 hace que Stripe… no, hace que el proveedor reintente. Sin
     // credenciales no hay nada que reintentar, pero un 200 enterraría el audio.
-    return NextResponse.json({ error: 'not_configured' }, { status: 503 })
+    return NextResponse.json({ error: 'El callback no puede procesarse en este entorno.', code: 'not_configured' }, { status: 503 })
   }
 
   const url = new URL(request.url)
@@ -55,16 +55,16 @@ export async function POST(request: Request) {
   const signature = url.searchParams.get('sig')
 
   if (!songId || !/^[0-9a-f-]{36}$/i.test(songId)) {
-    return NextResponse.json({ error: 'songId requerido.' }, { status: 400 })
+    return NextResponse.json({ error: 'Falta el identificador de canción.', code: 'invalid_request' }, { status: 400 })
   }
 
   if (!(await verifyCallbackSignature(songId, signature))) {
     console.warn('[callback] firma ausente o inválida', { songId })
-    return NextResponse.json({ error: 'firma inválida.' }, { status: 401 })
+    return NextResponse.json({ error: 'Firma del callback inválida.', code: 'signature_invalid' }, { status: 401 })
   }
 
   const payload = (await request.json().catch(() => null)) as Record<string, unknown> | null
-  if (!payload) return NextResponse.json({ error: 'payload inválido.' }, { status: 400 })
+  if (!payload) return NextResponse.json({ error: 'El cuerpo del callback no es JSON válido.', code: 'invalid_request' }, { status: 400 })
 
   const status = readStatus(payload)
   if (status === 'pending') {
@@ -87,7 +87,7 @@ export async function POST(request: Request) {
 
   // Un fallo de base de datos debe reintento: devolvemos 500 para que el
   // proveedor vuelva a llamar en vez de perder el audio que ya pagamos.
-  if (result === 'db_error') return NextResponse.json({ error: 'no se pudo registrar el resultado.' }, { status: 500 })
+  if (result === 'db_error') return NextResponse.json({ error: 'No se pudo registrar el resultado.', code: 'update_failed' }, { status: 500 })
 
   return NextResponse.json({ received: true, result })
 }

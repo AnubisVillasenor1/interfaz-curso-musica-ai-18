@@ -15,7 +15,7 @@ export const runtime = 'nodejs'
  */
 export async function POST(request: Request) {
   const supabase = await createClient()
-  if (!supabase) return NextResponse.json({ error: SUPABASE_NOT_CONFIGURED }, { status: 503 })
+  if (!supabase) return NextResponse.json({ error: SUPABASE_NOT_CONFIGURED, code: 'not_configured' }, { status: 503 })
 
   await supabase.auth.signOut()
 

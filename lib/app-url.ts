@@ -40,6 +40,27 @@ export function getAppUrl(request?: Request): string {
 }
 
 /**
+ * Origen canónico de producción, declarado en el código.
+ *
+ * Existe porque las superficies de visibilidad (metadataBase, sitemap.xml,
+ * robots.txt, datos estructurados) no pueden permitirse el lujo de quedarse
+ * vacías: sin `NEXT_PUBLIC_APP_URL` declarada, `getAppUrl()` devuelve "" y el
+ * resultado medido era un sitemap vacío y un robots que cerraba todo el sitio
+ * al índice. Un dominio equivocado en una tarjeta social es corregible; un
+ * sitio invisible para los buscadores, no.
+ */
+export const PRODUCTION_ORIGIN = 'https://interfaz-curso-musica-ai.vercel.app'
+
+/**
+ * Igual que `getAppUrl()`, pero con el dominio de producción como último
+ * recurso. Solo para lectura pública de URLs canónicas: el retorno de pago
+ * sigue pasando por `requireAppUrl()`, donde adivinar sí es un riesgo.
+ */
+export function getSeoOrigin(): string {
+  return getAppUrl() || PRODUCTION_ORIGIN
+}
+
+/**
  * Devuelve la URL base o un mensaje que la ruta traduce a 503. Distinto de
  * "" es un contrato: un despliegue sin `NEXT_PUBLIC_APP_URL` no puede prometer
  * un retorno de pago, y eso hay que decirlo en la cara, no cobrar y perder al
@@ -50,6 +71,6 @@ export function requireAppUrl(request?: Request): { url: string } | { error: str
   if (url) return { url }
   return {
     error:
-      'El retorno de pago no está configurado. Define NEXT_PUBLIC_APP_URL con el dominio público de la aplicación.',
+      'El retorno de pago no está configurado en este entorno. Inténtalo de nuevo en unos minutos.',
   }
 }

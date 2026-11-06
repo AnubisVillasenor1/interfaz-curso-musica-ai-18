@@ -1,0 +1,321 @@
+{
+  "schema": "ai-tw 质量评分 / evaluate-quality — review-report.json (los objetos de issues equivalen a las deductions pedidas por el solicitante: rule, evidence/anchor, location, severity, suggested_fix)",
+  "artifact": "C:/Users/tamvo/Downloads/tamvonline-weboficial-com/interfaz-curso-musica-ai-18/docs/ESTRATEGIA-ABIERTA-PLAY-AND-GO.md",
+  "artifact_type": "documento de decisión de estrategia de producto (español)",
+  "evaluated_at": "2026-11-06",
+  "reader_persona": "Dueño fundador, hispanohablante, técnico medio-alto; decide arquitectura y presupuesto él solo y actúa sobre lo que lee.",
+  "review_stance": "defensor del lector, no auditor formal",
+  "verificacion_en_repo": [
+    "lib/course.ts = 1386 líneas, COURSE_MODULES 5, COURSE_LESSONS 16, COURSE_BADGES con los 4 códigos citados — correcto",
+    "app/api/generate/route.ts: LOCAL_SEED_SALT = play-and-go-local-v1, doc de dos motores, 402 con limit/used, refund_generation_quota — correcto",
+    "app/curso/[modulo]/page.tsx: generateStaticParams existe (la página de lección no) — correcto",
+    "supabase/migrations/20261105190000_schema|190100_rls|190200_functions|190300_storage y consume_generation_quota/refund_generation_quota — correcto",
+    "app/globals.css .pg-shell: los 13 valores citados, 7 pasos -2..4, cubic-bezier(0.16,0.84,0.24,1), .pg-check[aria-pressed=true] — correcto",
+    "pnpm-workspace.yaml sin bloque packages — correcto; docs/stack-reference/pipeline.py existe y su puerta de licencia bloquea MusicGen en comercial — correcto",
+    "FALSO: PromptTemplate.text no contiene {bpm} en minúsculas ni {duracion}; ver r001"
+  ],
+  "score": 83,
+  "overall_score": 83,
+  "score_max": 100,
+  "benchmark": 80,
+  "dimensions": {
+    "content_accuracy": { "score": 70, "score_max": 100, "issues": ["r001", "r002", "r003", "r004"] },
+    "operability": { "score": 85, "score_max": 100, "issues": ["r005", "r006"] },
+    "terminology": { "score": 83, "score_max": 100, "issues": ["r007", "r008", "r009", "r010"] },
+    "expression": { "score": 86, "score_max": 100, "issues": ["r011", "r012", "r013", "r014"] },
+    "information_architecture": { "score": 85, "score_max": 100, "issues": ["r015", "r016", "r017"] },
+    "user_intent": { "score": 90, "score_max": 100, "issues": ["r018", "r019"] }
+  },
+  "issues": [
+    {
+      "id": "r001",
+      "severity": "P1",
+      "dimension": "content_accuracy",
+      "rule": "Anclaje afirmado como presente en el código y desmentido por ese código",
+      "description": "§5 dice que PromptTemplate.text ya trae {bpm}, {tonalidad} y {duracion}. En lib/course.ts no existe {bpm} en minúsculas ni {duracion}: hay {BPM} y variables con espacios y acentos.",
+      "anchor": "ya contiene `{bpm}`, `{tonalidad}`, `{duracion}`",
+      "location": "§5 · línea 188",
+      "evidence": "lib/course.ts líneas 233 y 304 usan {BPM}, {tonalidad}, {duración de la frase}, {voz o melodía protagonista}; grep de {bpm} en minúsculas no da resultados",
+      "suggested_fix": "Citar las variables reales leídas de variables: string[] y añadir la regla de normalización slug→variable (acentos, mayúsculas, espacios) antes de prometer que solo cuesta un parser.",
+      "category": "wrong"
+    },
+    {
+      "id": "r002",
+      "severity": "P1",
+      "dimension": "content_accuracy",
+      "rule": "Contradicción entre el documento y el artefacto que presenta como verificado",
+      "description": "§0 vende pipeline.py como referencia ejecutada de §4, pero el archivo llama consume_quota/refund_quota y audio_job, cierra con status ready y registra DiffRhythm como MIT; el doc habla de generation_jobs, succeeded y Apache-2.0.",
+      "anchor": "Escrito como `docs/stack-reference/pipeline.py`",
+      "location": "§0 · línea 22 y §4 · líneas 139-160",
+      "evidence": "pipeline.py líneas 81 (MIT), 173 (audio_job), 188-189 (consume_quota/refund_quota), 322 (ready); las migraciones reales solo define consume_generation_quota y refund_generation_quota",
+      "suggested_fix": "Alinear los identificadores de pipeline.py con §2/§3/§4 o declarar explícitamente que divergen; añadir que LUFS no se calcula (el archivo devuelve loudness_rms).",
+      "category": "wrong"
+    },
+    {
+      "id": "r003",
+      "severity": "P2",
+      "dimension": "content_accuracy",
+      "rule": "Números que no se sostienen con los datos del propio documento",
+      "description": "El cruce en 10 000-20 000 pistas/mes no es derivable (la tabla solo trae 1 000 y 30 000) y el techo de 3 000 canciones/día contradice los 40-70 s por pista que el mismo §6 fija.",
+      "anchor": "El punto de cruce está entre 10 000 y 20 000",
+      "location": "§6 · líneas 231-246",
+      "evidence": "86 400 s/día ÷ 40-70 s = 1 230-2 160 pistas; con 0,34-0,89 USD/h y 0,002-0,006 USD por pista la columna B a 30 000 sale por debajo de los 350-700 USD publicados",
+      "suggested_fix": "Publicar la fórmula (segundos/pista × USD/h + fijos) y dos filas intermedias a 10 000 y 20 000; recortar el techo diario o justificar el paralelismo de la GPU.",
+      "category": "wrong"
+    },
+    {
+      "id": "r004",
+      "severity": "P2",
+      "dimension": "content_accuracy",
+      "rule": "Afirmación sin prueba en el texto que contradice a otra sección",
+      "description": "§1 presenta la monetización como algo que ya está junto a /api/checkout, pero §0 y §8 dicen que el webhook pende, las migraciones no están aplicadas y Vercel tiene cero variables: hoy nada cobra.",
+      "anchor": "Monetización (curso, extensión, pro, plan gratuito)",
+      "location": "§1 · línea 43",
+      "evidence": "línea 24 (Pendiente del dueño) y líneas 293-296 (§8) anulan la lectura de la fila de §1",
+      "suggested_fix": "Marcar la fila como código escrito y no operativo en producción, enlazando §8 puntos 2 y 3; el lector no debe poder deducir que el ingreso funciona.",
+      "category": "wrong"
+    },
+    {
+      "id": "r005",
+      "severity": "P1",
+      "dimension": "operability",
+      "rule": "Salto de pasos: el ejemplo copiable falla al ejecutarlo",
+      "description": "La URL de E1 lleva tonalidad:F#m sin escapar. El carácter # abre el fragmento, así que searchParams recibirá tonalidad:F y el resto se descarta: copiar el ejemplo tal cual no funciona.",
+      "anchor": "`/studio?recipe=m02-l05&v=bpm:96,tonalidad:F#m`",
+      "location": "§5 · línea 190",
+      "evidence": "sintaxis de URL: todo lo posterior a # es fragment, no query",
+      "suggested_fix": "Escapar como %23 o cambiar el formato (p. ej. ?recipe=m02-l05&bpm=96&key=Fm) y añadir un caso de entrada inválida con su respuesta.",
+      "category": "wrong"
+    },
+    {
+      "id": "r006",
+      "severity": "P2",
+      "dimension": "operability",
+      "rule": "Ruta de acción que termina en stub sin advertirlo",
+      "description": "§4 y §0 presentan el pipeline como ejecutado, pero el adaptador del motor recomendado (ACE-Step) lanza NotImplementedError y el reintegro del cupo es un print pendiente de conectar.",
+      "anchor": "Para producción se cambia `musicgen` por `ace_step`",
+      "location": "§4 · línea 142",
+      "evidence": "pipeline.py línea 260 (NotImplementedError para diffusion-step/diff-rhythm) y línea 328 (refund por consola)",
+      "suggested_fix": "Declarar en §4 qué rutas corren de verdad y cuáles son stub, para que las estimaciones de E1-E4 no descansen en código que aún no genera audio.",
+      "category": "incomplete"
+    },
+    {
+      "id": "r007",
+      "severity": "P2",
+      "dimension": "terminology",
+      "rule": "Un mismo concepto con dos nombres",
+      "description": "cuota y cupo alternan para la unidad consumible; lecciones y sesiones para el mismo objeto; el motor se escribe ace_step en §3-§4 y ace-step en el registro real.",
+      "anchor": "402 con el precio del cupo",
+      "location": "§0 línea 28 · §1 línea 38 · §3 línea 132 · §4 líneas 149 y 175",
+      "evidence": "línea 149 cuota / línea 150 cupo / línea 175 cuota; línea 18 lecciones vs línea 38 sesiones",
+      "suggested_fix": "Fijar cupo = unidad que se gasta y cuota = límite del plan, usar siempre lección y copiar el identificador literal del registro de motores.",
+      "category": "term"
+    },
+    {
+      "id": "r008",
+      "severity": "P2",
+      "dimension": "terminology",
+      "rule": "Signado contradictorio de un token dentro de la misma sección",
+      "description": "La regla 5 de §7 reserva violeta a objeto/prompts y cyan a IA local; la propuesta de color de procedencia reasigna violeta al proveedor sin declarar el choque.",
+      "anchor": "violeta si fue proveedor con pesos Apache",
+      "location": "§7 · líneas 274 y 284",
+      "evidence": "regla 5 en línea 274 frente a línea 284",
+      "suggested_fix": "Proponer un token nuevo (p. ej. --pg-provenance-provider) o reescribir la regla 5 admitiendo que reasigna el significado publicado en globals.css.",
+      "category": "term"
+    },
+    {
+      "id": "r009",
+      "severity": "P2",
+      "dimension": "terminology",
+      "rule": "Código interno expuesto sin definición",
+      "description": "El encabezado usa la rodaja editorial 3 como prueba del estado del producto, pero el doc nunca define qué es una rodaja ni qué entregó la 3.",
+      "anchor": "incluye ya la rodaja editorial 3",
+      "location": "encabezado · línea 8",
+      "evidence": "el commit a2c9eb9 aparece sin enlace ni lista de entregables",
+      "suggested_fix": "Sustituir por los entregables concretos de esa rodaja o enlazar la auditoría que la define.",
+      "category": "term"
+    },
+    {
+      "id": "r010",
+      "severity": "P3",
+      "dimension": "terminology",
+      "rule": "Abreviaturas sin desempaquetar en la primera aparición",
+      "description": "SSG, RLS, LUFS, FTE, HMAC y EULA aparecen de golpe; LUFS y FTE condicionan la lectura de §5 y §6 y no se definen en ninguna parte.",
+      "anchor": "marcando `/curso/m01…m05` como SSG",
+      "location": "§0 línea 18 · §3 línea 87 · §4 línea 158 · §6 línea 238",
+      "evidence": "LUFS se usa en líneas 158, 180 y 216 sin definición",
+      "suggested_fix": "Glosa de una línea en la primera aparición (LUFS = sonoridad normalizada BS.1770; FTE = una persona/mes) o glosario final.",
+      "category": "convention"
+    },
+    {
+      "id": "r011",
+      "severity": "P2",
+      "dimension": "expression",
+      "rule": "Anglicismos y falsos amigos que obligan a releer",
+      "description": "Implementations ingenuas, un aprobado opaque, included en la misma GPU y las pruebas golden traducidas como oro de audio.",
+      "anchor": "rompen implementations ingenuas",
+      "location": "§4 línea 173 · §5 línea 208 · §6 línea 232 · §3 línea 114",
+      "evidence": "cuatro calcos del inglés en tres secciones, todos salvables en español",
+      "suggested_fix": "implementaciones ingenuas, opaco, incluido, pruebas doradas (golden). Oro de audio se lee como término inventado y cuesta una releída.",
+      "category": "style"
+    },
+    {
+      "id": "r012",
+      "severity": "P2",
+      "dimension": "expression",
+      "rule": "Frase con dos lecturas posibles",
+      "description": "§2 llama a Essentia la única librería del brief con licencia explícitamente comercial, aunque en la misma tabla MinIO es AGPL y aubio GPLv3.",
+      "anchor": "única librería del brief con licencia",
+      "location": "§2 · línea 66",
+      "evidence": "línea 66 frente a líneas 68 y 72",
+      "suggested_fix": "Reescribir como: la única cuyo autor (MTG/UPF) vende licencia comercial; MinIO exige lo mismo o sustituirlo, como dice la fila siguiente.",
+      "category": "expression"
+    },
+    {
+      "id": "r013",
+      "severity": "P3",
+      "dimension": "expression",
+      "rule": "Palabra equivocada en frase de carga",
+      "description": "§3 afirma que el producto ya tiene autenticidad de Supabase cuando quiere decir autenticación, justo antes de la regla del JWT de trabajo.",
+      "anchor": "autenticidad de Supabase",
+      "location": "§3 · línea 87",
+      "evidence": "el sentido se recupera por contexto, pero en una decisión de arquitectura cada ambigüedad se paga",
+      "suggested_fix": "autenticación de Supabase.",
+      "category": "expression"
+    },
+    {
+      "id": "r014",
+      "severity": "P3",
+      "dimension": "expression",
+      "rule": "Oración excesivamente larga / paréntesis invertido",
+      "description": "§7 encadena 12 tokens y la escala tipográfica en una frase de unas 60 palabras; §6 remata con un paréntesis que presenta la solución antes que el problema.",
+      "anchor": "Tokens en `.pg-shell`",
+      "location": "§7 líneas 257-261 · §6 línea 225",
+      "evidence": "el paréntesis de la línea 225 dice que el MP3/Opus es el primer problema cuando es la solución al almacenamiento",
+      "suggested_fix": "Tabla de dos columnas (token/valor) para la paleta y dos frases sueltas para el supuesto de codificación.",
+      "category": "style"
+    },
+    {
+      "id": "r015",
+      "severity": "P2",
+      "dimension": "information_architecture",
+      "rule": "Tabla de decisión diluida con censo del ecosistema",
+      "description": "§2 reúne en 17 filas las tres piezas que el brief proponía junto a un inventario de librerías laterales (Tone.js, D3, R3F, Docker Desktop), así que el veredicto llega diluido.",
+      "anchor": "Los tres son la peor combinación posible",
+      "location": "§2 · líneas 57-74",
+      "evidence": "la decisión útil (líneas 76-80) está después de 17 filas de las cuales 9 no afectan al brief",
+      "suggested_fix": "Subtabla de decisión con las 3 propuestas del brief y su veredicto delante; el resto va a un anexo de licencias.",
+      "category": "structure"
+    },
+    {
+      "id": "r016",
+      "severity": "P2",
+      "dimension": "information_architecture",
+      "rule": "Información fragmentada en 3 o más lugares",
+      "description": "Los datos de costo viven en cuatro sitios (supuestos, tabla, viñetas y §8) y la fila de mano de obra queda en FTE, sin conversión a USD, fuera de las filas de efectivo comparables.",
+      "anchor": "El costo que nadie escribe",
+      "location": "§6 · líneas 227-252",
+      "evidence": "línea 238 (FTE) no entra en las totales de líneas 236-237, aunque el propio texto dice que es el costo decisivo",
+      "suggested_fix": "Una sola tabla por escenario con la fila de laboratorio en USD/mes (0,1 FTE ≈ X) y la fórmula bajo la tabla; §8 solo enlaza.",
+      "category": "structure"
+    },
+    {
+      "id": "r017",
+      "severity": "P2",
+      "dimension": "information_architecture",
+      "rule": "Falta el resumen de decisiones que el propio encabezado promete",
+      "description": "El encabezado promete las cinco respuestas del brief, pero no hay caja de conclusiones al inicio: §0 es auditoría de verificación y la primera decisión accionable aparece en la línea 76.",
+      "anchor": "Documento de decisión. Responde las cinco preguntas",
+      "location": "encabezado líneas 3-5 · §0 líneas 14-24",
+      "evidence": "un lector con diez minutos no puede extraer las cinco decisiones sin leer hasta §8",
+      "suggested_fix": "Añadir cinco líneas (a-e) con la decisión adoptada y el enlace a su sección; sirve además como checklist para §8.",
+      "category": "structure"
+    },
+    {
+      "id": "r018",
+      "severity": "P2",
+      "dimension": "user_intent",
+      "rule": "Varias opciones presentadas sin criterio de elección",
+      "description": "§8 pide elegir entre ACE-Step y DiffRhythm sin un solo criterio de comparación, aunque la regeneración por secciones de §5 depende justo de esa capacidad.",
+      "anchor": "ACE-Step (Apache-2.0) o DiffRhythm (Apache-2.0);",
+      "location": "§8 · líneas 291-292",
+      "evidence": "pipeline.py línea 82 ya insinúa la diferencia: menos control por secciones",
+      "suggested_fix": "Tabla breve (control por secciones, duración, voces, VRAM, hash congelado) y recomendación explícita, cruzada con §5.3.",
+      "category": "missing"
+    },
+    {
+      "id": "r019",
+      "severity": "P2",
+      "dimension": "user_intent",
+      "rule": "Promesa de independencia sin dependencias declaradas",
+      "description": "§5 vende E1-E4 como publicables cada uno solo, pero E4 exige GPU, motor elegido (§8.1) y migraciones aplicadas (§8.3): encadenado como está, el lector puede planificarlo para el próximo mes y fallar.",
+      "anchor": "cada uno publicable solo",
+      "location": "§5 · línea 210",
+      "evidence": "fila E4 (línea 217) frente a §8 líneas 291-296",
+      "suggested_fix": "Columna predecesores en la tabla de roadmap (E4 ← §8.1 + §8.3) o renombrar la frase a entregable independiente.",
+      "category": "structure"
+    }
+  ],
+  "informational": [
+    {
+      "id": "i001",
+      "dimension": "content_accuracy",
+      "description": "§0 se apoya en un next build local, una sonda HTTP a producción y el commit a2c9eb9. Nada de eso es reproducible desde el texto (no se pega comando ni salida), así que no es deducible sin volver a ejecutar el build.",
+      "confidence": "low"
+    },
+    {
+      "id": "i002",
+      "dimension": "content_accuracy",
+      "description": "La afirmación de §8 sobre el dominio que resuelve a un deploy muerto sí tiene prueba, pero en otro archivo: docs/DEPLOY_FAILURES.md líneas 219-222. El documento evaluado no la enlaza.",
+      "confidence": "low"
+    },
+    {
+      "id": "i003",
+      "dimension": "user_intent",
+      "description": "La columna A de §6 deja el precio del proveedor sin cifra; completarla exige conocimiento de producto (tarifas reales del API contratado) que no está en el material de partida.",
+      "confidence": "low"
+    },
+    {
+      "id": "i004",
+      "dimension": "operability",
+      "description": "La paridad entre el motor local del navegador y local_recipe.py (§3) no es verificable sin ejecutar ambos; el propio §0 admite que no se escuchó el audio.",
+      "confidence": "low"
+    },
+    {
+      "id": "i005",
+      "dimension": "content_accuracy",
+      "description": "El matiz de Demucs/MUSDB18-HQ sobre los derechos del resultado se apoya en una fuente de terceros (audioshake.ai): es interpretación, no verificación jurídica.",
+      "confidence": "low"
+    }
+  ],
+  "not_applicable_dimensions": [
+    {
+      "name": "context_integration",
+      "reason": "No hay changes_path: es un documento de creación, no una edición. Queda fuera del promedio según dim-context-integration.md."
+    }
+  ],
+  "scoring": "Promedio de las 6 dimensiones aplicables (70, 85, 83, 86, 85, 90) = 83,17 → 83. Deducciones por regla del skill: P0 -15, P1 -10, P2 -5, P3 -2. No se activó el veto único: ningún error de pasos garantiza un fallo con pérdida de datos.",
+  "blocking_issues": [
+    "r001 — §5 línea 188: el anclaje que hace barata la capa educativa es falso contra lib/course.ts",
+    "r002 — §0 línea 22 y §4: pipeline.py contradice nombres, tablas, estados y licencias del propio documento",
+    "r005 — §5 línea 190: la URL de ejemplo falla al copiarla (el # corta el parámetro de tonalidad)",
+    "r003 — §6: las cuentas de costo que sostienen la recomendación B no son reproducibles con los datos impresos"
+  ],
+  "quick_wins": [
+    "§5 línea 188: citar las variables reales ({BPM}, {tonalidad}, {duración de la frase}) y añadir la regla de normalización",
+    "§5 línea 190: escapar %23 o cambiar el formato del query del enlace de receta",
+    "Encabezado: caja de cinco líneas con las decisiones (a-e) y su enlace",
+    "§6: publicar fórmula y filas a 10 000 y 20 000; convertir 0,1-0,5 FTE a USD/mes dentro de la tabla",
+    "Glosario interno: cupo frente a cuota, lección frente a sesión, ace-step literal, LUFS y FTE explicados en una línea",
+    "§7: resolver el choque del violeta (procedencia vs objeto/prompts) y mover los 12 tokens a una tabla",
+    "§2: subtabla de decisión de las tres piezas del brief, censo al anexo; reescribir la frase de la línea 66",
+    "§4/§0: declarar qué rutas de pipeline.py son stub (NotImplementedError, refund por print) y enlazar la prueba del dominio en DEPLOY_FAILURES.md"
+  ],
+  "fortalezas": [
+    "Los anclajes de código que sí pude verificar (course.ts 1386 líneas, 5 módulos y 16 lecciones, badges, LOCAL_SEED_SALT, 402 con limit/used, generateStaticParams, las 4 migraciones, los 13 tokens de globals.css, ausencia de packages: en pnpm-workspace) son todos exactos: el documento no infla su evidencia",
+    "§0 separa verificado, indicativo y pendiente antes de opinar, y admite lo que no probó",
+    "Las correcciones de premisas van con fuente primaria enlazada (§9) y con la consecuencia económica explicada",
+    "La comparación A/B/C del §6 incluye el costo de mano de obra, que casi ningún documento de este tipo escribe"
+  ],
+  "verdict": "83 sobre 100: aprobada con correcciones obligatorias. Es un documento de decisión honesto y mucho mejor anclado al repo que el promedio, pero falla justo donde el lector actúa: el anclaje de E1 es incorrecto, la referencia ejecutable contradice el diagrama, el ejemplo de URL no funciona copiado y las cuentas de costo no son reproducibles. Corregir r001, r002, r005 y r003 antes de usarlo como base de presupuesto; el resto es limpieza de lectura."
+}

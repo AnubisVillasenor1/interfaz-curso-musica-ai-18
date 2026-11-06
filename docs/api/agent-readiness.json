@@ -1,0 +1,122 @@
+{
+  "framework": "Agent-Ready APIs (plugin Postman 1.3.1, pillars.md)",
+  "objetivo": "API interna de interfaz-curso-musica-ai-18 (11 rutas documentadas + webhook Stripe excluido por contrato)",
+  "fecha_evaluacion": "2026-11-06",
+  "metodo": "Las 48 comprobaciones se pasan contra el código real de los route handlers y contra docs/api/openapi.yaml producido por esta auditoría. Los checks que el spec satisface (metadata, introspección, descubribilidad) cuentan como pass con evidencia en el spec; los que dependen de comportamiento del servidor (errores, naming, cabeceras, límites de tasa emitidos) solo cuentan si el código lo garantiza.",
+  "escala_pesos": { "critico": 4, "alto": 2, "medio": 1, "bajo": 0.5 },
+  "nota_formula": "La fórmula impresa en pillars.md da max 65.5, pero el recuento real de sus 48 checks es 4 crítico + 14 alto + 13 medio + 17 bajo (2 noAplica) = max aplicable 64.0. Se usa el recuento de la tabla, que es la fuente verificable.",
+  "peso_maximo_aplicable": 64.0,
+  "peso_obtenido": 44.5,
+  "score": 69.5,
+  "criticosFallados": 0,
+  "veredicto": "necesita_trabajo",
+  "veredicto_escala": "90-100 excelente / 70-89 agent ready / 50-69 necesita trabajo / 0-49 no lista",
+  "lectura": "Con el spec de docs/api/openapi.yaml ya publicado, la API queda a 0.5 puntos del umbral 'Agent Ready' (≥70 con cero críticos) y cero fallos críticos. Sin ese spec, la superficie real del código puntaría muy por debajo: los 16 fallos restantes son en su mayoría de servidor (formato de error, códigos de máquina, cabeceras de tasa/caché, naming).",
+  "resumen_fallos": { "critico": 0, "alto": 6, "medio": 5, "bajo": 5, "noAplica": 2 },
+  "pilares": [
+    {
+      "pilar": "Metadata",
+      "peso_max": 9,
+      "peso_obtenido": 8.5,
+      "checks": [
+        { "id": "M1", "check": "operationId único en cada operación", "severidad": "critico", "peso": 4, "estado": "pass", "evidencia": "docs/api/openapi.yaml (paths.*.operationId: compose_midi … logout_session, 13 operaciones)" },
+        { "id": "M2", "check": "summary en cada operación", "severidad": "alto", "peso": 2, "estado": "pass", "evidencia": "docs/api/openapi.yaml (summary en las 13 operaciones)" },
+        { "id": "M3", "check": "description en cada operación", "severidad": "medio", "peso": 1, "estado": "pass", "evidencia": "docs/api/openapi.yaml; descriptions citan archivo:línea del handler correspondiente" },
+        { "id": "M4", "check": "tags en cada operación", "severidad": "medio", "peso": 1, "estado": "pass", "evidencia": "docs/api/openapi.yaml (tags: music, generation, library, billing, account, course)" },
+        { "id": "M5", "check": "naming de tags consistente", "severidad": "bajo", "peso": 0.5, "estado": "pass", "evidencia": "docs/api/openapi.yaml: todos los tags en minúscula simple" },
+        { "id": "M6", "check": "metadata de visualización (x-display-name u homóloga)", "severidad": "bajo", "peso": 0.5, "estado": "fail", "evidencia": "docs/api/openapi.yaml — omitida deliberadamente por el criterio 'nada decorativo' del encargo; no hay campo de extensión por operación" }
+      ]
+    },
+    {
+      "pilar": "Errors",
+      "peso_max": 11.5,
+      "peso_obtenido": 5.5,
+      "checks": [
+        { "id": "E1", "check": "esquema en todas las respuestas 4xx/5xx", "severidad": "critico", "peso": 4, "estado": "pass", "evidencia": "docs/api/openapi.yaml components.schemas.ErrorResponse + components.responses.ErrorText referenciados en cada 4xx/5xx" },
+        { "id": "E2", "check": "formato de error consistente", "severidad": "alto", "peso": 2, "estado": "fail", "evidencia": "app/api/agent/route.ts:151-159 (429 con shape de éxito: answer/source/rateLimited, no {error}); app/api/generate/callback/route.ts:50 ({error:'not_configured'} token de máquina) vs el resto de rutas que usan {error:'frase en español'}; app/api/checkout/route.ts:41 añade available; app/api/generate/route.ts:84 añade limit/used; app/api/generate/route.ts:148 añade song+fallback en un 503", "arreglo": "Unificar a { error: { code, message, details?, retryAt? } } en los 12 handlers" },
+        { "id": "E3", "check": "códigos de error de máquina", "severidad": "alto", "peso": 2, "estado": "fail", "evidencia": "app/api/generate/route.ts:67,84,91,117,150,161,168,209 — todos los errores son prosa en español sin campo code; un agente no puede distinguir 503 'sin Supabase' (:54) de 503 'sin API_KEY de proveedor' (:147) sin parsear texto", "arreglo": "Añadir code estable a cada NextResponse.json de error" },
+        { "id": "E4", "check": "mensajes legibles presentes", "severidad": "medio", "peso": 1, "estado": "pass", "evidencia": "Todos los handlers devuelven message accionable, p. ej. app/api/songs/complete/route.ts:68 'El audio supera el límite de 25 MB.'" },
+        { "id": "E5", "check": "guía de reintento (Retry-After) en 429/503", "severidad": "medio", "peso": 1, "estado": "fail", "evidencia": "app/api/agent/route.ts:150-159 — el bucket conoce resetAt (:43) pero no se emite Retry-After ni retryAt en el cuerpo; los 503 de configuración (app/api/checkout/route.ts:28) tampoco dicen cuándo reintentar", "arreglo": "Cabecera Retry-After en el 429 y retryAt en 503 recuperables" },
+        { "id": "E6", "check": "detalle por campo en 400 de validación", "severidad": "medio", "peso": 1, "estado": "fail", "evidencia": "app/api/generate/route.ts:67 — título y prompt malos producen la misma frase sin indicar el campo; app/api/progress/route.ts:34 idem. Único caso parcialmente recuperable: app/api/checkout/route.ts:41 con available[]", "arreglo": "details: [{ field, issue }] en cada 400" },
+        { "id": "E7", "check": "sin stack traces ni detalle interno en errores", "severidad": "bajo", "peso": 0.5, "estado": "pass", "nota": "Pasa, con reparo: los 503 nombran variables de entorno concretas (lib/supabase/config.ts:45-46 NEXT_PUBLIC_SUPABASE_URL; lib/app-url.ts:52-54 NEXT_PUBLIC_APP_URL), filtración de configuración destinada a ops, no a clientes", "evidencia": "app/api/checkout/route.ts:99-109 (detalle Stripe solo en console.error); app/api/agent/route.ts:93-98 (cuerpo del proveedor no se reenvía)" }
+      ]
+    },
+    {
+      "pilar": "Introspección",
+      "peso_max": 11,
+      "peso_obtenido": 11,
+      "checks": [
+        { "id": "I1", "check": "tipos explícitos en todos los parámetros", "severidad": "critico", "peso": 4, "estado": "pass", "evidencia": "docs/api/openapi.yaml — tipos derivados de las validaciones reales: app/api/music/compose/route.ts:13-15 (tempo integer 50-180, key con patrón), app/api/generate/route.ts:64-76 (longitudes reales 80/2000/60/4000/120/240/64)" },
+        { "id": "I2", "check": "required marcado", "severidad": "alto", "peso": 2, "estado": "pass", "evidencia": "docs/api/openapi.yaml: required [title,prompt] en create_generation (app/api/generate/route.ts:66), required [lessonId] (app/api/progress/route.ts:33), required [songId,audio] multipart (app/api/songs/complete/route.ts:57-65)" },
+        { "id": "I3", "check": "enums en campos acotados", "severidad": "alto", "peso": 2, "estado": "pass", "evidencia": "docs/api/openapi.yaml: ProductId (lib/products.ts:15), engine local|provider (app/api/generate/route.ts:70), SongStatus (route.ts:109,198; complete/route.ts:90-94), source llm|fallback (lib/agent/guide.ts:22)" },
+        { "id": "I4", "check": "ejemplos en parámetros", "severidad": "medio", "peso": 1, "estado": "pass", "evidencia": "docs/api/openapi.yaml: examples en q (search), prompt/tempo/key (compose), productId (checkout), songId (songs)" },
+        { "id": "I5", "check": "format specifiers", "severidad": "medio", "peso": 1, "estado": "pass", "evidencia": "docs/api/openapi.yaml: format date-time en created_at/completed_at, uuid en ids, uri en URLs; formato unix de expiresAt documentado como excepción (app/api/songs/complete/route.ts:139)" },
+        { "id": "I6", "check": "defaults documentados", "severidad": "bajo", "peso": 0.5, "estado": "pass", "evidencia": "docs/api/openapi.yaml: engine=local (app/api/generate/route.ts:70), limit=20/page=1 (app/api/songs/route.ts:41-42), instrumental=false (:179)" },
+        { "id": "I7", "check": "nullable marcado", "severidad": "bajo", "peso": 0.5, "estado": "pass", "evidencia": "docs/api/openapi.yaml type [string,null] donde el código devuelve null: email (app/api/entitlement/route.ts:53), audioUrl (:138), tempo (app/api/generate/route.ts:73), playableUrl (app/api/songs/route.ts:71)" }
+      ]
+    },
+    {
+      "pilar": "Naming",
+      "peso_max": 7,
+      "peso_obtenido": 4,
+      "checks": [
+        { "id": "N1", "check": "URLs RESTful (recursos, no verbos)", "severidad": "alto", "peso": 2, "estado": "fail", "evidencia": "app/api/music/compose, app/api/generate, app/api/songs/complete, app/api/auth/logout son acciones en la ruta: /songs/complete en vez de PATCH /songs/{id}; /generate en vez de POST /songs", "arreglo": "Migración a /songs (POST), /songs/{id} (PATCH status), manteniendo aliases 308" },
+        { "id": "N2", "check": "casing de rutas consistente", "severidad": "alto", "peso": 2, "estado": "pass", "evidencia": "Las 12 rutas en minúscula/kebab: music/compose, generate/callback, songs/complete, auth/logout, stripe/webhook" },
+        { "id": "N3", "check": "semántica HTTP correcta", "severidad": "medio", "peso": 1, "estado": "pass", "nota": "GET leen (search, songs, entitlement, progress), POST crean/accionan, DELETE borra; DELETE /api/songs acepta body (app/api/songs/route.ts:95) — poco compatible con agentes estrictos, mitigado por ?songId= (:96)", "evidencia": "app/api/songs/route.ts:31,85; app/api/entitlement/route.ts:20" },
+        { "id": "N4", "check": "recursos en plural", "severidad": "medio", "peso": 1, "estado": "pass", "nota": "/songs plural; /entitlement y /progress son singulares-per-user defensables; /checkout y /generate son acciones (ya penalizado en N1)", "evidencia": "app/api/songs/route.ts; app/api/entitlement/route.ts" },
+        { "id": "N5", "check": "casing de propiedades consistente", "severidad": "bajo", "peso": 0.5, "estado": "fail", "evidencia": "Mezcla snake_case y camelCase en un mismo cuerpo: app/api/generate/route.ts:99-111 inserta vocal_style/lesson_id pero la respuesta render usa genreId/bpm (:133-134); app/api/songs/route.ts:69-71 mezcla columnas snake (created_at, audio_url) con playableUrl; app/api/progress/route.ts:78 lessonId/earnedAt vs lessons_done (:44)" },
+        { "id": "N6", "check": "sin verbos de acción en URLs", "severidad": "bajo", "peso": 0.5, "estado": "fail", "evidencia": "compose, generate, complete, logout, checkout son verbos (mismo problema que N1, aquí cuenta la variante estricta)" }
+      ]
+    },
+    {
+      "pilar": "Predictabilidad",
+      "peso_max": 9,
+      "peso_obtenido": 4.5,
+      "checks": [
+        { "id": "P1", "check": "esquema en todas las respuestas de éxito", "severidad": "critico", "peso": 4, "estado": "pass", "evidencia": "docs/api/openapi.yaml: las 13 operaciones tienen schema 200 (incluido audio/midi binario en compose_midi)" },
+        { "id": "P2", "check": "paginación consistente entre listados", "severidad": "alto", "peso": 2, "estado": "fail", "evidencia": "app/api/songs/route.ts:41-42 usa page/limit; app/api/music/search/route.ts:19,33 fija 12 resultados sin parámetros de página; ninguno devuelve total/cursor (:68-75)", "arreglo": "Adoptar cursor o page/limit+total en ambos" },
+        { "id": "P3", "check": "formato de fecha consistente", "severidad": "medio", "peso": 1, "estado": "fail", "evidencia": "ISO-8601 en created_at/completed_at (app/api/songs/route.ts:46; app/api/progress/route.ts:68) pero epoch entero en expiresAt (app/api/songs/complete/route.ts:139)" },
+        { "id": "P4", "check": "formato de IDs consistente", "severidad": "medio", "peso": 1, "estado": "fail", "evidencia": "UUID v4 para songs (app/api/songs/complete/route.ts:58) vs ids prefijados 'ia-'/'jamendo-' (app/api/music/search/route.ts:24,38) vs lecciones 'm03-l09' (lib/agent/guide.ts:202); no hay convención declarada" },
+        { "id": "P5", "check": "envoltura coherente (envelope vs directo)", "severidad": "bajo", "peso": 0.5, "estado": "pass", "nota": "Objeto con claves de recurso ({results}, {songs}, {completed}) o objeto de recurso ({song, render}); la excepción es compose, que devuelve binario por contrato de descarga", "evidencia": "app/api/music/search/route.ts:53; app/api/songs/route.ts:68-75; app/api/generate/route.ts:126-138" },
+        { "id": "P6", "check": "manejo de null consistente", "severidad": "bajo", "peso": 0.5, "estado": "fail", "evidencia": "Unas claves se emiten como null explícito (app/api/songs/complete/route.ts:138; app/api/entitlement/route.ts:53) y otras se omiten cuando faltan (app/api/generate/route.ts:133-134 '?? undefined' para genreId/bpm; app/api/agent/route.ts:175 note)" }
+      ]
+    },
+    {
+      "pilar": "Documentation",
+      "peso_max": 6.5,
+      "peso_obtenido": 5.5,
+      "checks": [
+        { "id": "D1", "check": "autenticación documentada con flujo", "severidad": "alto", "peso": 2, "estado": "pass", "evidencia": "docs/api/openapi.yaml components.securitySchemes: SupabaseSession (apiKey en cookie, getUser por handler) y CallbackHmac (HMAC-SHA256 del songId, lib/callback-signature.ts:49-61)" },
+        { "id": "D2", "check": "política de límites de tasa documentada", "severidad": "alto", "peso": 2, "estado": "pass", "nota": "Documentada con honestidad: solo /api/agent tiene límite (6/min anónimo, 20/min autenticado, por instancia de nodo, app/api/agent/route.ts:16-48) y el spec dice explícitamente que las demás rutas no tienen ninguno", "evidencia": "docs/api/openapi.yaml paths./api/agent.x-rate-limit" },
+        { "id": "D3", "check": "ejemplos de petición/respuesta por endpoint", "severidad": "medio", "peso": 1, "estado": "pass", "evidencia": "docs/api/openapi.yaml: examples en los bodies y en los 200 de las 13 operaciones" },
+        { "id": "D4", "check": "enlaces a documentación externa", "severidad": "bajo", "peso": 0.5, "estado": "pass", "evidencia": "docs/api/openapi.yaml externalDocs → docs/TECHNICAL_AUDIT.md, docs/DEPLOY_FAILURES.md (existentes en el repo)" },
+        { "id": "D5", "check": "avisos de deprecación", "severidad": "bajo", "peso": 0.5, "estado": "noAplica", "evidencia": "No hay ningún endpoint deprecado en los 12 handlers (API nueva, version 0.1.0 en package.json:3)" },
+        { "id": "D6", "check": "versionado o changelog de API", "severidad": "bajo", "peso": 0.5, "estado": "fail", "evidencia": "Las rutas no llevan prefijo de versión (/api/… sin /v1) y no hay CHANGELOG de API en docs/; package.json:3 solo versiona la app" }
+      ]
+    },
+    {
+      "pilar": "Performance",
+      "peso_max": 6,
+      "peso_obtenido": 0.5,
+      "checks": [
+        { "id": "PF1", "check": "cabeceras de rate limit emitidas/documentadas", "severidad": "alto", "peso": 2, "estado": "fail", "evidencia": "Ningún handler emite X-RateLimit-*/RateLimit-*; el 429 de app/api/agent/route.ts:151-159 llega sin cabeceras pese a conocer resetAt (:43). El resto de rutas no tiene límite ni cabecera", "arreglo": "NextResponse.json(..., { status: 429, headers: { 'Retry-After': String(secondsToReset), 'X-RateLimit-Limit', 'X-RateLimit-Remaining', 'X-RateLimit-Reset' } })" },
+        { "id": "PF2", "check": "paginación en endpoints de listado", "severidad": "alto", "peso": 2, "estado": "fail", "nota": "Parcial: /api/songs pagina (page/limit≤50); /api/search no (topes fijos 12+12 sin cursor)", "evidencia": "app/api/songs/route.ts:41-48 vs app/api/music/search/route.ts:19,33" },
+        { "id": "PF3", "check": "cabeceras de caché correctas", "severidad": "medio", "peso": 1, "estado": "fail", "evidencia": "Solo app/api/music/compose/route.ts:22 fija Cache-Control: no-store. GET por-usuario con URLs firmadas de audio (app/api/songs/route.ts:68-75; app/api/entitlement/route.ts:39) no fijan private,no-store; el fetch de search cachea upstream 1h (app/api/music/search/route.ts:9) sin declararlo en la respuesta. next.config.mjs:35-50 da Cache-Control solo a /perfil, /biblioteca y /audio/*, no a /api/*" },
+        { "id": "PF4", "check": "endpoints bulk/batch", "severidad": "bajo", "peso": 0.5, "estado": "noAplica", "evidencia": "No existen operaciones batch prometidas; createSignedUrls sí agrupa firmas por página (app/api/songs/route.ts:59-61) como micro-lote interno" },
+        { "id": "PF5", "check": "patrón async para operaciones largas", "severidad": "bajo", "peso": 0.5, "estado": "pass", "nota": "Cumple el espíritu con lagunas: /generate devuelve 200 (no 202) con taskId+status queued/generating; el progreso se consulta haciendo polling de /api/songs; no hay endpoint de estado dedicado ni webhooks de salida hacia el cliente", "evidencia": "app/api/generate/route.ts:196-201; app/api/generate/callback/route.ts:86-92" }
+      ]
+    },
+    {
+      "pilar": "Discoverability",
+      "peso_max": 6.5,
+      "peso_obtenido": 6.5,
+      "checks": [
+        { "id": "DC1", "check": "versión OpenAPI válida (3.1 preferida)", "severidad": "alto", "peso": 2, "estado": "pass", "evidencia": "docs/api/openapi.yaml: openapi: 3.1.0" },
+        { "id": "DC2", "check": "URL de servidor definida", "severidad": "alto", "peso": 2, "estado": "pass", "evidencia": "docs/api/openapi.yaml servers: https://interfaz-curso-musica-ai.vercel.app" },
+        { "id": "DC3", "check": "info completo (title, version, description)", "severidad": "medio", "peso": 1, "estado": "pass", "evidencia": "docs/api/openapi.yaml info; version coincide con package.json:3" },
+        { "id": "DC4", "check": "contacto", "severidad": "bajo", "peso": 0.5, "estado": "pass", "nota": "URL de contacto presente; email inexistente en el repo — marcado x-no-verificado en el spec", "evidencia": "docs/api/openapi.yaml info.contact" },
+        { "id": "DC5", "check": "licencia definida", "severidad": "bajo", "peso": 0.5, "estado": "pass", "nota": "Documentada como propietaria sin licencia pública, que es lo que package.json:15 ('private': true) y la ausencia de LICENSE garantizan; no se inventó MIT/Apache", "evidencia": "docs/api/openapi.yaml info.license" }
+      ]
+    }
+  ]
+}

@@ -25,20 +25,20 @@ export const runtime = 'nodejs'
  */
 export async function POST(request: Request) {
   const supabase = await createClient()
-  if (!supabase) return NextResponse.json({ error: SUPABASE_NOT_CONFIGURED }, { status: 503 })
+  if (!supabase) return NextResponse.json({ error: SUPABASE_NOT_CONFIGURED, code: 'not_configured' }, { status: 503 })
 
   const {
     data: { user },
   } = await supabase.auth.getUser()
   if (!user?.email) {
-    return NextResponse.json({ error: 'Inicia sesión para inscribirte.' }, { status: 401 })
+    return NextResponse.json({ error: 'Inicia sesión para inscribirte.', code: 'unauthorized' }, { status: 401 })
   }
 
   const body = (await request.json().catch(() => null)) as { productId?: unknown } | null
   const product = findProduct(body?.productId)
   if (!product) {
     return NextResponse.json(
-      { error: 'Producto no válido.', available: Object.keys(PRODUCTS) },
+      { error: 'Producto no válido.', code: 'invalid_request', available: Object.keys(PRODUCTS) },
       { status: 400 },
     )
   }
@@ -46,13 +46,13 @@ export async function POST(request: Request) {
   const secretKey = process.env.STRIPE_SECRET_KEY
   if (!secretKey) {
     return NextResponse.json(
-      { error: 'Los pagos todavía no están configurados en este entorno.' },
+      { error: 'Los pagos todavía no están configurados en este entorno.', code: 'not_configured' },
       { status: 503 },
     )
   }
 
   const app = requireAppUrl(request)
-  if ('error' in app) return NextResponse.json({ error: app.error }, { status: 503 })
+  if ('error' in app) return NextResponse.json({ error: app.error, code: 'not_configured' }, { status: 503 })
 
   // Ventana de un minuto por usuario y producto: mata el doble clic sin
   // impedir que alguien compre la extensión después del curso.
@@ -92,7 +92,7 @@ export async function POST(request: Request) {
     )
 
     if (!session.url) {
-      return NextResponse.json({ error: 'Stripe no devolvió una URL de pago.' }, { status: 502 })
+      return NextResponse.json({ error: 'Stripe no devolvió una URL de pago.', code: 'provider_unreachable' }, { status: 502 })
     }
 
     return NextResponse.json({ url: session.url, sessionId: session.id })
@@ -104,7 +104,7 @@ export async function POST(request: Request) {
       productId: product.id,
     })
     return NextResponse.json(
-      { error: 'No pudimos iniciar el pago. Intenta nuevamente o escríbenos.' },
+      { error: 'No pudimos iniciar el pago. Intenta nuevamente o escríbenos.', code: 'provider_unreachable' },
       { status: 502 },
     )
   }

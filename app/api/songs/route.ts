@@ -8,6 +8,14 @@ export const runtime = 'nodejs'
 /** Firmas baratas de caducar: un listado no debe abrir enlaces eternos. */
 const SIGNED_URL_TTL_SECONDS = 3600
 
+/**
+ * El listado devuelve URLs firmadas: son credenciales temporales de una sola
+ * cuenta. Cachearlas es el peor caso posible —otro usuario recibiría un enlace
+ * ajeno—, así que `no-store` va en la propia respuesta (ver el motivo en
+ * `app/api/progress/route.ts`).
+ */
+const PRIVATE_HEADERS = { 'Cache-Control': 'private, no-store' } as const
+
 const PAGE_SIZE_MAX = 50
 
 function positiveInt(value: string | null, fallback: number, max: number): number {
@@ -30,12 +38,12 @@ function positiveInt(value: string | null, fallback: number, max: number): numbe
  */
 export async function GET(request: Request) {
   const supabase = await createClient()
-  if (!supabase) return NextResponse.json({ error: SUPABASE_NOT_CONFIGURED }, { status: 503 })
+  if (!supabase) return NextResponse.json({ error: SUPABASE_NOT_CONFIGURED, code: 'not_configured' }, { status: 503 })
 
   const {
     data: { user },
   } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Inicia sesión para ver tu biblioteca.' }, { status: 401 })
+  if (!user) return NextResponse.json({ error: 'Inicia sesión para ver tu biblioteca.', code: 'unauthorized' }, { status: 401 })
 
   const url = new URL(request.url)
   const take = positiveInt(url.searchParams.get('limit'), 20, PAGE_SIZE_MAX)
@@ -49,7 +57,7 @@ export async function GET(request: Request) {
 
   if (error) {
     console.error('[songs] listado falló', error.message)
-    return NextResponse.json({ error: 'No pudimos cargar tu biblioteca.' }, { status: 500 })
+    return NextResponse.json({ error: 'No pudimos cargar tu biblioteca.', code: 'read_failed' }, { status: 500 })
   }
 
   const paths = (songs ?? []).map((song) => song.storage_path).filter((path): path is string => Boolean(path))
@@ -65,14 +73,18 @@ export async function GET(request: Request) {
     }
   }
 
-  return NextResponse.json({
-    songs: (songs ?? []).map((song) => ({
-      ...song,
-      playableUrl: (song.storage_path ? signatures.get(song.storage_path) : null) ?? song.audio_url ?? null,
-    })),
-    page,
-    perPage: take,
-  })
+  return NextResponse.json(
+    {
+      songs: (songs ?? []).map((song) => ({
+        ...song,
+        playableUrl: (song.storage_path ? signatures.get(song.storage_path) : null) ?? song.audio_url ?? null,
+      })),
+      page,
+      perPage: take,
+      signedUrlsExpireIn: SIGNED_URL_TTL_SECONDS,
+    },
+    { headers: PRIVATE_HEADERS },
+  )
 }
 
 /**
@@ -84,23 +96,23 @@ export async function GET(request: Request) {
  */
 export async function DELETE(request: Request) {
   const supabase = await createClient()
-  if (!supabase) return NextResponse.json({ error: SUPABASE_NOT_CONFIGURED }, { status: 503 })
+  if (!supabase) return NextResponse.json({ error: SUPABASE_NOT_CONFIGURED, code: 'not_configured' }, { status: 503 })
 
   const {
     data: { user },
   } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Inicia sesión para borrar.' }, { status: 401 })
+  if (!user) return NextResponse.json({ error: 'Inicia sesión para borrar.', code: 'unauthorized' }, { status: 401 })
 
   const url = new URL(request.url)
   const body = (await request.json().catch(() => null)) as { songId?: unknown } | null
   const songId = String(body?.songId ?? url.searchParams.get('songId') ?? '')
 
   if (!/^[0-9a-f-]{36}$/i.test(songId)) {
-    return NextResponse.json({ error: 'Identificador de canción inválido.' }, { status: 400 })
+    return NextResponse.json({ error: 'Identificador de canción inválido.', code: 'invalid_request' }, { status: 400 })
   }
 
   const { data: song } = await supabase.from('songs').select('id, storage_path').eq('id', songId).maybeSingle()
-  if (!song) return NextResponse.json({ error: 'Esa canción no está en tu biblioteca.' }, { status: 404 })
+  if (!song) return NextResponse.json({ error: 'Esa canción no está en tu biblioteca.', code: 'not_found' }, { status: 404 })
 
   if (song.storage_path) {
     const { error: removeError } = await supabase.storage.from('song-audio').remove([song.storage_path])
@@ -110,7 +122,7 @@ export async function DELETE(request: Request) {
   const { error } = await supabase.from('songs').delete().eq('id', songId)
   if (error) {
     console.error('[songs] borrado falló', error.message)
-    return NextResponse.json({ error: 'No pudimos borrar la canción.' }, { status: 500 })
+    return NextResponse.json({ error: 'No pudimos borrar la canción.', code: 'delete_failed' }, { status: 500 })
   }
 
   return NextResponse.json({ deleted: songId })

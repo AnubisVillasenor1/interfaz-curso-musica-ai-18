@@ -40,8 +40,8 @@ async function jamendoSearch(query: string): Promise<MusicResult[]> {
 
 export async function GET(request: Request) {
   const query = new URL(request.url).searchParams.get('q')?.trim() ?? ''
-  if (query.length < 2) return NextResponse.json({ error: 'La búsqueda debe tener al menos 2 caracteres.' }, { status: 400 })
-  if (query.length > 100) return NextResponse.json({ error: 'La búsqueda no puede superar 100 caracteres.' }, { status: 400 })
+  if (query.length < 2) return NextResponse.json({ error: 'La búsqueda debe tener al menos 2 caracteres.', code: 'query_too_short' }, { status: 400 })
+  if (query.length > 100) return NextResponse.json({ error: 'La búsqueda no puede superar 100 caracteres.', code: 'query_too_long' }, { status: 400 })
   const safeQuery = query.replace(/[()+\-!{}\[\]^"~*?:\\/]/g, ' ').replace(/\s+/g, ' ').trim()
   const [archive, jamendo] = await Promise.allSettled([archiveSearch(safeQuery), jamendoSearch(query)])
   const results = [
@@ -49,6 +49,11 @@ export async function GET(request: Request) {
     ...(jamendo.status === 'fulfilled' ? jamendo.value : []),
   ]
   const errors = [archive, jamendo].filter((result) => result.status === 'rejected').length
-  if (!results.length && errors === 2) return NextResponse.json({ error: 'Los catálogos no están disponibles en este momento.' }, { status: 502 })
-  return NextResponse.json({ results, providers: { internetArchive: archive.status === 'fulfilled', jamendo: jamendo.status === 'fulfilled' }, notice: 'Verifica los términos y la licencia de cada obra antes de usarla en proyectos públicos o comerciales.' })
+  if (!results.length && errors === 2) return NextResponse.json({ error: 'Los catálogos no están disponibles en este momento.', code: 'upstream_unavailable' }, { status: 502 })
+  // Búsqueda de catálogo público: no depende de la sesión, así que un caché
+  // corto es correcto y además protege a Internet Archive de golpes repetidos.
+  return NextResponse.json(
+    { results, providers: { internetArchive: archive.status === 'fulfilled', jamendo: jamendo.status === 'fulfilled' }, notice: 'Verifica los términos y la licencia de cada obra antes de usarla en proyectos públicos o comerciales.' },
+    { headers: { 'Cache-Control': 'public, max-age=60, stale-while-revalidate=300' } },
+  )
 }

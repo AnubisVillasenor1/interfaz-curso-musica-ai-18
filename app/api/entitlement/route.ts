@@ -6,6 +6,9 @@ import { createClient } from '@/lib/supabase/server'
 
 export const runtime = 'nodejs'
 
+/** Respuesta con datos de una sola cuenta: ver el comentario de `app/api/progress/route.ts`. */
+const PRIVATE_HEADERS = { 'Cache-Control': 'private, no-store' } as const
+
 /**
  * Plan, cupo y progreso de quien llama.
  *
@@ -19,37 +22,40 @@ export const runtime = 'nodejs'
  */
 export async function GET() {
   const supabase = await createClient()
-  if (!supabase) return NextResponse.json({ error: SUPABASE_NOT_CONFIGURED }, { status: 503 })
+  if (!supabase) return NextResponse.json({ error: SUPABASE_NOT_CONFIGURED, code: 'not_configured' }, { status: 503 })
 
   const {
     data: { user },
   } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Inicia sesión para ver tu plan.' }, { status: 401 })
+  if (!user) return NextResponse.json({ error: 'Inicia sesión para ver tu plan.', code: 'unauthorized' }, { status: 401 })
 
   const { data, error } = await supabase.rpc('read_entitlement')
 
   if (error) {
     console.error('[entitlement] RPC falló', error.message)
-    return NextResponse.json({ error: 'No pudimos leer tu plan.' }, { status: 500 })
+    return NextResponse.json({ error: 'No pudimos leer tu plan.', code: 'read_failed' }, { status: 500 })
   }
 
   // `read_entitlement` devuelve null cuando no hay fila de entitlements, es
   // decir, una cuenta recién creada a la que el trigger aún no le llegó. Se
   // responde el plan gratuito explícito para que la UI no tenga que adivinar.
-  return NextResponse.json({
-    entitlement: data ?? {
-      plan: FREE_TIER.plan,
-      active: FREE_TIER.active,
-      daily_limit: FREE_TIER.dailyLimit,
-      used_today: 0,
-      local_daily_limit: FREE_TIER.localDailyLimit,
-      local_used_today: 0,
-      role: 'user',
-      songs_total: 0,
-      songs_ready: 0,
-      lessons_done: 0,
+  return NextResponse.json(
+    {
+      entitlement: data ?? {
+        plan: FREE_TIER.plan,
+        active: FREE_TIER.active,
+        daily_limit: FREE_TIER.dailyLimit,
+        used_today: 0,
+        local_daily_limit: FREE_TIER.localDailyLimit,
+        local_used_today: 0,
+        role: 'user',
+        songs_total: 0,
+        songs_ready: 0,
+        lessons_done: 0,
+      },
+      userId: user.id,
+      email: user.email ?? null,
     },
-    userId: user.id,
-    email: user.email ?? null,
-  })
+    { headers: PRIVATE_HEADERS },
+  )
 }

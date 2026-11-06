@@ -1,15 +1,25 @@
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
 import { PRODUCTS } from '@/lib/products'
-import { getAppUrl } from '@/lib/app-url'
+import { getSeoOrigin } from '@/lib/app-url'
 import './globals.css'
 
-const siteUrl = getAppUrl()
+/**
+ * Base para las URLs absolutas de metadatos (Open Graph, Twitter, canonical).
+ *
+ * `getAppUrl()` devuelve "" cuando el entorno no declara `NEXT_PUBLIC_APP_URL`,
+ * y eso es correcto para una redirección de pago: ahí un destino adivinado es
+ * un riesgo. En metadatos el riesgo es el inverso —sin base, Next resuelve
+ * `http://localhost:3000/og.png` y la tarjeta social nace muerta—, por eso el
+ * default vive en `lib/app-url.ts`, compartido con robots y sitemap. Un
+ * `NEXT_PUBLIC_APP_URL` explícito siempre gana.
+ */
+const metadataUrl = getSeoOrigin()
 const description =
   'Play and Go de TAMV ONLINE: curso de música con inteligencia artificial, de cero a flujo profesional. 5 módulos, 16 sesiones, estudio de producción, biblioteca de prompts e insignias.'
 
 export const metadata: Metadata = {
-  metadataBase: siteUrl ? new URL(siteUrl) : undefined,
+  metadataBase: new URL(metadataUrl),
   title: {
     default: 'Play and Go by TAMV ONLINE — Música con IA',
     template: '%s · Play and Go by TAMV ONLINE',
@@ -31,7 +41,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'es_MX',
-    url: siteUrl || undefined,
+    url: metadataUrl,
     siteName: 'Play and Go by TAMV ONLINE',
     title: 'Play and Go by TAMV ONLINE — Música con IA',
     description,
@@ -79,11 +89,11 @@ export const viewport: Viewport = {
  * Los precios se leen de `lib/products.ts`, el mismo objeto que consume
  * `/api/checkout`: un schema escrito a mano se desincroniza del cobro en el
  * primer cambio de tarifa, y ese desajuste es exactamente lo que Google penaliza.
- * Sin `NEXT_PUBLIC_APP_URL` no hay `@id` estable, así que se omite el bloque
- * antes que publicar una url falsa.
+ * Sin `NEXT_PUBLIC_APP_URL` el `@id` usa el dominio de producción declarado en
+ * el código: seguir omitiendo el bloque dejaba el curso sin datos estructurados
+ * en el entorno real, que es justo donde importan.
  */
 function courseJsonLd() {
-  if (!siteUrl) return null
   const course = PRODUCTS['play-and-go-course']
   return {
     '@context': 'https://schema.org',
@@ -93,13 +103,13 @@ function courseJsonLd() {
     provider: {
       '@type': 'Organization',
       name: 'TAMV ONLINE',
-      url: siteUrl,
+      url: metadataUrl,
     },
     inLanguage: 'es-MX',
     isAccessibleForFree: false,
     offers: {
       '@type': 'Offer',
-      url: `${siteUrl}/precios`,
+      url: `${metadataUrl}/precios`,
       price: (course.priceInCents / 100).toFixed(2),
       priceCurrency: 'MXN',
       availability: 'https://schema.org/InStock',

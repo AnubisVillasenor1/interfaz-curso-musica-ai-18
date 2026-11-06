@@ -51,20 +51,20 @@ async function refundQuota(supabase: NonNullable<Awaited<ReturnType<typeof creat
  */
 export async function POST(request: Request) {
   const supabase = await createClient()
-  if (!supabase) return NextResponse.json({ error: SUPABASE_NOT_CONFIGURED }, { status: 503 })
+  if (!supabase) return NextResponse.json({ error: SUPABASE_NOT_CONFIGURED, code: 'not_configured' }, { status: 503 })
 
   const {
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) {
-    return NextResponse.json({ error: 'Inicia sesión para crear música.' }, { status: 401 })
+    return NextResponse.json({ error: 'Inicia sesión para crear música.', code: 'unauthorized' }, { status: 401 })
   }
 
   const body = (await request.json().catch(() => null)) as Record<string, unknown> | null
   const title = text(body?.title, 80)
   const prompt = text(body?.prompt, 2000)
   if (!title || !prompt) {
-    return NextResponse.json({ error: 'Completa el título y la dirección musical.' }, { status: 400 })
+    return NextResponse.json({ error: 'Completa el título y la dirección musical.', code: 'invalid_request' }, { status: 400 })
   }
 
   const engine = body?.engine === 'provider' ? 'provider' : 'local'
@@ -81,14 +81,14 @@ export async function POST(request: Request) {
 
   if (!quota.error && granted?.allowed !== true) {
     return NextResponse.json(
-      { error: granted?.reason ?? 'Sin cupo disponible.', limit: granted?.limit_total ?? 0, used: granted?.limit_used ?? 0 },
+      { error: granted?.reason ?? 'Sin cupo disponible.', code: 'quota_exceeded', limit: granted?.limit_total ?? 0, used: granted?.limit_used ?? 0 },
       { status: 402 },
     )
   }
   if (quota.error) {
     console.error('[generate] la RPC de cuota falló', quota.error.message)
     return NextResponse.json(
-      { error: 'No pudimos comprobar tu cupo. Reintenta en un momento.' },
+      { error: 'No pudimos comprobar tu cupo. Reintenta en un momento.', code: 'quota_unavailable' },
       { status: 503 },
     )
   }
@@ -115,7 +115,7 @@ export async function POST(request: Request) {
     console.error('[generate] no se pudo guardar el proyecto', insertError?.message)
     await refundQuota(supabase, user.id, engine)
     return NextResponse.json(
-      { error: 'No se pudo guardar tu proyecto. El cupo no se descontó.' },
+      { error: 'No se pudo guardar tu proyecto. El cupo no se descontó.', code: 'storage_error' },
       { status: 500 },
     )
   }
@@ -135,6 +135,7 @@ export async function POST(request: Request) {
         title,
       },
       message: 'Receta lista. El navegador renderiza y guarda tu canción.',
+      quota: { limit: granted?.limit_total ?? 0, used: granted?.limit_used ?? 0 },
     })
   }
 
@@ -148,6 +149,7 @@ export async function POST(request: Request) {
       {
         song,
         error: 'El estudio con voces no está disponible ahora. Puedes crear con el motor local gratis.',
+        code: 'not_configured',
         fallback: 'local',
       },
       { status: 503 },
@@ -157,15 +159,26 @@ export async function POST(request: Request) {
   const base = getAppUrl(request)
   if (!base) {
     await refundQuota(supabase, user.id, engine)
-    await supabase.from('songs').update({ status: 'error', error: 'Falta NEXT_PUBLIC_APP_URL.' }).eq('id', song.id)
-    return NextResponse.json({ error: 'Falta NEXT_PUBLIC_APP_URL para recibir el resultado.' }, { status: 503 })
+    // La columna songs.error se muestra en la biblioteca, y esta respuesta le
+    // llega al cliente: ninguna de las dos puede llevar el nombre de una variable
+    // de entorno. El detalle operativo va al log.
+    console.error('[generate] NEXT_PUBLIC_APP_URL sin definir: no hay retorno para el proveedor')
+    await supabase.from('songs').update({ status: 'error', error: 'El retorno del proveedor no está configurado.' }).eq('id', song.id)
+    return NextResponse.json(
+      { error: 'El estudio con voces no está disponible ahora mismo. Puedes crear con el motor local gratis.', code: 'not_configured', fallback: 'local' },
+      { status: 503 },
+    )
   }
 
   const signature = await signCallbackUrl(String(song.id))
   if (!signature) {
     await refundQuota(supabase, user.id, engine)
-    await supabase.from('songs').update({ status: 'error', error: 'Falta GENERATOR_CALLBACK_SECRET.' }).eq('id', song.id)
-    return NextResponse.json({ error: 'El retorno del proveedor no está configurado.' }, { status: 503 })
+    console.error('[generate] GENERATOR_CALLBACK_SECRET sin definir: el callback no se puede firmar')
+    await supabase.from('songs').update({ status: 'error', error: 'El retorno del proveedor no está configurado.' }).eq('id', song.id)
+    return NextResponse.json(
+      { error: 'El estudio con voces no está disponible ahora mismo. Puedes crear con el motor local gratis.', code: 'not_configured', fallback: 'local' },
+      { status: 503 },
+    )
   }
 
   try {
@@ -198,7 +211,11 @@ export async function POST(request: Request) {
       .update({ status: 'generating', provider_task_id: String(result.data.taskId).slice(0, 120) })
       .eq('id', song.id)
 
-    return NextResponse.json({ song, taskId: result.data.taskId })
+    return NextResponse.json({
+      song,
+      taskId: result.data.taskId,
+      quota: { limit: granted?.limit_total ?? 0, used: granted?.limit_used ?? 0 },
+    })
   } catch (error) {
     console.error('[generate] el proveedor rechazó la petición', {
       message: error instanceof Error ? error.message : String(error),
@@ -206,7 +223,7 @@ export async function POST(request: Request) {
     await refundQuota(supabase, user.id, engine)
     await supabase.from('songs').update({ status: 'error', error: 'El proveedor musical no respondió.' }).eq('id', song.id)
     return NextResponse.json(
-      { song, error: 'El proveedor musical no respondió. Tu proyecto quedó guardado para reintentar.' },
+      { song, error: 'El proveedor musical no respondió. Tu proyecto quedó guardado para reintentar.', code: 'provider_unreachable' },
       { status: 502 },
     )
   }

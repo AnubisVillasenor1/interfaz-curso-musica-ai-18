@@ -1619,6 +1619,14 @@ html[data-theme='dark'] {
      magenta que ya marcan `.pg-pill[error]` y el texto de error de la
      biblioteca, para que un fallo se reconozca igual en toda la app. */
   .pg-status[data-tone='error'] { color: var(--pg-magenta); }
+  /* Ámbar como estado propio, no como style en línea. Tres sitios lo tenían
+     escrito a mano (`style={{ color: 'var(--pg-amber)' }}` sobre `.pg-note` o
+     `.pg-status`); el color ya era el del sistema, pero la orden vivía en el
+     JSX, así que cambiar el semántico de un aviso requería tocar componentes.
+     Con el tono declarado aquí, el JSX solo dice qué estado es. */
+  .pg-status[data-tone='pending'],
+  .pg-note[data-tone='pending'] { color: var(--pg-amber); }
+  .pg-note[data-tone='error'] { color: var(--pg-magenta); }
 
   /* Variante compacta del botón, para acciones dentro de una tarjeta. */
   .pg-btn-sm {
@@ -1694,17 +1702,22 @@ html[data-theme='dark'] {
     border: 1px solid var(--pg-hairline);
     background: rgba(255, 255, 255, 0.03);
   }
-  .pg-btn-ghost:hover { border-color: rgba(117, 233, 242, 0.45); color: #fff; background: rgba(117, 233, 242, 0.07); }
   /* Ghost con acento: la secundaria que sí merece color de marca (descargar un
-     WAV, probar una pista) sin robarle protagonismo al primario. */
+     WAV, probar una pista) sin robarle protagonismo al primario. Va ANTES del
+     `:hover`: con la misma especificidad (0,2,0), si venía después apagaba el
+     hover del botón de marca y el cursor se quedaba sin respuesta. */
   .pg-btn-ghost[data-tone='cyan'] { color: var(--pg-cyan-soft); border-color: rgba(117, 233, 242, 0.4); }
+  .pg-btn-ghost:hover { border-color: rgba(117, 233, 242, 0.45); color: #fff; background: rgba(117, 233, 242, 0.07); }
   .pg-btn:disabled { opacity: 0.55; transform: none; }
 
   /* Foco visible y consistente: sin esto la navegación por teclado depende de
-     la suerte del orden de DOM. */
-  .pg-shell :is(a, button, input, textarea, select, summary, [tabindex]):focus-visible {
-    outline: 1px solid rgba(117, 233, 242, 0.85);
-    outline-offset: 3px;
+     la suerte del orden de DOM. 2 px y offset 2: con 1 px el anillo no alcanza
+     el contraste mínimo de WCAG 2.4.13 sobre una superficie oscura, y con 3 px
+     de offset se recorta contra el `overflow:hidden` de las tarjetas. */
+  .pg-shell :is(a, button, input, textarea, select, summary, [tabindex]):focus-visible,
+  .pg-shell:focus-visible :is(a, button, input, textarea, select, summary, [tabindex]) {
+    outline: 2px solid var(--pg-cyan);
+    outline-offset: 2px;
     border-radius: 0.6rem;
   }
 
@@ -1774,7 +1787,11 @@ html[data-theme='dark'] {
     -webkit-backdrop-filter: blur(6px);
     animation: pg-backdrop-in 0.28s ease both;
   }
-  .pg-panel {
+  /* Superficie del diálogo. Se llamaba `.pg-panel`, igual que el contenedor de
+     lectura de arriba, y la segunda definición ganaba por orden de fuente: la
+     biblioteca y el perfil heredaban borde cian, `margin: auto` y la animación
+     de entrada del diálogo. Un nombre por concepto, dos conceptos, dos nombres. */
+  .pg-dialog {
     position: relative;
     width: 100%;
     /* `margin: auto` en lugar de sólo centrar con flex: si el contenido supera
@@ -1788,7 +1805,7 @@ html[data-theme='dark'] {
     animation: pg-panel-in 0.3s var(--pg-rise) both;
   }
   @media (min-width: 640px) {
-    .pg-panel { padding: 1.75rem; }
+    .pg-dialog { padding: 1.75rem; }
   }
   @keyframes pg-backdrop-in {
     from { opacity: 0; }

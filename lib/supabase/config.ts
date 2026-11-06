@@ -41,6 +41,19 @@ export function readServiceEnv(): (SupabaseEnv & { serviceRoleKey: string }) | n
   return { ...publicEnv, serviceRoleKey }
 }
 
-/** Mensaje único para las rutas que dependen de Supabase y no pueden funcionar. */
+/**
+ * Mensaje único para las rutas que dependen de Supabase y no pueden funcionar.
+ *
+ * Va dirigido a quien usa la app, no a quien la despliega: por eso NO nombra
+ * variables de entorno. Un visitante con una ventana de incógnito no puede hacer
+ * nada con `NEXT_PUBLIC_SUPABASE_URL`, y verlo en pantalla le dice dos cosas
+ * falsas — que el fallo es suyo y que hay algo que puede configurar. El detalle
+ * operativo vive en `SUPABASE_NOT_CONFIGURED_DETAIL`, que es lo que hay que
+ * mirar en los logs del despliegue.
+ */
 export const SUPABASE_NOT_CONFIGURED =
-  'La base de datos todavía no está configurada en este entorno. Faltan NEXT_PUBLIC_SUPABASE_URL y su clave pública.'
+  'El acceso a tus datos no está disponible en este entorno. Inténtalo de nuevo en unos minutos.'
+
+/** Texto para el operador (logs, panel de Vercel). Nunca para el cliente. */
+export const SUPABASE_NOT_CONFIGURED_DETAIL =
+  'Faltan NEXT_PUBLIC_SUPABASE_URL y su clave pública (NEXT_PUBLIC_SUPABASE_ANON_KEY o NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY).'

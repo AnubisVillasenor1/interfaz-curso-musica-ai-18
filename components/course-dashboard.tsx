@@ -107,6 +107,11 @@ export function CourseDashboard() {
   const [showRegister, setShowRegister] = useState(false)
   const [email, setEmail] = useState('')
   const [status, setStatus] = useState('')
+  // El mismo `status` sirve para un aviso recuperable (el portapapeles bloqueado,
+  // «preparando tu acceso») y para un fallo real (el error que devolvió /api/checkout).
+  // El color no puede ser uno solo: el tono lo decide quien escribe el mensaje, no el
+  // JSX, y viene del sistema (`--pg-amber` / `--pg-magenta`), no de un style en línea.
+  const [statusTone, setStatusTone] = useState<'pending' | 'error'>('pending')
   const [playing, setPlaying] = useState(false)
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const [chatOpen, setChatOpen] = useState(false)
@@ -190,6 +195,7 @@ export function CourseDashboard() {
       window.setTimeout(() => setCopied(false), 2400)
     } catch {
       setCopied(false)
+      setStatusTone('pending')
       setStatus('Tu navegador no permitió copiar automáticamente: selecciona el texto y usa Ctrl+C.')
     }
   }
@@ -197,10 +203,14 @@ export function CourseDashboard() {
   async function startCheckout(event: React.FormEvent) {
     event.preventDefault()
     setStatus('Preparando tu acceso...')
+    setStatusTone('pending')
     const response = await fetch('/api/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ productId: COURSE_PRODUCT.id }) })
     const data: { url?: string; error?: string } = await response.json()
     if (data.url) window.location.href = data.url
-    else setStatus(data.error ?? 'Revisa tus datos e intenta de nuevo.')
+    else {
+      setStatusTone('error')
+      setStatus(data.error ?? 'Revisa tus datos e intenta de nuevo.')
+    }
   }
 
   const navLinks = [
@@ -625,7 +635,9 @@ export function CourseDashboard() {
         Cinco decisiones: género, emoción, instrumentación, tempo y estructura. Cambia una sola por iteración para
         poder comparar.
       </p>
-      {status && <p role="status" className="mt-3" style={{ fontSize: 'var(--pg-step--1)', color: 'var(--pg-amber)' }}>{status}</p>}
+      <p role="status" aria-live="polite" className="pg-note mt-3 empty:hidden" data-tone={statusTone}>
+        {status}
+      </p>
       <div className="mt-5 flex flex-wrap gap-3">
         <button type="button" className="pg-btn pg-btn-ghost" onClick={copyTemplate}>
           {copied ? <><Check size={15} /> Copiado</> : <><Copy size={15} /> Copiar prompt</>}
@@ -662,7 +674,13 @@ export function CourseDashboard() {
         <button type="submit" className="pg-btn pg-btn-primary w-full">
           Continuar al pago <ArrowRight size={15} />
         </button>
-        {status && <p role="status" className="text-center" style={{ fontSize: 'var(--pg-step--1)', color: 'var(--pg-amber)' }}>{status}</p>}
+        {/* Región viva montada siempre: `aria-live` solo anuncia lo que cambia
+            DENTRO de la región, así que un <p> que nace junto con el mensaje se
+            queda mudo para un lector de pantalla. Sin estado, `empty:hidden` le
+            quita el hueco del flex. */}
+        <p role="status" aria-live="polite" className="pg-note text-center empty:hidden" data-tone={statusTone}>
+          {status}
+        </p>
       </form>
       <p className="mt-4 text-center" style={{ fontSize: 'var(--pg-step--2)', color: 'var(--pg-muted)' }}>
         Pago procesado de forma segura por Stripe.

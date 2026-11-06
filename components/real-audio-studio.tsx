@@ -47,6 +47,11 @@ export function RealAudioStudio() {
   const sourceRef = useRef<MediaElementAudioSourceNode | null>(null)
   const rafRef = useRef<number | null>(null)
   const trackRef = useRef<Track | null>(null)
+  // El canvas se sujeta por referencia, no por `document.querySelector`: con dos
+  // estudios en la misma página (o con este componente montado dos veces en el
+  // árbol de vistas previas) la consulta devuelve el primero y el espectro se pinta
+  // en el sitio equivocado, sin error.
+  const fftCanvasRef = useRef<HTMLCanvasElement | null>(null)
 
   const replaceTrack = useCallback((next: Track | null) => {
     const previous = trackRef.current
@@ -151,8 +156,8 @@ export function RealAudioStudio() {
   }, [volume, track])
 
   useEffect(() => {
-    const canvas = document.querySelector<HTMLCanvasElement>('[data-audio-fft-canvas]')
-    const context2d = canvas?.getContext('2d')
+    const canvas = fftCanvasRef.current
+    const context2d = canvas ? canvas.getContext('2d') : null
     if (!canvas || !context2d) return
     let animationFrame = 0
     const data = new Uint8Array(analyser?.frequencyBinCount ?? 1024)
@@ -162,14 +167,55 @@ export function RealAudioStudio() {
     // su respaldo por si el componente viviera fuera de `.pg-shell`. Así el
     // espectro cambia de color cuando cambia la marca, no cuando alguien edite
     // este archivo.
-    const tone = (name: string, fallback: string) =>
-      getComputedStyle(canvas).getPropertyValue(name).trim() || fallback
-    const ink = tone('--pg-bg', '#07121f')
-    const muted = tone('--pg-muted', '#7f9aa7')
-    const deep = tone('--pg-violet', '#c09eff')
-    const mid = tone('--pg-cyan', '#75e9f2')
-    const peak = tone('--pg-amber', '#ffcf72')
-    const trace = tone('--pg-cyan-soft', '#8cecf3')
+    //
+    // La validación no es decoración: `fillStyle` con una cadena que el navegador
+    // no entiende NO lanza nada, deja el color del trazo anterior. Un token roto o
+    // sin resolver (`var(--x)` vacío) se vería como un especto con el color
+    // equivocado y nadie sabría qué paso. Se comprueba con `CSS.supports` y, si
+    // falla, se usa el literal de la marca, que es el mismo valor que hay hoy en
+    // `app/globals.css`.
+    const literals: Record<string, string> = {
+      '--pg-bg': '#07121f',
+      '--pg-muted': '#7f9aa7',
+      '--pg-violet': '#c09eff',
+      '--pg-cyan': '#75e9f2',
+      '--pg-amber': '#ffcf72',
+      '--pg-cyan-soft': '#8cecf3',
+    }
+    const tone = (name: string) => {
+      const raw = getComputedStyle(canvas).getPropertyValue(name).trim()
+      return raw && CSS.supports('color', raw) ? raw : literals[name]
+    }
+    const ink = tone('--pg-bg')
+    const muted = tone('--pg-muted')
+    const deep = tone('--pg-violet')
+    const mid = tone('--pg-cyan')
+    const peak = tone('--pg-amber')
+    const trace = tone('--pg-cyan-soft')
+
+    // 72 barras x 60 fps eran 4 320 objetos CanvasGradient por segundo, y el
+    // recolector de basura lo cobra en cuadros. La gradación solo depende del alto
+    // útil del lienzo y de un percentil de altura, así que se tabula en 24 pasos y
+    // se rehace únicamente cuando cambia el tamaño: el coste pasa por cuadro es una
+    // lectura de array.
+    const BAR_STEPS = 24
+    let gradientHeight = 0
+    let gradientLUT: CanvasGradient[] = []
+    const barGradient = (height: number, barHeight: number) => {
+      if (gradientHeight !== height) {
+        gradientHeight = height
+        gradientLUT = Array.from({ length: BAR_STEPS }, (_unused, step) => {
+          const span = (height * (step + 1)) / BAR_STEPS
+          const gradient = context2d.createLinearGradient(0, height, 0, height - span)
+          gradient.addColorStop(0, deep)
+          gradient.addColorStop(0.55, mid)
+          gradient.addColorStop(1, peak)
+          return gradient
+        })
+      }
+      const step = Math.min(BAR_STEPS - 1, Math.max(0, Math.floor((barHeight / height) * BAR_STEPS) - 1))
+      return gradientLUT[step]
+    }
 
     const render = () => {
       animationFrame = requestAnimationFrame(render)
@@ -201,11 +247,7 @@ export function RealAudioStudio() {
           for (let bin = start; bin < end; bin += 1) sum += data[bin]
           const amplitude = sum / (end - start) / 255
           const barHeight = Math.max(2 * ratio, amplitude * height * 0.92)
-          const gradient = context2d.createLinearGradient(0, height, 0, height - barHeight)
-          gradient.addColorStop(0, deep)
-          gradient.addColorStop(0.55, mid)
-          gradient.addColorStop(1, peak)
-          context2d.fillStyle = gradient
+          context2d.fillStyle = barGradient(height, barHeight)
           context2d.fillRect(index * barWidth + ratio, height - barHeight, Math.max(1, barWidth - 2 * ratio), barHeight)
         }
       } else {
@@ -262,7 +304,24 @@ export function RealAudioStudio() {
       </div>
       <div className="pg-inset p-5">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3"><h3 className="pg-block-title">Espectro de frecuencias</h3><div className="pg-inset flex gap-1.5 p-1.5">{(['bars', 'line'] as const).map((option) => <button key={option} type="button" aria-pressed={mode === option} onClick={() => setMode(option)} className="pg-seg">{option === 'bars' ? 'Barras' : 'Línea'}</button>)}</div></div>
-        <div className="pg-frame relative h-56 sm:h-64"><canvas data-audio-fft-canvas className="h-full w-full" /></div>
+        <div className="pg-frame relative h-56 sm:h-64">
+          <canvas
+            ref={fftCanvasRef}
+            data-audio-fft-canvas
+            className="h-full w-full"
+            role="img"
+            // El lienzo es el único sitio donde vive esta información: sin etiqueta,
+            // un lector de pantalla anuncia una imagen vacía. La descripción cambia
+            // con la vista activa porque barras y línea muestran la misma fuente de
+            // formas distintas, y dice el tamaño real de la FFT en lugar de fingir
+            // una precisión que no se puede leer de un mapa de bits.
+            aria-label={
+              analyser
+                ? `Espectro de frecuencias en vivo, vista de ${mode === 'bars' ? 'barras' : 'línea'}, FFT de ${analyser.fftSize} puntos`
+                : 'Espectro de frecuencias: sin pista cargada'
+            }
+          />
+        </div>
         <audio ref={audioRef} src={track?.url} controls crossOrigin="anonymous" onPlay={() => setIsPlaying(true)} onPause={() => setIsPlaying(false)} onEnded={() => setIsPlaying(false)} onError={() => { if (track) setError('No se pudo cargar el audio. Comprueba el formato, la URL y, para audio externo, que el servidor permita CORS.') }} className="mt-5 h-12 w-full accent-[var(--pg-cyan)]" />
         <p className="pg-note mt-3">Las URLs externas necesitan servir un archivo de audio y permitir CORS para que el navegador pueda analizar el espectro. El audio local funciona sin conexión externa. El analizador procesa el sonido en el navegador; no sube ni almacena el archivo.</p>
       </div>

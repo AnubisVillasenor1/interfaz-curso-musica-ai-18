@@ -183,7 +183,7 @@ export function ProgressBar({
       </div>
 
       {state.error && (
-        <p role="alert" className="pg-note mt-3" style={{ color: 'var(--pg-amber)' }}>
+        <p role="alert" className="pg-status mt-3" data-tone="error">
           {state.error}
         </p>
       )}

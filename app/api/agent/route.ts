@@ -29,7 +29,16 @@ const SIGNED_IN_PER_WINDOW = 20
  */
 const hits = new Map<string, { count: number; resetAt: number }>()
 
-function rateLimited(key: string, limit: number): boolean {
+type RateVerdict = { allowed: boolean; remaining: number; retryAfterS: number }
+
+/**
+ * Ventana fija en memoria. Devuelve el veredicto completo en vez de un booleano:
+ * un cliente que recibe 429 sin `Retry-After` reintenta a ciegas y convierte un
+ * freno en una tormenta. El conteo vive en el nodo, así que en un despliegue con
+ * varios nodos el límite es orientativo — lo que sí es exacto es el tiempo que
+ * queda para la ventana que este nodo está sirviendo.
+ */
+function rateCheck(key: string, limit: number): RateVerdict {
   const now = Date.now()
 
   // Poda: sin esto el mapa crecería con cada IP nueva durante toda la vida del
@@ -41,10 +50,13 @@ function rateLimited(key: string, limit: number): boolean {
   const entry = hits.get(key)
   if (!entry || entry.resetAt < now) {
     hits.set(key, { count: 1, resetAt: now + WINDOW_MS })
-    return false
+    return { allowed: true, remaining: Math.max(0, limit - 1), retryAfterS: 0 }
   }
   entry.count += 1
-  return entry.count > limit
+  if (entry.count > limit) {
+    return { allowed: false, remaining: 0, retryAfterS: Math.max(1, Math.ceil((entry.resetAt - now) / 1000)) }
+  }
+  return { allowed: true, remaining: Math.max(0, limit - entry.count), retryAfterS: 0 }
 }
 
 function ipOf(request: Request): string {
@@ -129,9 +141,9 @@ export async function POST(request: Request) {
     | null
 
   const message = typeof body?.message === 'string' ? body.message.trim() : ''
-  if (!message) return NextResponse.json({ error: 'Escribe una pregunta.' }, { status: 400 })
+  if (!message) return NextResponse.json({ error: 'Escribe una pregunta.', code: 'invalid_request' }, { status: 400 })
   if (message.length > MAX_MESSAGE_CHARS) {
-    return NextResponse.json({ error: 'Tu mensaje es demasiado largo.' }, { status: 413 })
+    return NextResponse.json({ error: 'Tu mensaje es demasiado largo.', code: 'message_too_long', limit: MAX_MESSAGE_CHARS }, { status: 413 })
   }
 
   const history = Array.isArray(body?.history) ? (body.history as ChatTurn[]) : []
@@ -147,21 +159,45 @@ export async function POST(request: Request) {
     } = (await supabase?.auth.getUser()) ?? { data: { user: null } }
 
     const limit = user ? SIGNED_IN_PER_WINDOW : ANONYMOUS_PER_WINDOW
-    if (rateLimited(bucketKey(user?.id ?? null, request), limit)) {
+    const rate = rateCheck(bucketKey(user?.id ?? null, request), limit)
+    if (!rate.allowed) {
+      // Sigue llevando `answer` y `source`, porque la interfaz del chat los lee y
+      // muestra la frase al alumno: quitarlos sería cambiar el contrato con la UI
+      // por una preferencia de estilo. Lo que faltaba era la semántica de error
+      // (código de máquina) y el tiempo de espera, para que un agente pueda
+      // reintentar sin adivinar.
       return NextResponse.json(
         {
           answer: 'Varios mensajes seguidos desde el mismo sitio: espera un minuto y vuelve a preguntar.',
           source: 'fallback',
           lessonIds: [],
           rateLimited: true,
+          error: 'Demasiadas preguntas seguidas. Espera antes de volver a intentar.',
+          code: 'rate_limited',
+          retryAfter: rate.retryAfterS,
         },
-        { status: 429 },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': String(rate.retryAfterS),
+            'X-RateLimit-Limit': String(limit),
+            'X-RateLimit-Remaining': '0',
+          },
+        },
       )
     }
 
     try {
       const reply = await askProvider(messages)
-      return NextResponse.json({ answer: reply.content, source: 'llm', model: reply.model, lessonIds: [] })
+      return NextResponse.json(
+        { answer: reply.content, source: 'llm', model: reply.model, lessonIds: [] },
+        {
+          headers: {
+            'X-RateLimit-Limit': String(limit),
+            'X-RateLimit-Remaining': String(rate.remaining),
+          },
+        },
+      )
     } catch (error) {
       console.error('[agent] el proveedor no respondió; se usa la guía del curso', {
         message: error instanceof Error ? error.message : String(error),

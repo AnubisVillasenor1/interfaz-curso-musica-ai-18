@@ -64,7 +64,7 @@ export function ProfilePanel() {
       if (response.status === 503) {
         setNotice(
           payload?.error ??
-            'Falta la configuración de Supabase en este entorno (NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY).',
+            'El acceso a tus datos no está disponible en este entorno. Inténtalo de nuevo en unos minutos.',
         )
         setState('unconfigured')
         return
