@@ -15,7 +15,7 @@ import { createClient } from '@/lib/supabase/client'
 const heroImage = 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Gemini_Generated_Image_hi55a9hi55a9hi55-OPBoBGaw8KYoHSuXcugNi9LtKJeZlm.jpg'
 const logoImage = 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logoplayandgo-8ZZZTdsW2ueYIcVxJscglJWiPeHgov.jpg'
 const tamvLogoImage = 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/tamvlogo1-i0HazgHWGLPPtgpiy0SnmCir2lextV.jpg'
-const sampleAudio = '/audio/intro-bed-60s.mp3'
+const sampleAudio = '/audio/pista2.mp3'
 
 /**
  * Precio único de verdad: se lee de `lib/products.ts`, que es lo que cobra el
