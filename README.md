@@ -1,4 +1,6 @@
-# 🎵 Interfaz Curso Música AI (`interfaz-curso-musica-ai-18`)
+# **TAMV ONLINE NETWORK**
+
+# Interfaz Curso Música AI (`interfaz-curso-musica-ai-18`)
 
 Plataforma interactiva de última generación para la educación y producción musical impulsada por Inteligencia Artificial, experiencias cinemáticas en 3D y análisis de audio en tiempo real.
 
