@@ -71,8 +71,20 @@
   to { transform: translate3d(-50%, 0, 0); }
 }
 @keyframes bar-dance {
-  0%, 100% { transform: scaleY(0.28); }
-  50% { transform: scaleY(1); }
+  0%, 100% { transform: scaleY(0.42); opacity: 0.82; }
+  50% { transform: scaleY(1); opacity: 1; }
+}
+
+/* Mantiene los gradientes en su propia capa para evitar flashes negros al animar. */
+.equalizer-bar {
+  display: block;
+  backface-visibility: hidden;
+  transform-origin: bottom;
+  transform: translateZ(0) scaleY(0.42);
+  will-change: transform, opacity;
+}
+.equalizer-bar-active {
+  animation: bar-dance 1.15s ease-in-out infinite;
 }
 
 @theme inline {
