@@ -5,9 +5,8 @@ import { Check, ChevronRight, Clock3 } from 'lucide-react'
 
 import { Reveal } from '@/components/reveal'
 import { COURSE_MODULES, lessonsByModule, type CourseModule } from '@/lib/course'
-import { cn } from '@/lib/utils'
 
-import { BadgeGrid, ProgressBar, focusRing, useCourseProgress } from './progress-bar'
+import { BadgeGrid, ProgressBar, useCourseProgress } from './progress-bar'
 
 function pad(value: number) {
   return String(value).padStart(2, '0')
@@ -29,7 +28,7 @@ export function CourseModulesIndex({ modules = COURSE_MODULES }: { modules?: Cou
       <ProgressBar progress={progress} label="Tu ruta en el programa" />
 
       <section aria-labelledby="modulos-heading">
-        <h2 id="modulos-heading" className="pg-title" style={{ fontSize: 'var(--pg-step-2)' }}>
+        <h2 id="modulos-heading" className="pg-title" data-size="sm">
           Los {modules.length} módulos
         </h2>
         <p className="pg-note mt-3 max-w-2xl">
@@ -46,7 +45,7 @@ export function CourseModulesIndex({ modules = COURSE_MODULES }: { modules?: Cou
 
             return (
               <Reveal as="li" key={module.id} delay={60 * index}>
-                <Link href={`/curso/${module.id}`} className={cn('pg-card pg-card-hover flex gap-4 p-5', focusRing)}>
+                <Link href={`/curso/${module.id}`} className="pg-card pg-card-hover flex gap-4 p-5">
                   <span
                     className="pg-mark"
                     data-state={finished ? 'done' : doneCount > 0 ? 'part' : undefined}
@@ -86,7 +85,7 @@ export function CourseModulesIndex({ modules = COURSE_MODULES }: { modules?: Cou
       </section>
 
       <section aria-labelledby="insignias-heading">
-        <h2 id="insignias-heading" className="pg-title" style={{ fontSize: 'var(--pg-step-2)' }}>
+        <h2 id="insignias-heading" className="pg-title" data-size="sm">
           Insignias del programa
         </h2>
         <p className="pg-note mt-3 max-w-2xl">
@@ -122,7 +121,7 @@ export function ModuleLessonList({ module }: { module: CourseModule }) {
             <Reveal as="li" key={lesson.id} delay={45 * index}>
               <Link
                 href={`/curso/${module.id}/${lesson.id}`}
-                className={cn('pg-card pg-card-hover flex gap-4 p-5', focusRing)}
+                className="pg-card pg-card-hover flex gap-4 p-5"
               >
                 <span className="pg-mark" data-state={isDone ? 'done' : undefined} aria-hidden="true">
                   {isDone ? <Check size={18} /> : pad(lesson.lessonNumber)}

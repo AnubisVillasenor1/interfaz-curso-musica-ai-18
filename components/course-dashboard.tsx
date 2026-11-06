@@ -211,7 +211,7 @@ export function CourseDashboard() {
     ['Información', '/informacion'],
   ] as const
 
-  return <main className="pg-shell relative min-h-screen overflow-x-clip" style={{ background: 'var(--pg-bg)', color: 'var(--pg-ink)' }}>
+  return <main className="pg-shell relative min-h-screen overflow-x-clip" style={{ background: 'var(--pg-bg)' }}>
     {/* Capa ambiental dentro del sistema: cambiar la paleta cambia también el
         fondo. Antes usaba `-z-0`, que ni siquiera es una clase válida. */}
     <div
@@ -267,7 +267,7 @@ export function CourseDashboard() {
             Convierte tus ideas en{' '}
             <span
               className="bg-clip-text text-transparent"
-              style={{ backgroundImage: 'linear-gradient(96deg, #8ff0f6, var(--pg-violet) 52%, var(--pg-magenta))' }}
+              style={{ backgroundImage: 'linear-gradient(96deg, var(--pg-cyan-soft), var(--pg-violet) 52%, var(--pg-magenta))' }}
             >
               canciones.
             </span>
@@ -314,7 +314,7 @@ export function CourseDashboard() {
                 aria-pressed={playing}
                 onClick={toggleSample}
                 className="flex size-10 shrink-0 items-center justify-center rounded-full"
-                style={{ background: 'var(--pg-cyan)', color: '#06131e' }}
+                style={{ background: 'var(--pg-cyan)', color: 'var(--pg-bg)' }}
               >
                 {playing ? <Pause size={15} fill="currentColor" /> : <Play size={15} fill="currentColor" />}
               </button>
@@ -331,7 +331,7 @@ export function CourseDashboard() {
                   style={{
                     height: `${height * 4}px`,
                     animationDelay: `${index * 80}ms`,
-                    backgroundImage: 'linear-gradient(to top, #9a72e8, var(--pg-cyan), var(--pg-amber))',
+                    backgroundImage: 'linear-gradient(to top, var(--pg-violet), var(--pg-cyan), var(--pg-amber))',
                   }}
                 />
               ))}
@@ -371,14 +371,8 @@ export function CourseDashboard() {
                 style={item.state === 'current' ? { borderColor: 'rgba(117,233,242,.45)' } : undefined}
               >
                 <span
-                  className="flex size-11 shrink-0 items-center justify-center rounded-xl text-sm font-semibold"
-                  style={
-                    item.state === 'done'
-                      ? { background: 'rgba(131,215,180,.15)', color: '#83d7b4' }
-                      : item.state === 'current'
-                        ? { background: 'var(--pg-cyan)', color: '#06131e' }
-                        : { background: 'rgba(255,255,255,.06)', color: 'rgba(237,250,255,.42)' }
-                  }
+                  className="pg-mark"
+                  data-state={item.state === 'done' ? 'done' : item.state === 'current' ? 'part' : undefined}
                 >
                   {item.state === 'done' ? <Check size={18} /> : item.state === 'locked' ? <LockKeyhole size={17} /> : item.number}
                 </span>
@@ -411,10 +405,7 @@ export function CourseDashboard() {
             <Reveal key={item.module} delay={(index % 2) * 90}>
               <details className="pg-card group h-full p-5">
                 <summary className="flex cursor-pointer list-none items-start gap-4">
-                  <span
-                    className="flex size-10 shrink-0 items-center justify-center rounded-xl font-mono text-xs"
-                    style={{ background: 'rgba(192,158,255,.14)', color: '#d9c9ff' }}
-                  >
+                  <span className="pg-mark">
                     0{index + 1}
                   </span>
                   <span className="flex-1">
@@ -434,11 +425,8 @@ export function CourseDashboard() {
                     </li>
                   ))}
                 </ol>
-                <div
-                  className="mt-5 rounded-2xl p-3 leading-5"
-                  style={{ border: '1px solid rgba(255,207,114,.22)', background: 'rgba(255,207,114,.05)', fontSize: 'var(--pg-step--1)', color: '#e6d4a8' }}
-                >
-                  <strong style={{ color: 'var(--pg-amber)' }}>Entregable · </strong>{item.deliverable}
+                <div className="pg-callout mt-5">
+                  <strong>Entregable · </strong>{item.deliverable}
                 </div>
               </details>
             </Reveal>
@@ -498,9 +486,9 @@ export function CourseDashboard() {
                   completa.
                 </p>
               </div>
-              <div className="rounded-2xl px-5 py-4 text-center" style={{ border: '1px solid rgba(255,207,114,.24)', background: 'rgba(255,207,114,.07)' }}>
-                <p className="font-mono" style={{ fontSize: 'var(--pg-step-2)', color: 'var(--pg-amber)' }}>2 / día</p>
-                <p className="pg-eyebrow mt-1" style={{ color: '#d9c79a', letterSpacing: '.18em' }}>Inscripción Pro</p>
+              <div className="pg-metric items-center px-5 py-4 text-center" style={{ border: '1px solid rgba(255,207,114,.24)', background: 'rgba(255,207,114,.07)' }}>
+                <b>2 / día</b>
+                <span>Inscripción Pro</span>
               </div>
             </div>
             <div className="mt-8 flex flex-wrap items-center gap-3">
@@ -517,7 +505,7 @@ export function CourseDashboard() {
       <div className="pg-container">
         <div className="grid gap-10 lg:grid-cols-[.85fr_1.15fr] lg:items-center">
           <div>
-            <p className="pg-eyebrow" style={{ color: 'var(--pg-amber)' }}>Progreso visible</p>
+            <p className="pg-eyebrow" data-tone="amber">Progreso visible</p>
             <h2 className="pg-title">Cada práctica desbloquea una frecuencia nueva.</h2>
             <p className="pg-lede">
               Colecciona insignias, construye tu portafolio y demuestra que puedes dirigir una producción completa.
@@ -550,7 +538,7 @@ export function CourseDashboard() {
           <div className="flex items-center gap-4">
             <img src={logoMark} alt="" width={44} height={44} className="size-11 rounded-xl" />
             <span className="block">
-              <strong className="block tracking-[0.18em]" style={{ fontSize: 'var(--pg-step-0)', color: '#e7d9b4' }}>TAMV ONLINE</strong>
+              <strong className="pg-item-title block tracking-[0.18em]">TAMV ONLINE</strong>
               <span className="pg-eyebrow" style={{ letterSpacing: '.2em' }}>Tecnología · música · futuro</span>
             </span>
           </div>
@@ -614,7 +602,7 @@ export function CourseDashboard() {
             aria-label="Enviar pregunta"
             disabled={chatBusy}
             className="flex size-10 shrink-0 items-center justify-center rounded-xl disabled:opacity-60"
-            style={{ background: 'var(--pg-cyan)', color: '#06131e' }}
+            style={{ background: 'var(--pg-cyan)', color: 'var(--pg-bg)' }}
           >
             <Send size={16} />
           </button>
@@ -630,10 +618,7 @@ export function CourseDashboard() {
       title={template?.name ?? 'Plantilla'}
       className="max-w-lg"
     >
-      <p
-        className="pg-field leading-6"
-        style={{ height: 'auto', padding: '1.1rem 1.2rem', color: '#c9dde4', whiteSpace: 'pre-wrap' }}
-      >
+      <p className="pg-code">
         {template?.copy}
       </p>
       <p className="mt-3" style={{ fontSize: 'var(--pg-step--1)', color: 'var(--pg-muted)' }}>

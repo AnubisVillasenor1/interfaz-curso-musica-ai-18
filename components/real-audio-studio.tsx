@@ -157,6 +157,20 @@ export function RealAudioStudio() {
     let animationFrame = 0
     const data = new Uint8Array(analyser?.frequencyBinCount ?? 1024)
 
+    // El canvas no puede heredar el color por CSS: pinta sobre mapa de bits. Se
+    // leen los tokens de la shell una sola vez, al montar, y cada lectura lleva
+    // su respaldo por si el componente viviera fuera de `.pg-shell`. Así el
+    // espectro cambia de color cuando cambia la marca, no cuando alguien edite
+    // este archivo.
+    const tone = (name: string, fallback: string) =>
+      getComputedStyle(canvas).getPropertyValue(name).trim() || fallback
+    const ink = tone('--pg-bg', '#07121f')
+    const muted = tone('--pg-muted', '#7f9aa7')
+    const deep = tone('--pg-violet', '#c09eff')
+    const mid = tone('--pg-cyan', '#75e9f2')
+    const peak = tone('--pg-amber', '#ffcf72')
+    const trace = tone('--pg-cyan-soft', '#8cecf3')
+
     const render = () => {
       animationFrame = requestAnimationFrame(render)
       const rect = canvas.getBoundingClientRect()
@@ -167,10 +181,10 @@ export function RealAudioStudio() {
         canvas.width = width
         canvas.height = height
       }
-      context2d.fillStyle = '#050508'
+      context2d.fillStyle = ink
       context2d.fillRect(0, 0, width, height)
       if (!analyser) {
-        context2d.fillStyle = '#737373'
+        context2d.fillStyle = muted
         context2d.font = `${14 * ratio}px monospace`
         context2d.textAlign = 'center'
         context2d.fillText('Carga y reproduce un audio', width / 2, height / 2)
@@ -188,16 +202,16 @@ export function RealAudioStudio() {
           const amplitude = sum / (end - start) / 255
           const barHeight = Math.max(2 * ratio, amplitude * height * 0.92)
           const gradient = context2d.createLinearGradient(0, height, 0, height - barHeight)
-          gradient.addColorStop(0, '#065f46')
-          gradient.addColorStop(0.55, '#10b981')
-          gradient.addColorStop(1, '#6366f1')
+          gradient.addColorStop(0, deep)
+          gradient.addColorStop(0.55, mid)
+          gradient.addColorStop(1, peak)
           context2d.fillStyle = gradient
           context2d.fillRect(index * barWidth + ratio, height - barHeight, Math.max(1, barWidth - 2 * ratio), barHeight)
         }
       } else {
         context2d.beginPath()
         context2d.lineWidth = 2 * ratio
-        context2d.strokeStyle = '#34d399'
+        context2d.strokeStyle = trace
         const points = Math.min(256, data.length)
         for (let index = 0; index < points; index += 1) {
           const bin = Math.floor(index * data.length / points)
@@ -231,26 +245,26 @@ export function RealAudioStudio() {
     }
   }
 
-  return <section id="audio-analyzer" className="mt-8 rounded-3xl border border-emerald-900/50 bg-[#090d12] p-5 text-neutral-100 shadow-2xl sm:p-8">
+  return <section id="audio-analyzer" className="pg-card mt-8 p-5 sm:p-8">
     <header className="mb-6 flex flex-wrap items-start justify-between gap-4">
-      <div><p className="text-[10px] uppercase tracking-[.24em] text-emerald-400">Web Audio API · FFT real</p><h2 className="mt-2 text-2xl font-semibold">Reproductor y analizador</h2><p className="mt-2 max-w-2xl text-sm text-neutral-400">Escucha un archivo propio o una URL directa y visualiza los bins reales del AnalyserNode. También puedes exportar la captura espectral actual como CSV.</p></div>
-      <span className="rounded-full border border-emerald-800/60 bg-emerald-950/60 px-3 py-1 font-mono text-[10px] text-emerald-300">FFT {analyser?.fftSize ?? 2048} · {isPlaying ? 'ACTIVO' : 'EN ESPERA'}</span>
+      <div><p className="pg-eyebrow">Web Audio API · FFT real</p><h2 className="pg-section-title mt-2">Reproductor y analizador</h2><p className="pg-lede">Escucha un archivo propio o una URL directa y visualiza los bins reales del AnalyserNode. También puedes exportar la captura espectral actual como CSV.</p></div>
+      <span className="pg-chip" data-tone="mint">FFT {analyser?.fftSize ?? 2048} · {isPlaying ? 'ACTIVO' : 'EN ESPERA'}</span>
     </header>
     <div className="grid gap-6 lg:grid-cols-[.8fr_1.2fr]">
-      <div className="space-y-5 rounded-2xl border border-white/10 bg-white/[.025] p-5">
-        <label className="block text-sm text-neutral-300">Archivo de audio<input className="mt-2 block w-full cursor-pointer rounded-xl border border-white/10 bg-black/40 p-3 text-xs file:mr-3 file:rounded-lg file:border-0 file:bg-emerald-500 file:px-3 file:py-2 file:font-semibold file:text-black" type="file" accept="audio/*" onChange={onFile} /></label>
-        <form onSubmit={onUrl} className="space-y-2"><label htmlFor="external-audio-url" className="block text-sm text-neutral-300">URL directa de audio</label><div className="flex gap-2"><input id="external-audio-url" type="url" inputMode="url" value={urlInput} onChange={(event) => setUrlInput(event.target.value)} placeholder="https://dominio.com/audio.mp3" className="min-w-0 flex-1 rounded-xl border border-white/10 bg-black/40 px-3 py-3 text-sm outline-none focus:border-emerald-400" /><button className="rounded-xl bg-emerald-500 px-4 font-semibold text-black hover:bg-emerald-400">Cargar</button></div></form>
-        {error && <p role="alert" className="rounded-xl border border-red-900/60 bg-red-950/30 p-3 text-sm text-red-200">{error}</p>}
-        <div className="rounded-xl border border-white/10 bg-black/30 p-3 text-sm"><p className="truncate text-white">{track?.title ?? 'Sin pista cargada'}</p><p className="mt-1 text-xs text-neutral-500">{track?.origin ?? 'Audio local o URL externa compatible'}</p></div>
-        <button type="button" onClick={startPlayback} disabled={!track} className="w-full rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 px-4 py-3 font-semibold text-black disabled:cursor-not-allowed disabled:opacity-40">▶ Reproducir y analizar</button>
-        <label className="flex items-center gap-3 text-sm text-neutral-400">Volumen<input aria-label="Volumen" type="range" min="0" max="1" step="0.01" value={volume} onChange={onVolume} className="w-full accent-emerald-500" /></label>
-        <button type="button" onClick={saveSnapshot} disabled={!track} className="w-full rounded-xl border border-emerald-800 px-4 py-3 text-sm text-emerald-200 hover:bg-emerald-950/40 disabled:cursor-not-allowed disabled:opacity-40">Descargar espectro CSV</button>
+      <div className="pg-inset space-y-5 p-5">
+        <label className="pg-label block">Archivo de audio<input className="pg-field mt-2 block w-full cursor-pointer text-xs file:mr-3 file:rounded-full file:border-0 file:bg-[var(--pg-cyan)] file:px-3 file:py-2 file:font-semibold file:text-[var(--pg-bg)]" type="file" accept="audio/*" onChange={onFile} /></label>
+        <form onSubmit={onUrl} className="space-y-2"><label htmlFor="external-audio-url" className="pg-label block">URL directa de audio</label><div className="flex gap-2"><input id="external-audio-url" type="url" inputMode="url" value={urlInput} onChange={(event) => setUrlInput(event.target.value)} placeholder="https://dominio.com/audio.mp3" className="pg-field min-w-0 flex-1" /><button className="pg-btn pg-btn-primary pg-btn-sm">Cargar</button></div></form>
+        {error && <p role="alert" className="pg-status" data-tone="error">{error}</p>}
+        <div className="pg-inset text-sm"><p className="pg-item-title truncate">{track?.title ?? 'Sin pista cargada'}</p><p className="pg-note mt-1">{track?.origin ?? 'Audio local o URL externa compatible'}</p></div>
+        <button type="button" onClick={startPlayback} disabled={!track} className="pg-btn pg-btn-primary w-full">▶ Reproducir y analizar</button>
+        <label className="pg-label flex items-center gap-3">Volumen<input aria-label="Volumen" type="range" min="0" max="1" step="0.01" value={volume} onChange={onVolume} className="w-full accent-[var(--pg-cyan)]" /></label>
+        <button type="button" onClick={saveSnapshot} disabled={!track} className="pg-btn pg-btn-ghost pg-btn-sm w-full">Descargar espectro CSV</button>
       </div>
-      <div className="rounded-2xl border border-white/10 bg-white/[.025] p-5">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3"><h3 className="font-medium">Espectro de frecuencias</h3><div className="flex rounded-lg border border-white/10 p-1">{(['bars', 'line'] as const).map((option) => <button key={option} type="button" aria-pressed={mode === option} onClick={() => setMode(option)} className={`rounded-md px-3 py-1.5 text-xs ${mode === option ? 'bg-emerald-500 font-semibold text-black' : 'text-neutral-400 hover:text-white'}`}>{option === 'bars' ? 'Barras' : 'Línea'}</button>)}</div></div>
-        <div className="relative h-56 overflow-hidden rounded-xl border border-neutral-800 bg-[#050508] sm:h-64"><canvas data-audio-fft-canvas className="h-full w-full" /></div>
-        <audio ref={audioRef} src={track?.url} controls crossOrigin="anonymous" onPlay={() => setIsPlaying(true)} onPause={() => setIsPlaying(false)} onEnded={() => setIsPlaying(false)} onError={() => { if (track) setError('No se pudo cargar el audio. Comprueba el formato, la URL y, para audio externo, que el servidor permita CORS.') }} className="mt-5 h-12 w-full accent-emerald-500" />
-        <p className="mt-3 text-xs leading-relaxed text-neutral-500">Las URLs externas necesitan servir un archivo de audio y permitir CORS para que el navegador pueda analizar el espectro. El audio local funciona sin conexión externa. El analizador procesa el sonido en el navegador; no sube ni almacena el archivo.</p>
+      <div className="pg-inset p-5">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3"><h3 className="pg-block-title">Espectro de frecuencias</h3><div className="pg-inset flex gap-1.5 p-1.5">{(['bars', 'line'] as const).map((option) => <button key={option} type="button" aria-pressed={mode === option} onClick={() => setMode(option)} className="pg-seg">{option === 'bars' ? 'Barras' : 'Línea'}</button>)}</div></div>
+        <div className="pg-frame relative h-56 sm:h-64"><canvas data-audio-fft-canvas className="h-full w-full" /></div>
+        <audio ref={audioRef} src={track?.url} controls crossOrigin="anonymous" onPlay={() => setIsPlaying(true)} onPause={() => setIsPlaying(false)} onEnded={() => setIsPlaying(false)} onError={() => { if (track) setError('No se pudo cargar el audio. Comprueba el formato, la URL y, para audio externo, que el servidor permita CORS.') }} className="mt-5 h-12 w-full accent-[var(--pg-cyan)]" />
+        <p className="pg-note mt-3">Las URLs externas necesitan servir un archivo de audio y permitir CORS para que el navegador pueda analizar el espectro. El audio local funciona sin conexión externa. El analizador procesa el sonido en el navegador; no sube ni almacena el archivo.</p>
       </div>
     </div>
   </section>

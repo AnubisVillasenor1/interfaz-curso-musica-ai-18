@@ -63,7 +63,7 @@ export default async function CursoLeccionPage({ params }: Props) {
   return (
     <main
       className="pg-shell relative min-h-screen overflow-x-clip"
-      style={{ background: 'var(--pg-bg)', color: 'var(--pg-ink)' }}
+      style={{ background: 'var(--pg-bg)' }}
     >
       <div
         aria-hidden

@@ -111,7 +111,7 @@ export function Dialog({
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             {eyebrow && <p className="pg-eyebrow">{eyebrow}</p>}
-            <h2 className="pg-title mt-2" style={{ fontSize: 'var(--pg-step-2)' }}>{title}</h2>
+            <h2 className="pg-title mt-2" data-size="sm">{title}</h2>
           </div>
           <button
             type="button"

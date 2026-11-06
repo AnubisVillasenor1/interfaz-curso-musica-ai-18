@@ -49,29 +49,29 @@ export function MusicStudio() {
     } catch (error) { setCatalogMessage(error instanceof Error ? error.message : 'Error de red.') }
   }
 
-  return <main className="min-h-screen bg-[#07121f] px-5 py-10 text-[#edfaff] sm:px-8">
-    <div className="mx-auto max-w-5xl">
-      <a href="/" className="text-sm text-cyan-200 hover:underline">← Volver a Play and Go</a>
-      <header className="my-8"><p className="text-xs uppercase tracking-[.25em] text-cyan-300">Taller musical libre</p><h1 className="mt-2 text-4xl font-semibold">Agente de composición</h1><p className="mt-3 max-w-2xl text-slate-300">Convierte una idea en un plan de arreglo y exporta un boceto MIDI descargable. Funciona sin API de pago; Ollama local mejora el análisis cuando está configurado.</p></header>
+  return <main className="pg-shell min-h-screen px-5 py-10 sm:px-8" style={{ background: 'var(--pg-bg)' }}>
+    <div className="pg-container max-w-5xl">
+      <a href="/" className="pg-navlink">← Volver a Play and Go</a>
+      <header className="my-8"><p className="pg-eyebrow">Taller musical libre</p><h1 className="pg-title">Agente de composición</h1><p className="pg-lede">Convierte una idea en un plan de arreglo y exporta un boceto MIDI descargable. Funciona sin API de pago; Ollama local mejora el análisis cuando está configurado.</p></header>
       <div className="grid gap-6 lg:grid-cols-[1.1fr_.9fr]">
-        <section className="rounded-3xl border border-white/10 bg-white/[.04] p-6">
-          <h2 className="text-xl font-medium">1. Diseña tu composición</h2>
+        <section className="pg-card p-6">
+          <h2 className="pg-section-title">1. Diseña tu composición</h2>
           <form onSubmit={createPlan} className="mt-4 space-y-4">
-            <label htmlFor="music-prompt" className="block text-sm text-slate-300">Describe estilo, emoción, instrumentos y tempo</label>
-            <textarea id="music-prompt" value={prompt} onChange={(event) => setPrompt(event.target.value)} maxLength={1200} required rows={5} className="w-full rounded-xl border border-white/15 bg-slate-950/60 p-4 text-white outline-none focus:border-cyan-300" />
-            <button disabled={busy} className="rounded-xl bg-cyan-300 px-5 py-3 font-semibold text-slate-950 disabled:opacity-50">{busy ? 'Procesando…' : 'Crear plan musical'}</button>
+            <label htmlFor="music-prompt" className="pg-label block">Describe estilo, emoción, instrumentos y tempo</label>
+            <textarea id="music-prompt" value={prompt} onChange={(event) => setPrompt(event.target.value)} maxLength={1200} required rows={5} className="pg-field leading-6" />
+            <button disabled={busy} className="pg-btn pg-btn-primary">{busy ? 'Procesando…' : 'Crear plan musical'}</button>
           </form>
-          {message && <p role="status" className="mt-4 text-sm text-cyan-100">{message}</p>}
-          {plan && <div className="mt-6 rounded-2xl border border-cyan-300/20 bg-cyan-300/5 p-5"><h3 className="text-lg font-semibold">{plan.title}</h3><dl className="mt-3 grid grid-cols-2 gap-3 text-sm"><div><dt className="text-slate-400">Género / ánimo</dt><dd>{plan.genre} · {plan.mood}</dd></div><div><dt className="text-slate-400">Tempo / tonalidad</dt><dd>{plan.tempo} BPM · {plan.key}</dd></div><div className="col-span-2"><dt className="text-slate-400">Instrumentos</dt><dd>{plan.instruments.join(', ')}</dd></div></dl><ul className="mt-4 space-y-1 text-sm text-slate-300">{plan.structure.map((item) => <li key={item}>♪ {item}</li>)}</ul><button onClick={exportMidi} disabled={busy} className="mt-5 rounded-xl border border-cyan-200/50 px-4 py-2 text-sm hover:bg-cyan-200/10 disabled:opacity-50">Descargar arreglo MIDI</button></div>}
+          {message && <p role="status" className="pg-status mt-4">{message}</p>}
+          {plan && <div className="pg-inset mt-6"><h3 className="pg-block-title">{plan.title}</h3><dl className="mt-3 grid grid-cols-2 gap-3 text-sm"><div><dt className="pg-label" data-tone="muted">Género / ánimo</dt><dd>{plan.genre} · {plan.mood}</dd></div><div><dt className="pg-label" data-tone="muted">Tempo / tonalidad</dt><dd>{plan.tempo} BPM · {plan.key}</dd></div><div className="col-span-2"><dt className="pg-label" data-tone="muted">Instrumentos</dt><dd>{plan.instruments.join(', ')}</dd></div></dl><ul className="pg-list mt-4">{plan.structure.map((item) => <li key={item}>♪ {item}</li>)}</ul><button onClick={exportMidi} disabled={busy} className="pg-btn pg-btn-ghost pg-btn-sm mt-5">Descargar arreglo MIDI</button></div>}
         </section>
-        <section className="rounded-3xl border border-white/10 bg-white/[.04] p-6">
-          <h2 className="text-xl font-medium">2. Explora música reutilizable</h2><p className="mt-2 text-sm text-slate-300">Búsqueda en Internet Archive y, opcionalmente, Jamendo. La licencia varía por obra.</p>
-          <form onSubmit={searchCatalog} className="mt-4 flex gap-2"><label htmlFor="catalog-query" className="sr-only">Buscar música</label><input id="catalog-query" value={query} onChange={(event) => setQuery(event.target.value)} minLength={2} maxLength={100} required placeholder="piano jazz, ambient…" className="min-w-0 flex-1 rounded-xl border border-white/15 bg-slate-950/60 px-3 py-3 outline-none focus:border-cyan-300" /><button className="rounded-xl bg-white/10 px-4 py-2 hover:bg-white/15">Buscar</button></form>
-          {catalogMessage && <p role="status" className="mt-3 text-xs text-slate-300">{catalogMessage}</p>}
-          <ul className="mt-4 space-y-3">{results.map((item) => <li key={item.id} className="rounded-xl border border-white/10 p-3"><a className="font-medium text-cyan-200 hover:underline" href={item.url} target="_blank" rel="noreferrer">{item.title}</a><p className="mt-1 text-xs text-slate-400">{item.creator} · {item.source}</p><p className="mt-1 break-all text-xs text-slate-500">Licencia: {item.license}</p></li>)}</ul>
+        <section className="pg-card p-6">
+          <h2 className="pg-section-title">2. Explora música reutilizable</h2><p className="pg-note mt-2">Búsqueda en Internet Archive y, opcionalmente, Jamendo. La licencia varía por obra.</p>
+          <form onSubmit={searchCatalog} className="mt-4 flex gap-2"><label htmlFor="catalog-query" className="sr-only">Buscar música</label><input id="catalog-query" value={query} onChange={(event) => setQuery(event.target.value)} minLength={2} maxLength={100} required placeholder="piano jazz, ambient…" className="pg-field min-w-0 flex-1" /><button className="pg-btn pg-btn-ghost pg-btn-sm">Buscar</button></form>
+          {catalogMessage && <p role="status" className="pg-note mt-3">{catalogMessage}</p>}
+          <ul className="mt-4 space-y-3">{results.map((item) => <li key={item.id} className="pg-inset"><a className="pg-minilink" href={item.url} target="_blank" rel="noreferrer">{item.title}</a><p className="pg-note mt-1">{item.creator} · {item.source}</p><p className="pg-note mt-1 break-all">Licencia: {item.license}</p></li>)}</ul>
         </section>
       </div>
-      <aside className="mt-6 rounded-2xl border border-amber-300/20 bg-amber-300/5 p-4 text-sm text-amber-100"><strong>Alcance:</strong> el exportador crea MIDI procedural con melodía y acordes, no audio renderizado ni stems. Usa un DAW/sintetizador propio para producir audio. El planificador sin Ollama es determinista y no utiliza un modelo de IA.</aside>
+      <aside className="pg-callout mt-6"><strong>Alcance:</strong> el exportador crea MIDI procedural con melodía y acordes, no audio renderizado ni stems. Usa un DAW/sintetizador propio para producir audio. El planificador sin Ollama es determinista y no utiliza un modelo de IA.</aside>
     </div>
   </main>
 }

@@ -26,7 +26,7 @@ export default async function StudioPage({
   const raw = Array.isArray(params.prompt) ? params.prompt[0] : params.prompt
   const initialPrompt = typeof raw === 'string' ? raw.slice(0, 2000) : ''
 
-  return <main className="pg-shell min-h-screen" style={{ background: 'var(--pg-bg)', color: 'var(--pg-ink)' }}>
+  return <main className="pg-shell min-h-screen" style={{ background: 'var(--pg-bg)' }}>
     <div className="pg-container" style={{ maxWidth: '68rem', paddingTop: '2.5rem' }}>
       <a href="/" className="pg-navlink">← Volver a Play and Go</a>
       <header className="mb-8 mt-6">

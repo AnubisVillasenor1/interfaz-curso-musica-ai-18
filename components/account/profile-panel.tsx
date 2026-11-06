@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { ArrowRight, LogOut, Music2, Sparkles } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
 import { PRODUCTS, PRODUCT_IDS, priceLabel, type ProductId } from '@/lib/products'
 
 /**
@@ -137,41 +136,40 @@ export function ProfilePanel() {
 
   if (state === 'loading') {
     return (
-      <div className="rounded-3xl border border-white/10 bg-white/[.035] p-8 text-sm text-[#8fa9b5]">
-        Cargando tu plan…
-      </div>
+      <div className="pg-panel pg-note text-sm p-8">Cargando tu plan…</div>
     )
   }
 
   if (state !== 'ready' || !data) {
     return (
-      <div className="rounded-3xl border border-[#ffcf72]/25 bg-[#ffcf72]/5 p-8">
-        <h2 className="text-lg font-semibold text-[#ffcf72]">
+      <div className="pg-notice">
+        <h2 className="pg-card-title" data-tone="amber">
           {state === 'unauthorized'
             ? 'Necesitas iniciar sesión'
             : state === 'unconfigured'
               ? 'Servicio de cuenta sin configurar'
               : 'No pudimos mostrar tu cuenta'}
         </h2>
-        <p className="mt-3 text-sm leading-6 text-[#c4d8df]">{notice}</p>
+        <p className="pg-prose mt-3">{notice}</p>
         <div className="mt-6 flex flex-wrap gap-3">
           {state === 'unauthorized' && (
-            <Button
+            <button
+              type="button"
               onClick={() => {
                 window.location.href = '/auth?next=/perfil'
               }}
-              className="rounded-full bg-[#75e9f2] px-5 font-semibold text-[#06131e] hover:bg-[#a0f4f9]"
+              className="pg-btn pg-btn-primary"
             >
-              Iniciar sesión <ArrowRight data-icon="inline-end" />
-            </Button>
+              Iniciar sesión <ArrowRight size={15} aria-hidden="true" />
+            </button>
           )}
-          <Button
-            variant="outline"
+          <button
+            type="button"
             onClick={() => void load()}
-            className="rounded-full border-white/15 text-[#c4d8df]"
+            className="pg-btn pg-btn-ghost"
           >
             Reintentar
-          </Button>
+          </button>
         </div>
       </div>
     )
@@ -187,95 +185,95 @@ export function ProfilePanel() {
 
   return (
     <div className="flex flex-col gap-5">
-      <section className="rounded-3xl border border-[#75e9f2]/25 bg-[#0c2432]/70 p-6">
+      <section className="pg-card pg-card-featured p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="text-[10px] uppercase tracking-[.24em] text-[#75e9f2]">Tu cuenta</p>
-            <h1 className="mt-2 text-2xl font-semibold tracking-tight">
+            <p className="pg-eyebrow">Tu cuenta</p>
+            <h1 className="pg-title mt-2" data-size="sm">
               {data.email ?? 'Cuenta iniciada'}
             </h1>
-            <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
-              <span className="rounded-full bg-[#75e9f2]/15 px-3 py-1 text-[#8cecf3]">
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <span className="pg-pill" data-tone="cyan">
                 {planLabel[entitlement.plan] ?? entitlement.plan}
               </span>
-              <span
-                className={`rounded-full px-3 py-1 ${
-                  entitlement.active
-                    ? 'bg-[#83d7b4]/15 text-[#83d7b4]'
-                    : 'bg-white/10 text-[#a9c0ca]'
-                }`}
-              >
+              <span className="pg-pill" data-tone={entitlement.active ? 'mint' : undefined}>
                 {entitlement.active ? 'Acceso activo' : 'Acceso inactivo'}
               </span>
-              <span className="rounded-full bg-white/10 px-3 py-1 text-[#a9c0ca]">
-                Rol: {entitlement.role}
-              </span>
+              <span className="pg-pill">Rol: {entitlement.role}</span>
             </div>
           </div>
-          <Button
-            variant="outline"
+          <button
+            type="button"
             onClick={logout}
             disabled={busy}
             aria-label="Cerrar sesión"
-            className="rounded-full border-white/15 text-[#c4d8df] hover:bg-white/5"
+            className="pg-btn pg-btn-ghost pg-btn-sm"
           >
-            <LogOut data-icon="inline-start" /> Cerrar sesión
-          </Button>
+            <LogOut size={15} aria-hidden="true" /> Cerrar sesión
+          </button>
         </div>
       </section>
 
       <div className="grid gap-5 sm:grid-cols-2">
-        <section className="rounded-3xl border border-white/10 bg-white/[.035] p-6">
-          <h2 className="text-sm font-semibold text-[#d4c7ff]">Cupo con proveedor de pago</h2>
-          <p className="mt-4 text-3xl font-semibold text-[#c09eff]">
+        <section className="pg-card p-6">
+          <h2 className="pg-card-title" data-tone="violet">
+            Cupo con proveedor de pago
+          </h2>
+          <p className="pg-figure" data-tone="violet">
             {remaining(entitlement.daily_limit, entitlement.used_today)}{' '}
-            <span className="text-sm font-normal text-[#8fa9b5]">
-              / {entitlement.daily_limit} disponibles
-            </span>
+            <span>/ {entitlement.daily_limit} disponibles</span>
           </p>
-          <p className="mt-2 text-xs text-[#8fa9b5]">
+          <p className="pg-note mt-2">
             Usadas hoy: {entitlement.used_today} de {entitlement.daily_limit}.
           </p>
         </section>
 
-        <section className="rounded-3xl border border-white/10 bg-white/[.035] p-6">
-          <h2 className="text-sm font-semibold text-[#8cecf3]">Cupo motor local</h2>
-          <p className="mt-4 text-3xl font-semibold text-[#75e9f2]">
+        <section className="pg-card p-6">
+          <h2 className="pg-card-title" data-tone="cyan">
+            Cupo motor local
+          </h2>
+          <p className="pg-figure" data-tone="cyan">
             {remaining(entitlement.local_daily_limit, entitlement.local_used_today)}{' '}
-            <span className="text-sm font-normal text-[#8fa9b5]">
-              / {entitlement.local_daily_limit} disponibles
-            </span>
+            <span>/ {entitlement.local_daily_limit} disponibles</span>
           </p>
-          <p className="mt-2 text-xs text-[#8fa9b5]">
+          <p className="pg-note mt-2">
             Usadas hoy: {entitlement.local_used_today} de {entitlement.local_daily_limit}. Sin costo.
           </p>
         </section>
       </div>
 
-      <section className="grid gap-4 rounded-3xl border border-white/10 bg-white/[.035] p-6 sm:grid-cols-3">
+      <section className="pg-panel grid gap-4 p-6 sm:grid-cols-3">
         <div>
-          <p className="text-xs text-[#7f9aa7]">Canciones</p>
-          <p className="mt-1 text-2xl font-semibold">
-            {entitlement.songs_total}
-            <span className="ml-1 text-xs font-normal text-[#8fa9b5]">total</span>
+          <p className="pg-label" data-tone="muted">
+            Canciones
           </p>
-          <p className="mt-1 text-xs text-[#83d7b4]">{entitlement.songs_ready} listas</p>
+          <p className="pg-figure mt-1">
+            {entitlement.songs_total}
+            <span>total</span>
+          </p>
+          <p className="pg-accent-mint mt-1 text-xs">{entitlement.songs_ready} listas</p>
         </div>
         <div>
-          <p className="text-xs text-[#7f9aa7]">Listas para reproducir</p>
-          <p className="mt-1 text-2xl font-semibold text-[#ffcf72]">{entitlement.songs_ready}</p>
+          <p className="pg-label" data-tone="muted">
+            Listas para reproducir
+          </p>
+          <p className="pg-figure mt-1" data-tone="amber">
+            {entitlement.songs_ready}
+          </p>
         </div>
         <div>
-          <p className="text-xs text-[#7f9aa7]">Lecciones completadas</p>
-          <p className="mt-1 text-2xl font-semibold">{entitlement.lessons_done}</p>
+          <p className="pg-label" data-tone="muted">
+            Lecciones completadas
+          </p>
+          <p className="pg-figure mt-1">{entitlement.lessons_done}</p>
         </div>
       </section>
 
-      <section className="rounded-3xl border border-white/10 bg-[#0b1f2e]/80 p-6">
-        <h2 className="flex items-center gap-2 text-sm font-semibold">
-          <Sparkles className="text-[#75e9f2]" size={16} /> Mejora tu acceso
+      <section className="pg-card p-6">
+        <h2 className="pg-card-title">
+          <Sparkles size={16} className="pg-accent-cyan" aria-hidden="true" /> Mejora tu acceso
         </h2>
-        <p className="mt-2 text-xs leading-5 text-[#8fa9b5]">
+        <p className="pg-note mt-2 leading-5">
           Elige un plan y continúa el pago con Stripe. El precio se muestra desde el mismo catálogo
           que cobra la pasarela.
         </p>
@@ -287,7 +285,7 @@ export function ProfilePanel() {
             id="upgrade-plan"
             value={upgradeId}
             onChange={(event) => setUpgradeId(event.target.value as ProductId)}
-            className="h-11 rounded-xl border border-white/10 bg-black/25 px-3 text-sm text-[#c4d8df] outline-none focus-visible:border-[#75e9f2] focus-visible:ring-3 focus-visible:ring-[#75e9f2]/40"
+            className="pg-field w-auto max-w-xs"
           >
             {PRODUCT_IDS.map((id) => (
               <option key={id} value={id}>
@@ -295,17 +293,19 @@ export function ProfilePanel() {
               </option>
             ))}
           </select>
-          <Button
+          <button
+            type="button"
             onClick={upgrade}
             disabled={busy}
-            className="h-11 rounded-full bg-[#75e9f2] px-5 font-semibold text-[#06131e] hover:bg-[#a0f4f9] disabled:opacity-60"
+            className="pg-btn pg-btn-primary"
           >
-            {busy ? 'Preparando pago…' : 'Subir de plan'} <Music2 data-icon="inline-end" />
-          </Button>
+            {busy ? 'Preparando pago…' : 'Subir de plan'}{' '}
+            <Music2 size={15} aria-hidden="true" />
+          </button>
         </div>
       </section>
 
-      <p aria-live="polite" className="text-center text-xs text-[#ffcf72]">
+      <p aria-live="polite" data-tone="error" className="pg-status mx-auto text-center text-xs">
         {notice}
       </p>
     </div>

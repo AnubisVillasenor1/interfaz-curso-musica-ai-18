@@ -138,9 +138,6 @@ export function useCourseProgress(enabled = true) {
   return { progress, reload: load, applyCompletion }
 }
 
-export const focusRing =
-  'outline-none focus-visible:ring-2 focus-visible:ring-[#75e9f2] focus-visible:ring-offset-2 focus-visible:ring-offset-[#07121f]'
-
 /**
  * Barra de progreso global. Sin props hace su propia lectura de
  * `GET /api/progress`; con `progress` controlado reutiliza el estado del padre.

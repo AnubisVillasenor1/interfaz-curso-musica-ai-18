@@ -214,23 +214,23 @@ export function LocalComposer({ initialPrompt = '' }: { initialPrompt?: string }
     <div className="flex items-start justify-between gap-4">
       <div>
         <p className="pg-eyebrow">Motor local · sin costo</p>
-        <h3 className="mt-1.5 text-xl font-semibold">Escribe tu primera dirección musical</h3>
-        <p className="mt-1.5 max-w-xl text-xs leading-5" style={{ color: 'var(--pg-muted, #8fa9b5)' }}>
+        <h3 className="pg-block-title mt-1.5">Escribe tu primera dirección musical</h3>
+        <p className="pg-note mt-1.5 max-w-xl">
           El arreglo se compone aquí y el audio se renderiza en tu navegador. No usa el servicio de pago, así que
           puedes practicar cuantas veces te permita tu cupo gratuito.
         </p>
       </div>
-      <Music2 className="hidden shrink-0 text-[#75e9f2]/70 sm:block" size={22} />
+      <Music2 className="pg-accent-cyan hidden shrink-0 opacity-70 sm:block" size={22} />
     </div>
 
-    <label className="flex flex-col gap-1.5 text-xs text-[#a9c0ca]">
+    <label className="pg-label flex flex-col gap-1.5">
       Título
       <input value={title} onChange={(event) => setTitle(event.target.value)} maxLength={80} required
         placeholder="Ej. Mapa sonoro nº1"
         className="pg-field h-11 text-sm" />
     </label>
 
-    <label className="flex flex-col gap-1.5 text-xs text-[#a9c0ca]">
+    <label className="pg-label flex flex-col gap-1.5">
       Dirección musical
       <textarea value={prompt} onChange={(event) => setPrompt(event.target.value)} maxLength={2000} required rows={4}
         placeholder="Género, emoción, instrumentación, tempo y estructura. Sé específico: el motor atiende cinco decisiones, no adjetivos."
@@ -238,7 +238,7 @@ export function LocalComposer({ initialPrompt = '' }: { initialPrompt?: string }
     </label>
 
     <div className="grid gap-3 sm:grid-cols-2">
-      <label className="flex flex-col gap-1.5 text-xs text-[#a9c0ca]">
+      <label className="pg-label flex flex-col gap-1.5">
         ADN de género (opcional)
         <select value={genreId} onChange={(event) => setGenreId(event.target.value)}
           className="pg-field h-11 text-sm">
@@ -246,7 +246,7 @@ export function LocalComposer({ initialPrompt = '' }: { initialPrompt?: string }
           {GENRES.map((genre) => <option key={genre.id} value={genre.id}>{genre.name}</option>)}
         </select>
       </label>
-      <label className="flex flex-col gap-1.5 text-xs text-[#a9c0ca]">
+      <label className="pg-label flex flex-col gap-1.5">
         BPM (opcional, 40–200)
         <input type="number" min={40} max={200} value={bpm || ''}
           onChange={(event) => setBpm(Number(event.target.value) || 0)}
@@ -262,34 +262,34 @@ export function LocalComposer({ initialPrompt = '' }: { initialPrompt?: string }
         {busy ? PHASE_COPY[phase] : 'Componer y guardar'}
       </button>
       {arrangement && <button type="button" onClick={preview}
-        className="pg-btn pg-btn-ghost" style={{ padding: '0.7rem 1.15rem' }}>
+        className="pg-btn pg-btn-ghost pg-btn-sm">
         <AudioLines size={16} /> {playing ? 'Detener vista previa' : 'Escuchar en vivo'}
       </button>}
       {audioUrl && <button type="button" onClick={download}
-        className="pg-btn pg-btn-ghost" style={{ padding: '0.7rem 1.15rem', color: 'var(--pg-cyan-soft, #8cecf3)', borderColor: 'rgba(117,233,242,.4)' }}>
+        className="pg-btn pg-btn-ghost pg-btn-sm" data-tone="cyan">
         <Download size={16} /> Descargar WAV
       </button>}
     </div>
 
     {phase === 'rendering' && progress > 0 && (
       <div>
-        <div className="h-1 overflow-hidden rounded-full bg-white/10" role="progressbar" aria-valuenow={Math.round(progress * 100)} aria-valuemin={0} aria-valuemax={100} aria-label="Renderizado del audio">
-          <div className="h-full rounded-full transition-[width]" style={{ width: `${Math.round(progress * 100)}%`, background: 'var(--pg-cyan, #75e9f2)' }} />
+        <div className="pg-meter" role="progressbar" aria-valuenow={Math.round(progress * 100)} aria-valuemin={0} aria-valuemax={100} aria-label="Renderizado del audio">
+          <div className="pg-meter-fill" style={{ width: `${Math.round(progress * 100)}%` }} />
         </div>
-        <p className="mt-2 font-mono text-[10px] uppercase tracking-[.18em] text-[#7f9aa7]">
+        <p className="pg-meta mt-2">
           Renderizando · {Math.round(progress * 100)}%
         </p>
       </div>
     )}
 
-    {arrangement && <p className="font-mono text-[11px] tracking-[.06em] text-[#7f9aa7]">
+    {arrangement && <p className="pg-item-meta">
       {arrangement.sections.length} secciones · {Math.round(arrangement.durationSeconds)} s · {arrangement.bpm} BPM · {arrangement.key.tonic} {arrangement.key.mode}
     </p>}
 
     {audioUrl && phase !== 'error' && <audio controls src={audioUrl} className="w-full" onPlay={() => setPlaying(false)} />}
 
     {(detail || phase === 'error') && (
-      <p role={phase === 'error' ? 'alert' : 'status'} className={`rounded-xl p-3 text-xs leading-5 ${phase === 'error' ? 'bg-[#ff8f8f]/10 text-[#ffb4b4]' : 'flex items-center gap-2 bg-[#75e9f2]/10 text-[#8cecf3]'}`}>
+      <p role={phase === 'error' ? 'alert' : 'status'} data-tone={phase === 'error' ? 'error' : undefined} className="pg-status flex items-center gap-2">
         {phase === 'done' && <Save size={14} />} {detail || PHASE_COPY[phase]}
       </p>
     )}

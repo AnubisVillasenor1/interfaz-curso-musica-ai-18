@@ -983,7 +983,7 @@ html[data-theme='dark'] {
      La landing estaba escrita con una cuarentena de hex sueltos en el
      JSX: cada sección tenía su propio cian y su propio gris. Aquí vive
      el vocabulario una sola vez (tokens en `.pg-shell`) y las clases
-     descienden de ellos. Cambiar la marca es cambiar seis líneas.
+     descienden de ellos. Cambiar la marca es cambiar siete líneas.
      ================================================================== */
   .pg-shell {
     --pg-cyan: #75e9f2;
@@ -991,6 +991,7 @@ html[data-theme='dark'] {
     --pg-violet: #c09eff;
     --pg-magenta: #ff9eea;
     --pg-amber: #ffcf72;
+    --pg-mint: #83d7b4;
     --pg-ink: #edfaff;
     --pg-text: #adc4d0;
     --pg-muted: #7f9aa7;
@@ -1060,6 +1061,7 @@ html[data-theme='dark'] {
      insignia— sin cambiar la regla de 18 px que la ancla. */
   .pg-eyebrow[data-tone='magenta'] { color: var(--pg-magenta); }
   .pg-eyebrow[data-tone='violet'] { color: var(--pg-violet); }
+  .pg-eyebrow[data-tone='amber'] { color: var(--pg-amber); }
 
   .pg-title {
     margin-top: 0.85rem;
@@ -1073,6 +1075,19 @@ html[data-theme='dark'] {
     font-size: var(--pg-step-4);
     line-height: 0.92;
     letter-spacing: -0.06em;
+  }
+  /* Escala del título. Un panel no necesita el título de portada: `sm` es el
+     encabezado de sección dentro de una tarjeta y `xs` el de un bloque corto.
+     Existía como `style={{ fontSize: 'var(--pg-step-2)' }}` repetido por las
+     páginas; aquí vive ahora, con el peso y el tracking del título conservados. */
+  .pg-title[data-size='sm'] {
+    font-size: var(--pg-step-2);
+    line-height: 1.12;
+  }
+  .pg-title[data-size='xs'] {
+    font-size: var(--pg-step-1);
+    line-height: 1.25;
+    letter-spacing: -0.02em;
   }
 
   .pg-lede {
@@ -1236,7 +1251,9 @@ html[data-theme='dark'] {
     line-height: 1.6;
     color: #d8c99d;
   }
-  .pg-callout b { color: var(--pg-amber); font-weight: 600; }
+  /* El inicio en negrita es la etiqueta del aviso. `strong` y `b` valen: el
+     marcado semántico lo elige la lección, el color lo pone aquí el sistema. */
+  .pg-callout :is(b, strong) { color: var(--pg-amber); font-weight: 600; }
 
   /* Medidor de avance. */
   .pg-meter {
@@ -1378,7 +1395,7 @@ html[data-theme='dark'] {
   }
   .pg-label[data-tone='cyan'] { color: var(--pg-cyan); }
   .pg-label[data-tone='violet'] { color: var(--pg-violet); }
-  .pg-label[data-tone='mint'] { color: #83d7b4; }
+  .pg-label[data-tone='mint'] { color: var(--pg-mint); }
   .pg-label[data-tone='amber'] { color: var(--pg-amber); }
   .pg-label[data-tone='muted'] { color: var(--pg-muted); }
 
@@ -1476,7 +1493,7 @@ html[data-theme='dark'] {
     background: rgba(192, 158, 255, 0.06);
     color: #c5d8df;
   }
-  .pg-callout[data-tone='violet'] b { color: var(--pg-violet); }
+  .pg-callout[data-tone='violet'] :is(b, strong) { color: var(--pg-violet); }
 
   /* El objetivo de una sesión es contenido, no letra pequeña: la nota de una
      tarjeta va a --pg-step--1, la del hero sube al cuerpo de lectura. Sólo
@@ -1484,6 +1501,38 @@ html[data-theme='dark'] {
   .pg-callout[data-size='lead'] {
     font-size: var(--pg-step-0);
     line-height: 1.75;
+  }
+
+  /* Conmutador segmentado: varias vistas de UN mismo marco (barras/línea,
+     semana/mes). Va en línea, hueco por defecto y relleno cuando `aria-pressed`
+     es true — el estado lo pinta el atributo, nunca una clase condicional en el
+     JSX, que es como se corrompe un sistema. `.pg-shell` delante para que ni
+     `.pg-check` ni ningún tinte de tarjeta le roben el color por orden de fuente. */
+  .pg-shell .pg-seg {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    border: 1px solid var(--pg-hairline);
+    border-radius: 0.7rem;
+    padding: 0.42rem 0.95rem;
+    font-size: var(--pg-step--1);
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    line-height: 1.4;
+    color: var(--pg-muted);
+    background: transparent;
+    transition: color 0.35s ease, border-color 0.35s ease, background-color 0.35s ease;
+  }
+  .pg-shell .pg-seg:hover {
+    color: var(--pg-ink);
+    border-color: var(--pg-keyline);
+  }
+  .pg-shell .pg-seg[aria-pressed='true'] {
+    color: var(--pg-bg);
+    background: var(--pg-cyan);
+    border-color: var(--pg-cyan);
+    font-weight: 600;
   }
 
   /* Tarjeta de prompt: cuerpo de .pg-card con el tinte del objeto. */
@@ -1534,7 +1583,7 @@ html[data-theme='dark'] {
   .pg-check[aria-pressed='true'] .pg-check-box {
     border-color: rgba(131, 215, 180, 0.6);
     background: rgba(131, 215, 180, 0.18);
-    color: #83d7b4;
+    color: var(--pg-mint);
   }
 
   /* Confirmación de estado (lección registrada, insignia nueva). A diferencia
@@ -1566,7 +1615,10 @@ html[data-theme='dark'] {
     line-height: 1.7;
     color: var(--pg-cyan-soft);
   }
-  .pg-status[data-tone='error'] { color: var(--pg-amber); }
+  /* Ámbar = se puede recuperar. Magenta = algo falló de verdad. El mismo
+     magenta que ya marcan `.pg-pill[error]` y el texto de error de la
+     biblioteca, para que un fallo se reconozca igual en toda la app. */
+  .pg-status[data-tone='error'] { color: var(--pg-magenta); }
 
   /* Variante compacta del botón, para acciones dentro de una tarjeta. */
   .pg-btn-sm {
@@ -1596,14 +1648,16 @@ html[data-theme='dark'] {
     color: var(--pg-cyan);
   }
 
-  /* Acento de color para los iconos que jalonan cada sección. Existe como clase
-     porque `text-[var(--pg-cyan)]` es ambiguo para Tailwind (¿tamaño o color?)
-     y un hex suelto en el JSX es justo lo que este sistema vino a quitar. */
+  /* Acento de color para los iconos que jalonan cada sección. Medido en el CSS
+     compilado: Tailwind sí resuelve `text-[var(--pg-cyan)]` como color, así que
+     el valor arbitrario funciona — pero deja el token suelto en el JSX. La clase
+     mantiene el vocabulario en un solo sitio y quita los hex de las páginas. */
   .pg-accent-cyan { color: var(--pg-cyan); }
   .pg-accent-violet { color: var(--pg-violet); }
   .pg-accent-magenta { color: var(--pg-magenta); }
   .pg-accent-amber { color: var(--pg-amber); }
-  .pg-accent-mint { color: #83d7b4; }
+  .pg-accent-mint { color: var(--pg-mint); }
+  .pg-accent-muted { color: var(--pg-muted); }
 
   /* Botones: el primario lleva el barrido de luz lento (el mismo gesto que el
      CTA de la intro); el secundario no compite, sólo se abre el hairline. */
@@ -1641,6 +1695,9 @@ html[data-theme='dark'] {
     background: rgba(255, 255, 255, 0.03);
   }
   .pg-btn-ghost:hover { border-color: rgba(117, 233, 242, 0.45); color: #fff; background: rgba(117, 233, 242, 0.07); }
+  /* Ghost con acento: la secundaria que sí merece color de marca (descargar un
+     WAV, probar una pista) sin robarle protagonismo al primario. */
+  .pg-btn-ghost[data-tone='cyan'] { color: var(--pg-cyan-soft); border-color: rgba(117, 233, 242, 0.4); }
   .pg-btn:disabled { opacity: 0.55; transform: none; }
 
   /* Foco visible y consistente: sin esto la navegación por teclado depende de
@@ -1809,6 +1866,123 @@ html[data-theme='dark'] {
   }
   .pg-field::placeholder { color: rgba(120, 145, 157, 0.8); }
   .pg-field:focus { border-color: rgba(117, 233, 242, 0.6); background: rgba(0, 0, 0, 0.38); }
+
+  /* ===== CUENTA (perfil y biblioteca) ===== */
+
+  /* Ninguna regla de aquí trae un color nuevo: los tintes reutilizan, letra por
+     letra, los literales que ya usan .pg-chip, .pg-label y .pg-btn-ghost para
+     el mismo tono; el resto sale de var(--pg-*). */
+
+  /* Pastilla de estado de cuenta: plan, rol, acceso, estado de una canción.
+     Es .pg-chip sin el text-transform: aquí el literal viene del backend
+     ("Pro mensual", "En cola", el rol) y subirlo a mayúsculas cambiaría lo
+     que la persona lee. */
+  .pg-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    border: 1px solid var(--pg-hairline);
+    border-radius: 999px;
+    padding: 0.3rem 0.7rem;
+    font-size: var(--pg-step--1);
+    line-height: 1.45;
+    color: #a9c0ca;
+    background: rgba(255, 255, 255, 0.06);
+  }
+  .pg-pill[data-tone='cyan'] { color: var(--pg-cyan-soft); border-color: rgba(117, 233, 242, 0.3); background: rgba(117, 233, 242, 0.12); }
+  .pg-pill[data-tone='mint'] { color: #a9e6cc; border-color: rgba(131, 215, 180, 0.32); background: rgba(131, 215, 180, 0.12); }
+  .pg-pill[data-tone='amber'] { color: #f0dcae; border-color: rgba(255, 207, 114, 0.3); background: rgba(255, 207, 114, 0.1); }
+  .pg-pill[data-tone='error'] { color: var(--pg-magenta); border-color: rgba(255, 158, 234, 0.3); background: rgba(255, 158, 234, 0.1); }
+
+  /* Cifra grande de una tarjeta de cuenta (cupo restante, contadores). El
+     .pg-price de precios no sirve aquí: esa cifra es un importe y lleva el
+     quiebre de línea hacia abajo. */
+  .pg-figure {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.4rem;
+    margin-top: 1rem;
+    font-family: var(--font-mono);
+    font-size: var(--pg-step-2);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+    color: var(--pg-ink);
+  }
+  .pg-figure span {
+    font-size: var(--pg-step--1);
+    font-weight: 400;
+    letter-spacing: 0;
+    color: var(--pg-muted);
+  }
+  .pg-figure[data-tone='cyan'] { color: var(--pg-cyan); }
+  .pg-figure[data-tone='violet'] { color: var(--pg-violet); }
+  .pg-figure[data-tone='amber'] { color: var(--pg-amber); }
+  .pg-figure[data-tone='mint'] { color: var(--pg-mint); }
+
+  /* Título de una tarjeta de cuenta. Lleva el tinte del dato que encabeza
+     (cupo de pago en violeta, cupo local en cian) y admite el icono al frente. */
+  .pg-card-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: var(--pg-step-0);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--pg-ink);
+  }
+  .pg-card-title svg { flex: none; }
+  .pg-card-title[data-tone='cyan'] { color: var(--pg-cyan); }
+  .pg-card-title[data-tone='violet'] { color: var(--pg-violet); }
+  .pg-card-title[data-tone='amber'] { color: var(--pg-amber); }
+  .pg-card-title[data-tone='mint'] { color: var(--pg-mint); }
+
+  /* Aviso de la cuenta cuando no hay sesión, no hay configuración o la lectura
+     falló. Ámbar porque es una pausa con salida (iniciar sesión, reintentar),
+     no un fallo irreversible: el magenta queda para la canción que no se
+     pudo generar. */
+  .pg-notice {
+    border: 1px solid rgba(255, 207, 114, 0.28);
+    border-radius: 1.5rem;
+    background: rgba(255, 207, 114, 0.05);
+    padding: 1.75rem;
+  }
+
+  /* Botón-icono de una fila de la biblioteca (descargar, borrar). Mismo
+     redondo de .pg-btn-sm pero en 36 px para el área táctil mínima. */
+  .pg-icon-btn {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 999px;
+    border: 1px solid var(--pg-hairline);
+    background: rgba(255, 255, 255, 0.03);
+    color: #d6eaf1;
+    transition: border-color 0.35s ease, background 0.35s ease, color 0.35s ease;
+  }
+  .pg-icon-btn:hover { border-color: rgba(117, 233, 242, 0.45); background: rgba(117, 233, 242, 0.08); color: var(--pg-ink); }
+  .pg-icon-btn:disabled { opacity: 0.55; }
+  .pg-icon-btn[data-tone='danger'] { border-color: rgba(255, 158, 234, 0.26); color: var(--pg-magenta); background: rgba(255, 158, 234, 0.06); }
+  .pg-icon-btn[data-tone='danger']:hover { border-color: rgba(255, 158, 234, 0.5); background: rgba(255, 158, 234, 0.12); }
+  .pg-icon-btn svg { flex: none; }
+
+  /* Micro-datos de una canción: motor, género, tempo, duración. Va en
+     monoespaciada como .pg-meta pero sin el text-transform, porque el género
+     y el nombre del motor los escribe quien generó la pista. */
+  .pg-item-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem 0.9rem;
+    font-family: var(--font-mono);
+    font-size: var(--pg-step--1);
+    letter-spacing: 0.04em;
+    color: var(--pg-muted);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

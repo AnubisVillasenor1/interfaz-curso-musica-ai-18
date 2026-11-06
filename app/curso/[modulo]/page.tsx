@@ -45,7 +45,7 @@ export default async function CursoModuloPage({ params }: Props) {
   return (
     <main
       className="pg-shell relative min-h-screen overflow-x-clip"
-      style={{ background: 'var(--pg-bg)', color: 'var(--pg-ink)' }}
+      style={{ background: 'var(--pg-bg)' }}
     >
       <div
         aria-hidden
@@ -84,7 +84,7 @@ export default async function CursoModuloPage({ params }: Props) {
           </p>
         </section>
 
-        <h2 className="pg-title mt-14" style={{ fontSize: 'var(--pg-step-2)' }}>
+        <h2 className="pg-title mt-14" data-size="sm">
           Sesiones de este módulo
         </h2>
         <p className="pg-note mt-3 max-w-2xl">

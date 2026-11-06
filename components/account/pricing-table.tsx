@@ -189,7 +189,7 @@ export function PricingTable() {
         {/* Plan gratuito: coincide con los defaults de la tabla entitlements. */}
         <Reveal as="article" className="pg-card pg-card-hover flex flex-col p-6">
           <p className="pg-eyebrow">Explora gratis</p>
-          <h2 className="pg-title" style={{ fontSize: 'var(--pg-step-1)' }}>
+          <h2 className="pg-title" data-size="xs">
             Plan gratuito
           </h2>
           <p className="pg-price mt-4">{formatPrice(0)}</p>
@@ -224,7 +224,7 @@ export function PricingTable() {
                   </span>
                 )}
               </div>
-              <h2 className="pg-title" style={{ fontSize: 'var(--pg-step-1)' }}>
+              <h2 className="pg-title" data-size="xs">
                 {product.name}
               </h2>
               <p className="pg-price mt-4">{priceLabel(product)}</p>
@@ -256,7 +256,7 @@ export function PricingTable() {
 
       <section aria-labelledby="comparativa-title">
         <Reveal>
-          <h2 id="comparativa-title" className="pg-title" style={{ fontSize: 'var(--pg-step-2)' }}>
+          <h2 id="comparativa-title" className="pg-title" data-size="sm">
             Los cuatro planes, línea por línea
           </h2>
           <p className="pg-lede">
@@ -308,7 +308,7 @@ export function PricingTable() {
       <section aria-labelledby="letra-chica-title">
         <Reveal className="pg-card p-6 sm:p-7">
           <p className="pg-eyebrow">Letra chica, en claro</p>
-          <h2 id="letra-chica-title" className="pg-title" style={{ fontSize: 'var(--pg-step-1)' }}>
+          <h2 id="letra-chica-title" className="pg-title" data-size="xs">
             Qué pasa después de darle al botón
           </h2>
           <div className="mt-6 grid gap-6 sm:grid-cols-3">
