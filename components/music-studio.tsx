@@ -51,7 +51,7 @@ export function MusicStudio() {
 
   return <main className="min-h-screen bg-[#07121f] px-5 py-10 text-[#edfaff] sm:px-8">
     <div className="mx-auto max-w-5xl">
-      <a href="/" className="text-sm text-cyan-200 hover:underline">← Volver a Sonora IA</a>
+      <a href="/" className="text-sm text-cyan-200 hover:underline">← Volver a Play and Go</a>
       <header className="my-8"><p className="text-xs uppercase tracking-[.25em] text-cyan-300">Taller musical libre</p><h1 className="mt-2 text-4xl font-semibold">Agente de composición</h1><p className="mt-3 max-w-2xl text-slate-300">Convierte una idea en un plan de arreglo y exporta un boceto MIDI descargable. Funciona sin API de pago; Ollama local mejora el análisis cuando está configurado.</p></header>
       <div className="grid gap-6 lg:grid-cols-[1.1fr_.9fr]">
         <section className="rounded-3xl border border-white/10 bg-white/[.04] p-6">

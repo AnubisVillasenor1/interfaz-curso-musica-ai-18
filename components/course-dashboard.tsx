@@ -1,13 +1,20 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { ArrowRight, Award, BadgeCheck, BookOpen, Check, ChevronRight, Clock3, Headphones, LockKeyhole, Menu, MessageCircle, Music2, Play, Send, Sparkles, Star, Trophy, Video, X, Zap } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { COURSE_PRODUCT } from '@/lib/products'
 import { createClient } from '@/lib/supabase/client'
 
-const heroImage = 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Gemini_Generated_Image_nq28qfnq28qfnq28-uGgydZgJRGge0I1MlI2zT51Y8Cvt4T.jpeg'
-const logoImage = 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Gemini_Generated_Image_2nv6uv2nv6uv2nv6-RcQzcHF3Frxdi7PUzmCGA8yLCO5eEF.jpeg'
+/**
+ * Ambos recursos eran enlaces a `*.public.blob.vercel-storage.com`, un bucket
+ * ajeno al proyecto: si se limpia o caduca, la portada se queda en blanco y el
+ * logotipo desaparece. Ahora son archivos locales versionados con el código,
+ * y la muestra de audio es la pista real del intro cinemático.
+ */
+const heroImage = '/brand/hero-studio.svg'
+const logoImage = '/brand/logo.svg'
+const sampleAudio = '/audio/intro-bed-60s.mp3'
 
 /**
  * Precio único de verdad: se lee de `lib/products.ts`, que es lo que cobra el
@@ -45,6 +52,7 @@ export function CourseDashboard() {
   const [email, setEmail] = useState('')
   const [status, setStatus] = useState('')
   const [playing, setPlaying] = useState(false)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
   const [user, setUser] = useState<{ email?: string } | null>(null)
   const [studioOpen, setStudioOpen] = useState(false)
   const [songTitle, setSongTitle] = useState('')
@@ -94,6 +102,27 @@ export function CourseDashboard() {
     }
   }
 
+  /**
+   * La muestra del hero antes solo movía una animación: el botón prometía audio
+   * y no sonaba nada. Ahora reproduce la pista real del intro cinemático y el
+   * ecualizador se aparta de la animación genérica al estado del elemento.
+   */
+  function toggleSample() {
+    const el = audioRef.current
+    if (!el) {
+      setPlaying((value) => !value)
+      return
+    }
+    if (el.paused) {
+      el.play()
+        .then(() => setPlaying(true))
+        .catch(() => setPlaying(false))
+    } else {
+      el.pause()
+      setPlaying(false)
+    }
+  }
+
   async function openStudio() {
     const supabase = createClient()
     if (!supabase) { window.location.href = '/auth'; return }
@@ -120,14 +149,14 @@ export function CourseDashboard() {
     <div className="fixed inset-0 -z-0 bg-[radial-gradient(circle_at_75%_5%,rgba(88,213,230,.18),transparent_30%),radial-gradient(circle_at_15%_80%,rgba(155,92,226,.16),transparent_32%)]" />
     <header className="relative z-20 mx-auto flex max-w-7xl items-center justify-between px-5 py-5 lg:px-10">
       <div className="flex items-center gap-3"><img src={logoImage} alt="Play and Go by TAMV ONLINE" className="size-11 rounded-xl object-cover object-center" /><div><p className="font-semibold tracking-tight">PLAY <span className="text-[#75e9f2]">AND GO</span></p><p className="text-[9px] uppercase tracking-[.24em] text-[#9fb8c7]">by TAMV ONLINE</p></div></div>
-      <nav className="hidden items-center gap-8 text-sm text-[#a9c0ca] md:flex"><a href="#ruta">Ruta</a><a href="#prompts">Prompts</a><a href="#logros">Logros</a><Button onClick={openStudio} className="rounded-full bg-[#75e9f2] px-5 text-[#06131e] hover:bg-[#a0f4f9]">Entrar al estudio</Button></nav>
+      <nav className="hidden items-center gap-8 text-sm text-[#a9c0ca] md:flex"><a href="/curso">Programa</a><a href="#ruta">Ruta</a><a href="#prompts">Prompts</a><a href="#logros">Logros</a><a href="/precios">Precios</a><Button onClick={openStudio} className="rounded-full bg-[#75e9f2] px-5 text-[#06131e] hover:bg-[#a0f4f9]">Entrar al estudio</Button></nav>
       <button className="md:hidden" aria-label="Abrir menú" onClick={() => setMenuOpen(!menuOpen)}>{menuOpen ? <X /> : <Menu />}</button>
     </header>
-    {menuOpen && <nav className="relative z-20 flex flex-col gap-4 border-y border-white/10 bg-[#0a1b2b] px-5 py-5 text-sm md:hidden"><a href="#ruta">Ruta de aprendizaje</a><a href="#prompts">Biblioteca de prompts</a><Button onClick={() => setShowRegister(true)} className="rounded-full bg-[#75e9f2] text-[#06131e]">Inscribirme</Button></nav>}
+    {menuOpen && <nav className="relative z-20 flex flex-col gap-4 border-y border-white/10 bg-[#0a1b2b] px-5 py-5 text-sm md:hidden"><a href="/curso">Programa completo</a><a href="#ruta">Ruta de aprendizaje</a><a href="#prompts">Biblioteca de prompts</a><a href="/precios">Precios</a><a href="/perfil">Mi cuenta</a><Button onClick={() => setShowRegister(true)} className="rounded-full bg-[#75e9f2] text-[#06131e]">Inscribirme</Button></nav>}
 
     <section className="relative z-10 mx-auto grid max-w-7xl items-center gap-12 px-5 pb-16 pt-8 lg:grid-cols-[1.05fr_.95fr] lg:px-10 lg:pb-24 lg:pt-20">
       <div><div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#75e9f2]/30 bg-[#75e9f2]/10 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[.2em] text-[#8cecf3]"><Sparkles size={13} /> Música aumentada por IA</div><h1 className="max-w-2xl text-5xl font-semibold leading-[.95] tracking-[-.065em] sm:text-7xl">Convierte tus ideas en <span className="bg-gradient-to-r from-[#78eaf0] via-[#b4a5ff] to-[#ff9eea] bg-clip-text text-transparent">canciones.</span></h1><p className="mt-7 max-w-xl text-base leading-7 text-[#aac3ce]">Aprende desde cero a crear música con inteligencia artificial y desarrolla un criterio profesional para dirigir voces, géneros, tempos e instrumentaciones.</p><div className="mt-8 flex flex-wrap gap-3"><Button onClick={() => setShowRegister(true)} className="rounded-full bg-[#75e9f2] px-6 py-6 font-semibold text-[#06131e] hover:bg-[#a0f4f9]">Comenzar la ruta <ArrowRight data-icon="inline-end" /></Button><a href="#ruta" className="flex items-center gap-2 rounded-full border border-white/15 px-6 py-3 text-sm text-[#c4d8df] hover:bg-white/5">Explorar programa</a></div><div className="mt-10 flex items-center gap-6 text-xs text-[#7f9aa7]"><span className="flex items-center gap-2"><BadgeCheck className="text-[#75e9f2]" /> Certificado final</span><span className="flex items-center gap-2"><Headphones className="text-[#c09eff]" /> Audio + video</span></div></div>
-      <div className="relative"><div className="absolute -inset-6 rounded-[2rem] bg-[#75e9f2]/10 blur-3xl" /><div className="relative overflow-hidden rounded-[2rem] border border-[#75e9f2]/25 bg-[#0c2432] p-2 shadow-2xl shadow-[#55d4ee]/10"><img src={heroImage} alt="Productor explorando música con inteligencia artificial" className="aspect-[4/3] w-full rounded-[1.5rem] object-cover" /><div className="absolute bottom-7 left-7 right-7 flex items-center justify-between rounded-2xl border border-white/15 bg-[#071522]/80 p-4 backdrop-blur-xl"><div><p className="text-[10px] uppercase tracking-[.2em] text-[#75e9f2]">Ahora sonando</p><p className="mt-1 text-sm font-medium">Diseña tu primer universo sonoro</p></div><button aria-label="Reproducir muestra" onClick={() => setPlaying(!playing)} className="flex size-10 items-center justify-center rounded-full bg-[#75e9f2] text-[#06131e]">{playing ? <span className="text-xs">||</span> : <Play size={16} fill="currentColor" />}</button></div></div><div className="equalizer absolute -bottom-5 -right-5 flex h-16 items-end gap-1 rounded-xl border border-white/10 bg-[#0d2030]/90 p-3">{[3,7,5,9,4,8,6,10,5,7].map((height, i) => <span key={i} className={`w-1 rounded-full bg-gradient-to-t from-[#9a72e8] to-[#73edf1] ${playing ? 'animate-pulse' : ''}`} style={{ height: `${height * 4}px`, animationDelay: `${i * 80}ms` }} />)}</div></div>
+      <div className="relative"><div className="absolute -inset-6 rounded-[2rem] bg-[#75e9f2]/10 blur-3xl" /><div className="relative overflow-hidden rounded-[2rem] border border-[#75e9f2]/25 bg-[#0c2432] p-2 shadow-2xl shadow-[#55d4ee]/10"><img src={heroImage} alt="Productor explorando música con inteligencia artificial" className="aspect-[4/3] w-full rounded-[1.5rem] object-cover" /><audio ref={audioRef} src={sampleAudio} loop preload="none" onEnded={() => setPlaying(false)} /><div className="absolute bottom-7 left-7 right-7 flex items-center justify-between rounded-2xl border border-white/15 bg-[#071522]/80 p-4 backdrop-blur-xl"><div><p className="text-[10px] uppercase tracking-[.2em] text-[#75e9f2]">Ahora sonando</p><p className="mt-1 text-sm font-medium">Diseña tu primer universo sonoro</p></div><button aria-label={playing ? 'Pausar muestra' : 'Reproducir muestra'} aria-pressed={playing} onClick={toggleSample} className="flex size-10 items-center justify-center rounded-full bg-[#75e9f2] text-[#06131e]">{playing ? <span className="text-xs">||</span> : <Play size={16} fill="currentColor" />}</button></div></div><div className="equalizer absolute -bottom-5 -right-5 flex h-16 items-end gap-1 rounded-xl border border-white/10 bg-[#0d2030]/90 p-3">{[3,7,5,9,4,8,6,10,5,7].map((height, i) => <span key={i} className={`w-1 rounded-full bg-gradient-to-t from-[#9a72e8] to-[#73edf1] ${playing ? 'animate-pulse' : ''}`} style={{ height: `${height * 4}px`, animationDelay: `${i * 80}ms` }} />)}</div></div>
     </section>
 
     <section id="ruta" className="relative z-10 mx-auto max-w-7xl px-5 py-16 lg:px-10"><div className="mb-8 flex flex-wrap items-end justify-between gap-4"><div><p className="text-[10px] uppercase tracking-[.24em] text-[#75e9f2]">Tu recorrido</p><h2 className="mt-2 text-3xl font-semibold tracking-tight">De la primera idea al release</h2></div><div className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs text-[#a9c0ca]">24% completado · nivel 1</div></div><div className="grid gap-3">{modules.map(([number, title, meta, state]) => <button key={number} className={`group flex items-center gap-4 rounded-2xl border p-4 text-left transition hover:-translate-y-0.5 ${state === 'current' ? 'border-[#75e9f2]/50 bg-[#75e9f2]/[.08]' : 'border-white/10 bg-white/[.035] hover:border-white/20'}`}><span className={`flex size-11 shrink-0 items-center justify-center rounded-xl text-sm font-semibold ${state === 'done' ? 'bg-[#83d7b4]/15 text-[#83d7b4]' : state === 'current' ? 'bg-[#75e9f2] text-[#06131e]' : 'bg-white/10 text-white/40'}`}>{state === 'done' ? <Check /> : state === 'locked' ? <LockKeyhole size={17} /> : number}</span><span className="min-w-0 flex-1"><strong className="block text-sm">{title}</strong><small className="mt-1 block text-xs text-[#7f9aa7]">{meta}</small></span>{state === 'current' && <span className="hidden rounded-full bg-[#75e9f2]/15 px-3 py-1 text-[10px] text-[#8cecf3] sm:block">Siguiente</span>}<ChevronRight className="text-[#6f8995]" size={18} /></button>)}</div></section>
