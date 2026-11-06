@@ -3,9 +3,10 @@ import type { Metadata, Viewport } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Sonora IA — Academia musical',
-  description: 'Aprende a crear música con inteligencia artificial, desde cero hasta profesional.',
-  generator: 'v0.app',
+  title: 'Play and Go by TAMV ONLINE — Curso de música con IA',
+  description: 'Play and Go by TAMV ONLINE: aprende a crear música con inteligencia artificial, desde cero hasta profesional. Orgullosamente Realmontenses.',
+  applicationName: 'Play and Go by TAMV ONLINE',
+  generator: 'Play and Go by TAMV ONLINE',
   icons: {
     icon: [
       {
