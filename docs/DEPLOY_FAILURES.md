@@ -167,7 +167,7 @@ de esa base no las tengo.
 
 ---
 
-## Falla 5 — No hay dominio: la cuenta no tiene ninguno y la marca no resuelve
+## Falla 5 — No hay dominio montado, y el que sí existe apunta a un deployment muerto
 
 Medido por API y por DNS, con controles para que el método no sea la explicación:
 
@@ -176,20 +176,35 @@ Medido por API y por DNS, con controles para que el método no sea la explicaci�
 | dominios registrados en el equipo `tamvonlinenetwork` | **0** | `GET /v8/domains?teamId=tamvonlinenetwork` |
 | dominio montado en el proyecto | solo `interfaz-curso-musica-ai.vercel.app` | `GET /v6/projects/…/domains` |
 | `interfaz-curso-musica-ai.vercel.app` | alias vivo del deployment `dpl_HhW5…` | `GET /v4/aliases/…` |
-| `visitaraldelmonte.online` | **NXDOMAIN** — sin delegación de nameserver en el registro `.online` | `nslookup -type=NS/A` contra 8.8.8.8 y 1.1.1.1, dos veces |
-| `weboficial.com` | **SERVFAIL** (zona existe pero no resuelve; no es lo mismo que estar libre) | misma consulta |
+| `visitarealdelmonte.online` | **resuelve**: `A 2.57.91.91`, NS `orbit/horizon.dns-parking.com` (parking de Hostinger) | `nslookup -type=A/NS` contra 8.8.8.8 |
+| correo de ese dominio | MX `mx1.hostinger.com` (5), `mx2.hostinger.com` (10) — el dominio sí puede recibir correo | `nslookup -type=MX` |
+| HTTP sobre ese dominio | **302 → `https://isabella-ai-genesis.vercel.app/`**, y ese destino responde **404** | `curl -D -` y `curl -L` |
+| alias en Vercel para `visitarealdelmonte.online` | **404** — no existe en ese equipo | `GET /v4/aliases/…` |
 | control de que el método funciona | `github.com` → `dns1.p08.nsone.net`, `vercel.com` → `ns2.vercel-dns.com`, `qoder.online` → `launch1.spaceship.net` | misma consulta |
 
-Lo de `.online` importa más que el deploy: si el dominio no tiene NS en el
-registry, **tampoco funciona el correo** que cuelga de él, aunque Hostinger siga
-con los registros MX configurados del lado del proveedor de correo. Cualquier
-tarjeta, presupuesto o PDF que diga `@visitaraldelmonte.online` está apuntando a
-un nombre que hoy el DNS global declara inexistente. Antes de montar nada en
-Vercel hay que saber si la renovación está vencida o si se movieron los
-nameservers sin dejar delegación.
+**Corrección de una afirmación mía que estaba mal.** En el borrador de este
+documento escribí que el dominio de la marca estaba en **NXDOMAIN** y que por
+tanto el correo también estaba muerto. Era falso y el error fue mío: consulté
+`visitaraldelmonte.online` — sin la `e` de *realdelmonte* — en lugar de
+`visitarealdelmonte.online`, que es el nombre que publicas. Repetida la
+consulta con el hostname correcto, el dominio resuelve y los MX siguen
+apuntando a Hostinger. El DNS nunca fue la falla; lo que está roto es el destino
+de la redirección: un deployment de Vercel que ya no existe. No lo reportes
+como problema de registro ni de renovación.
 
-Nada de esto lo toqué: DNS y pagos de dominio son escritura en infraestructura
-ajena.
+Lo que sí se sostiene sin matiz: el proyecto no tiene ningún dominio suyo, y el
+único nombre propio de la marca que hoy resuelve devuelve una redirección a una
+página 404. El arreglo es del lado de Hostinger (quitar o reescribir el registro
+de redirección, o montar un CNAME a `cname.vercel-dns.com` tras añadir el
+dominio al proyecto), no de comprar nada.
+
+Lo que no pude comprobar desde esta máquina: el HTTPS de ese dominio. `curl`
+falla con un error de la API criptográfica de Windows (`SEC_E_INTERNAL_ERROR`),
+no del sitio, así que no sé si el certificado de Hostinger está montado. Queda
+verificado por quien pueda abrirlo desde un navegador.
+
+Nada de esto lo toqué: DNS y redirecciones del dominio son escritura en
+infraestructura ajena.
 
 ---
 
@@ -216,8 +231,8 @@ ajena.
 4. Montar el endpoint de webhook de Stripe contra el dominio real y probar un
    cobro de test de punta a punta: pago → webhook → `entitlements` → canción
    diaria disponible.
-5. Antes de montar el dominio, resolver el registro: `visitaraldelmonte.online`
-   está NXDOMAIN, así que no hay nada que conectar hasta que el nombre vuelva a
-   tener nameservers (renovación o delegación en el registrador — escritura en
-   infraestructura ajena, no la hago). Después conectar al proyecto y verificar
-   `/robots.txt` y `/sitemap.xml` con el dominio puesto.
+5. Añadir `visitarealdelmonte.online` al proyecto en Vercel y, del lado de
+   Hostinger, quitar la redirección huérfana a `isabella-ai-genesis.vercel.app`
+   (hoy devuelve 404) o sustituirla por el CNAME que dé Vercel. Después
+   verificar `/robots.txt` y `/sitemap.xml` con el dominio puesto, porque con
+   `NEXT_PUBLIC_APP_URL` vacío ambos están declarados apagados a propósito.
