@@ -1,6 +1,8 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
+import { readPublicEnv } from './config'
+
 /**
  * Refresco de sesión en el borde.
  *
@@ -11,14 +13,12 @@ import { NextResponse, type NextRequest } from 'next/server'
  * landing y el intro; la sesión es un extra, no un requisito de arranque.
  */
 export async function updateSession(request: NextRequest): Promise<NextResponse> {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
-
-  if (!url || !key) return NextResponse.next({ request })
+  const env = readPublicEnv()
+  if (!env) return NextResponse.next({ request })
 
   let response = NextResponse.next({ request })
 
-  const supabase = createServerClient(url, key, {
+  const supabase = createServerClient(env.url, env.anonKey, {
     cookies: {
       getAll: () => request.cookies.getAll(),
       setAll: (cookies) => {

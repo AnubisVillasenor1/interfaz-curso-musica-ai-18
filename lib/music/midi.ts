@@ -5,7 +5,13 @@ const SCALES: Record<string, number[]> = {
   minor: [0, 2, 3, 5, 7, 8, 10],
 }
 const ROOTS: Record<string, number> = { C: 0, 'C#': 1, Db: 1, D: 2, 'D#': 3, Eb: 3, E: 4, F: 5, 'F#': 6, Gb: 6, G: 7, 'G#': 8, Ab: 8, A: 9, 'A#': 10, Bb: 10, B: 11 }
-const CHORDS = [0, 5, 3, 4]
+/**
+ * Orden de los cuatro voicings de `chordIntervals` dentro del ciclo armónico.
+ * Antes esto guardaba grados romanos ([0, 5, 3, 4]) y se indexaba con ellos, así
+ * que el bar 2 pedía `chordIntervals[5]`: undefined, y el exportador de MIDI
+ * fallaba siempre, no en casos raros.
+ */
+const PROGRESSION = [0, 1, 2, 3]
 const TICKS_PER_BEAT = 480
 
 function variableLength(value: number): number[] {
@@ -63,8 +69,8 @@ export function createMidi(prompt: string, tempo: number, key: string) {
   const bars = 24
 
   for (let bar = 0; bar < bars; bar += 1) {
-    const chordIndex = CHORDS[Math.floor(bar / 2) % CHORDS.length]
-    const chord = chordIntervals[chordIndex]
+    const chordIndex = PROGRESSION[Math.floor(bar / 2) % PROGRESSION.length]
+    const chord = chordIntervals[chordIndex] ?? chordIntervals[0]
     const start = bar * 4 * TICKS_PER_BEAT
     for (const interval of chord) addNote(harmony, 0, 48 + root + interval, start, 4 * TICKS_PER_BEAT - 12, 56)
     for (let beat = 0; beat < 4; beat += 1) {

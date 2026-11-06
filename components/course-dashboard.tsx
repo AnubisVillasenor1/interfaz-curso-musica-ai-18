@@ -3,10 +3,18 @@
 import { useState } from 'react'
 import { ArrowRight, Award, BadgeCheck, BookOpen, Check, ChevronRight, Clock3, Headphones, LockKeyhole, Menu, MessageCircle, Music2, Play, Send, Sparkles, Star, Trophy, Video, X, Zap } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { COURSE_PRODUCT } from '@/lib/products'
 import { createClient } from '@/lib/supabase/client'
 
 const heroImage = 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Gemini_Generated_Image_nq28qfnq28qfnq28-uGgydZgJRGge0I1MlI2zT51Y8Cvt4T.jpeg'
 const logoImage = 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Gemini_Generated_Image_2nv6uv2nv6uv2nv6-RcQzcHF3Frxdi7PUzmCGA8yLCO5eEF.jpeg'
+
+/**
+ * Precio único de verdad: se lee de `lib/products.ts`, que es lo que cobra el
+ * checkout. Estaba escrito a mano como "$490 MXN" mientras la pasarela pedía
+ * $500, así que la landing anunciaba un precio que ningún pago podía cumplir.
+ */
+const coursePrice = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', maximumFractionDigits: 0 }).format(COURSE_PRODUCT.priceInCents / 100)
 
 const modules = [
   ['01', 'Fundamentos de música con IA', '3 lecciones · 42 min', 'done'],
@@ -44,28 +52,51 @@ export function CourseDashboard() {
   const [songStatus, setSongStatus] = useState('')
   const [chatOpen, setChatOpen] = useState(false)
   const [chatInput, setChatInput] = useState('')
-  const [chatMessages, setChatMessages] = useState([{ from: 'bot', text: 'Hola, soy el guía de Play and Go. Pregúntame por el curso, precio, pagos, contenidos o tu ruta de aprendizaje.' }])
+  const [chatBusy, setChatBusy] = useState(false)
+  const [chatMessages, setChatMessages] = useState([{ from: 'bot', text: 'Hola, soy el guía de Play and Go. Pregúntame por el curso, el precio, los pagos, tu idea musical o tus letras.', source: 'guide' }])
 
-  function askCourseBot(text: string) {
-    const query = text.toLowerCase()
-    if (query.includes('precio') || query.includes('vale') || query.includes('costo')) return 'La inscripción cuesta $500 MXN e incluye el curso completo, estudio con 2 canciones diarias, prompts, ejercicios, audio, video e insignias. La extensión para crear más canciones cuesta $229 MXN.'
-    if (query.includes('pago') || query.includes('stripe')) return 'Puedes pagar con tarjeta desde el botón de inscripción. Stripe procesa el cobro de forma segura y, al confirmarse, se activa tu acceso Pro.'
-    if (query.includes('aprendo') || query.includes('contenido') || query.includes('curso')) return 'Aprendes música con IA desde cero hasta un flujo profesional: fundamentos, prompting, voces y letras, géneros, tempo, instrumentación, producción y un proyecto final.'
-    if (query.includes('sirve') || query.includes('hace')) return 'Sirve para convertir ideas musicales en canciones dirigidas por ti. Practicas con prompts claros, comparas resultados y construyes un portafolio real.'
-    if (query.includes('cancion') || query.includes('diaria')) return 'Con la inscripción activa puedes crear hasta 2 canciones al día en el estudio. La extensión de $229 MXN amplía tu capacidad de creación.'
-    return 'Puedo orientarte sobre qué es el curso, qué incluye, precio ($500 MXN), extensión ($229 MXN), pagos, canciones diarias y habilidades que vas a aprender.'
-  }
-
-  function sendChat(event: React.FormEvent) {
+  /**
+   * Pregunta al guía del curso.
+   *
+   * `askCourseBot` era una cadena de `if` con palabras clave que se llamaba a
+   * sí misma "asistente de IA" y nunca llamaba a un modelo. Ahora la respuesta
+   * viene de `/api/agent`, que usa el proveedor configurado y, si falta o
+   * falla, contesta con el contenido real del curso. La procedencia viaja en
+   * `source` para que la burbuja lo diga, en lugar de fingir IA.
+   */
+  async function sendChat(event: React.FormEvent) {
     event.preventDefault()
     const text = chatInput.trim()
-    if (!text) return
-    setChatMessages(messages => [...messages, { from: 'user', text }, { from: 'bot', text: askCourseBot(text) }])
+    if (!text || chatBusy) return
+
+    setChatBusy(true)
+    setChatMessages((messages) => [...messages, { from: 'user', text, source: 'user' }])
     setChatInput('')
+
+    const history = chatMessages.slice(-6).map((message) => ({
+      role: message.from === 'user' ? 'user' : 'assistant',
+      content: message.text,
+    }))
+
+    try {
+      const response = await fetch('/api/agent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text, history }),
+      })
+      const data = await response.json().catch(() => null)
+      const answer = data?.answer ?? 'No pude responder ahora. Prueba otra vez en un minuto.'
+      setChatMessages((messages) => [...messages, { from: 'bot', text: answer, source: data?.source === 'llm' ? 'model' : 'guide' }])
+    } catch {
+      setChatMessages((messages) => [...messages, { from: 'bot', text: 'Se cortó la conexión con el guía. Vuelve a preguntar.', source: 'guide' }])
+    } finally {
+      setChatBusy(false)
+    }
   }
 
   async function openStudio() {
     const supabase = createClient()
+    if (!supabase) { window.location.href = '/auth'; return }
     const { data } = await supabase.auth.getUser()
     if (!data.user) { window.location.href = '/auth'; return }
     setUser(data.user); setStudioOpen(true)
@@ -79,7 +110,7 @@ export function CourseDashboard() {
 
   async function startCheckout(event: React.FormEvent) {
     event.preventDefault(); setStatus('Preparando tu acceso...')
-    const response = await fetch('/api/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) })
+    const response = await fetch('/api/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ productId: COURSE_PRODUCT.id }) })
     const data = await response.json()
     if (data.url) window.location.href = data.url
     else setStatus(data.error ?? 'Revisa tus datos e intenta de nuevo.')
@@ -115,6 +146,6 @@ export function CourseDashboard() {
 
     {prompt && <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#02080e]/80 p-4 backdrop-blur-sm" onClick={() => setPrompt(null)}><div className="w-full max-w-lg rounded-3xl border border-[#75e9f2]/30 bg-[#0d2230] p-6 shadow-2xl" onClick={e => e.stopPropagation()}><div className="flex items-start justify-between"><div><p className="text-[10px] uppercase tracking-[.2em] text-[#75e9f2]">Prompt listo para adaptar</p><h2 className="mt-2 text-xl font-semibold">Biblioteca Play and Go</h2></div><button aria-label="Cerrar prompt" onClick={() => setPrompt(null)}><X className="text-[#8fa9b5]" /></button></div><p className="mt-6 rounded-2xl border border-white/10 bg-black/20 p-5 text-sm leading-6 text-[#c5d8df]">{prompt}</p><Button className="mt-5 w-full rounded-full bg-[#75e9f2] text-[#06131e]" onClick={() => setPrompt(null)}>Copiar y personalizar <Sparkles data-icon="inline-end" /></Button></div></div>}
     {studioOpen && <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#02080e]/85 p-4 backdrop-blur-sm" onClick={() => setStudioOpen(false)}><div className="w-full max-w-2xl rounded-3xl border border-[#75e9f2]/30 bg-[#0d2230] p-6 shadow-2xl" onClick={e => e.stopPropagation()}><div className="flex items-start justify-between"><div><p className="text-[10px] uppercase tracking-[.2em] text-[#75e9f2]">{user?.email}</p><h2 className="mt-2 text-2xl font-semibold">Nuevo universo sonoro</h2></div><button aria-label="Cerrar compositor" onClick={() => setStudioOpen(false)}><X className="text-[#8fa9b5]" /></button></div><form onSubmit={generateSong} className="mt-6 flex flex-col gap-4"><input required value={songTitle} onChange={e => setSongTitle(e.target.value)} placeholder="Título de la canción" className="h-12 rounded-xl border border-white/10 bg-black/20 px-4 text-sm outline-none focus:border-[#75e9f2]" /><textarea required value={songPrompt} onChange={e => setSongPrompt(e.target.value)} placeholder="Describe la canción: género, emoción, estructura, voz, tempo e instrumentos..." className="min-h-36 rounded-2xl border border-white/10 bg-black/20 p-4 text-sm leading-6 outline-none focus:border-[#75e9f2]" /><div className="grid gap-3 sm:grid-cols-3"><div className="rounded-xl border border-white/10 bg-white/5 p-3 text-xs"><span className="text-[#75e9f2]">96 BPM</span><p className="mt-1 text-[#8fa9b5]">Tempo sugerido</p></div><div className="rounded-xl border border-white/10 bg-white/5 p-3 text-xs"><span className="text-[#ff9eea]">Voz aireada</span><p className="mt-1 text-[#8fa9b5]">Perfil vocal</p></div><div className="rounded-xl border border-white/10 bg-white/5 p-3 text-xs"><span className="text-[#ffcf72]">Piano + cuerdas</span><p className="mt-1 text-[#8fa9b5]">Instrumentación</p></div></div><Button type="submit" className="h-12 rounded-full bg-[#75e9f2] font-semibold text-[#06131e]">Generar canción <Sparkles data-icon="inline-end" /></Button>{songStatus && <p className="rounded-xl bg-[#75e9f2]/10 p-3 text-center text-xs text-[#8cecf3]">{songStatus}</p>}</form></div></div>}
-    {showRegister && <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#02080e]/80 p-4 backdrop-blur-sm" onClick={() => setShowRegister(false)}><div className="w-full max-w-md rounded-3xl border border-[#75e9f2]/30 bg-[#0d2230] p-6 shadow-2xl" onClick={e => e.stopPropagation()}><div className="flex items-start justify-between"><div><p className="text-[10px] uppercase tracking-[.2em] text-[#75e9f2]">Inscripción segura</p><h2 className="mt-2 text-2xl font-semibold">Activa tu acceso Pro</h2></div><button aria-label="Cerrar registro" onClick={() => setShowRegister(false)}><X className="text-[#8fa9b5]" /></button></div><div className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-4"><div className="flex items-center justify-between"><span className="text-sm">Curso completo</span><strong className="text-xl">$490 MXN</strong></div><p className="mt-2 text-xs text-[#8fa9b5]">Acceso a lecciones, prompts, ejercicios, audio, video e insignias.</p></div><form onSubmit={startCheckout} className="mt-5 flex flex-col gap-3"><label className="text-xs text-[#a9c0ca]" htmlFor="email">Tu correo electrónico</label><input id="email" type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="tu@correo.com" className="h-12 rounded-xl border border-white/10 bg-black/20 px-4 text-sm outline-none placeholder:text-[#58717e] focus:border-[#75e9f2]" /><Button type="submit" className="h-12 rounded-full bg-[#75e9f2] font-semibold text-[#06131e] hover:bg-[#a0f4f9]">Continuar al pago <ArrowRight data-icon="inline-end" /></Button>{status && <p className="text-center text-xs text-[#ffcf72]">{status}</p>}</form><p className="mt-4 text-center text-[10px] text-[#6f8995]">Pago procesado de forma segura por Stripe.</p></div></div>}
+    {showRegister && <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#02080e]/80 p-4 backdrop-blur-sm" onClick={() => setShowRegister(false)}><div className="w-full max-w-md rounded-3xl border border-[#75e9f2]/30 bg-[#0d2230] p-6 shadow-2xl" onClick={e => e.stopPropagation()}><div className="flex items-start justify-between"><div><p className="text-[10px] uppercase tracking-[.2em] text-[#75e9f2]">Inscripción segura</p><h2 className="mt-2 text-2xl font-semibold">Activa tu acceso Pro</h2></div><button aria-label="Cerrar registro" onClick={() => setShowRegister(false)}><X className="text-[#8fa9b5]" /></button></div><div className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-4"><div className="flex items-center justify-between"><span className="text-sm">Curso completo</span><strong className="text-xl">{coursePrice}</strong></div><p className="mt-2 text-xs text-[#8fa9b5]">Acceso a lecciones, prompts, ejercicios, audio, video e insignias.</p></div><form onSubmit={startCheckout} className="mt-5 flex flex-col gap-3"><label className="text-xs text-[#a9c0ca]" htmlFor="email">Tu correo electrónico</label><input id="email" type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="tu@correo.com" className="h-12 rounded-xl border border-white/10 bg-black/20 px-4 text-sm outline-none placeholder:text-[#58717e] focus:border-[#75e9f2]" /><Button type="submit" className="h-12 rounded-full bg-[#75e9f2] font-semibold text-[#06131e] hover:bg-[#a0f4f9]">Continuar al pago <ArrowRight data-icon="inline-end" /></Button>{status && <p className="text-center text-xs text-[#ffcf72]">{status}</p>}</form><p className="mt-4 text-center text-[10px] text-[#6f8995]">Pago procesado de forma segura por Stripe.</p></div></div>}
   </main>
 }

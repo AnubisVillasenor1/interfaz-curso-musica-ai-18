@@ -1,0 +1,1754 @@
+/**
+ * Contenido curricular de Play and Go by TAMV ONLINE.
+ *
+ * Este archivo es la única fuente de verdad del curso. Las páginas de lección
+ * deben leer `COURSE_LESSONS` y `COURSE_MODULES`, nunca copiar títulos a mano:
+ * el dashboard tenía los nombres de las sesiones escritos como strings sueltos
+ * en `components/course-dashboard.tsx`, sin objetivo, sin ejercicio y sin
+ * entregable, y por eso el progreso no significaba haber aprendido nada.
+ *
+ * Sin dependencias externas. Todo lo que hay aquí es contenido.
+ */
+
+export type LessonId = string // formato 'm01-l01' ... 'm05-l16'
+
+export interface PromptTemplate {
+  name: string
+  /** Qué se obtiene con él, en una línea. */
+  outcome: string
+  /** El prompt completo, listo para copiar. */
+  text: string
+  /** Variables entre {llaves} que el alumno debe sustituir. */
+  variables: string[]
+}
+
+export interface Exercise {
+  title: string
+  /** Pasos numerados, 3 a 6. */
+  steps: string[]
+  /** Qué se entrega al terminar. */
+  deliverable: string
+  /** Criterios de éxito comprobables, 2 a 4. */
+  checklist: string[]
+}
+
+export interface ListeningRef {
+  title: string
+  /** Qué escuchar específicamente, no "fíjate en la música". */
+  focus: string
+  /** Referencia buscable: género + artista/obra o técnica. */
+  search: string
+}
+
+export interface Lesson {
+  id: LessonId
+  moduleIndex: number // 1..5
+  lessonNumber: number // 1..16 global
+  title: string
+  kicker: string // etiqueta corta, máx 40 caracteres
+  minutes: number // 6..25
+  objective: string // 1 frase
+  /** 3 a 5 bloques de enseñanza. Cada bloque: título + 2 a 4 párrafos de 40 a 90 palabras. */
+  blocks: Array<{ heading: string; body: string[] }>
+  /** 1 a 3 ejemplos concretos, con el prompt o la decisión real. */
+  examples: string[]
+  techniques: string[] // 3 a 6, cada una nombrada y explicada en 1-2 frases
+  prompts: PromptTemplate[] // 1 a 3
+  exercise: Exercise
+  listening: ListeningRef[] // 1 a 3
+  /** Errores frecuentes y cómo se corrigen. 2 a 4. */
+  pitfalls: Array<{ mistake: string; fix: string }>
+  takeaway: string // una frase que el alumno debe recordar
+}
+
+export interface CourseModule {
+  index: number
+  id: string // 'm01'...'m05'
+  title: string
+  subtitle: string
+  summary: string
+  outcome: string
+  lessonIds: LessonId[]
+}
+
+export const COURSE_MODULES: CourseModule[] = [
+  {
+    index: 1,
+    id: 'm01',
+    title: 'El mapa sonoro',
+    subtitle: 'Fundamentos: qué decide el motor y qué decides tú',
+    summary:
+      'Qué es realmente la generación musical con IA y cuáles son las cinco variables que siempre puedes dirigir: género, tempo, tonalidad, voz y estructura con dinámica. Aprendes a traducir una escena en decisiones comprobables en vez de pedir emociones con adjetivos.',
+    outcome:
+      'Escribes el brief de una canción con emoción, referencia, curva de energía y estructura, y puedes explicar qué instrucción produjo qué fragmento del audio.',
+    lessonIds: ['m01-l01', 'm01-l02', 'm01-l03'],
+  },
+  {
+    index: 2,
+    id: 'm02',
+    title: 'Prompting musical',
+    subtitle: 'Anatomía, dirección y iteración reproducible',
+    summary:
+      'Construyes prompts con campos obligatorios que puedes relanzar mañana y obtener el mismo resultado: voz, género, instrumentación con función, tempo, estructura y referencia de mezcla. Iteras cambiando una sola variable y comparas versiones con una checklist en lugar de por corazonadas.',
+    outcome:
+      'Tienes tres generaciones documentadas del mismo material, una versión seleccionada con justificación y una checklist de calidad que aplicas antes de compartir nada.',
+    lessonIds: ['m02-l04', 'm02-l05', 'm02-l06', 'm02-l07'],
+  },
+  {
+    index: 3,
+    id: 'm03',
+    title: 'Voz, letra y emoción',
+    subtitle: 'Interpretación vocal y métrica que funciona cantada',
+    summary:
+      'Diriges la voz en sus cuatro ejes (registro, textura, articulación y acento), escribes letras con métrica funcional por sección y anotas la interpretación para que el motor reciba instrucciones, no intenciones. Includes las restricciones reales de suplantación de voz.',
+    outcome:
+      'Entregas una letra completa con anotaciones de interpretación y dinámica, y tres perfiles vocales distintos cantando el mismo material.',
+    lessonIds: ['m03-l08', 'm03-l09', 'm03-l10'],
+  },
+  {
+    index: 4,
+    id: 'm04',
+    title: 'Género y producción',
+    subtitle: 'Capas, groove, dinámica y referencias',
+    summary:
+      'Cada instrumento entra en la mezcla por una función, no por decoración. Maps las capas por género, eliges el groove que sostiene el tema, trabajas la curva de dinámica y usas referencias de producción sin copiar obras. Covers objetivos de loudness de las plataformas.',
+    outcome:
+      'Presentas una matriz comparativa con tres arreglos del mismo tema y el prompt final de producción justificado capa por capa.',
+    lessonIds: ['m04-l11', 'm04-l12', 'm04-l13'],
+  },
+  {
+    index: 5,
+    id: 'm05',
+    title: 'De idea a release',
+    subtitle: 'Versiones, derechos, distribución y portafolio',
+    summary:
+      'Del borrador a la entrega: selección con criterios, control de versiones, brief profesional, qué es registrable cuando interviene una IA, cómo funcionan las licencias de cada plataforma, qué es un ISRC, cómo se distribuye con un agregador y cómo se negocia un sync. Terminas con dos canciones y su evidencia.',
+    outcome:
+      'Publicas dos canciones con su ficha de versiones, su checklist de derechos cumplida y un portafolio que demuestra criterio de productor.',
+    lessonIds: ['m05-l14', 'm05-l15', 'm05-l16'],
+  },
+]
+
+export const COURSE_LESSONS: Lesson[] = [
+  {
+    id: 'm01-l01',
+    moduleIndex: 1,
+    lessonNumber: 1,
+    title: 'Qué es la música generativa y cómo pensar como director',
+    kicker: 'Sesión 01 · Fundamentos',
+    minutes: 14,
+    objective:
+      'Salir de «pide una canción bonita» y entrar a dirigir cinco decisiones musicales comprobables.',
+    blocks: [
+      {
+        heading: 'El motor no entiende música: entiende correlaciones',
+        body: [
+          'Un generador musical de IA es un modelo entrenado con muchísimos audios que aprendió a predecir qué suena después de qué. No sabe qué es la tristeza ni qué es un coro: sabe que cuando la descripción incluye piano felt, 84 BPM y voz femenina susurrada, los audios etiquetados así comparten tempo lento, ataque suave y un espectro cerrado en agudos. Tu prompt no se lee: se correlaciona. Cada palabra activa un vecindario estadístico de sonidos, y el audio que recibes es una muestra de ese vecindario.',
+          'De ahí la primera regla práctica: las palabras vagas producen música vaga. «Triste» abarca el réquiem, el lo-fi de madrugada y la balada de piano con cuerdas, tres mundos que no comparten ni el tempo. «Que suene profesional» no es una instrucción, es un deseo. Sustituye el adjetivo por decisiones medibles: registro vocal, densidad instrumental, curva de energía por sección y un referente de mezcla. Si no puedes medirlo, tampoco puedes dirijirlo ni auditarlo.',
+          'Segunda regla: el material musical siempre existió en tu sesión; el prompt solo eligió en qué vecindario buscar. Por eso dos prompts casi idénticos generan canciones hermanas, y por eso documentar qué cambiaste vale muchísimo más que rezar para que salga una toma afortunada. Un productor que trabaja con IA no pesca al azar: pesca con mapa, carta de navegación y bitácora. Ese cuaderno es tu activo.',
+        ],
+      },
+      {
+        heading: 'Las cinco decisiones que siempre controlas',
+        body: [
+          'Sin importar el motor, hay cinco mandos que sí responden. Género y subgénero: definen el vocabulario rítmico e instrumental. Tempo en BPM: define la velocidad percibida y el cuerpo del groove. Tonalidad y modo: definen el color, el menor suena tenso y el mayor resuelto. Descripción vocal: registro, textura, articulación y acento. Estructura con dinámica: qué ocurre en cada bloque de tiempo. Todo lo demás que puedes escribir es decoración de esas cinco casillas.',
+          'Observa lo que NO está en la lista: «éxito», «emoción garantizada», «sonido de moda». Cuando un resultado te frustra, casi nunca falló la inteligencia artificial: falló una de las cinco casillas que dejaste vacía. Revisa la lista antes de reescribir el prompt completo y sabrás exactamente qué llenar, en vez de tirar otra generación a ver qué sale.',
+          'Esa lista también delimita tu responsabilidad. El modelo decide el timbre exacto de la caja, la variación del riff y miles de microdetalles que no puedes pedir palabra por palabra. Tú decides el marco. Aceptar ese reparto con honestidad es lo que separa a quien se frustra en la primera generación de quien itera con criterio en la décima.',
+        ],
+      },
+      {
+        heading: 'Traduce la escena a música, no la resumas con un adjetivo',
+        body: [
+          'El ejercicio que sostiene todo el curso: describe una escena con sustantivos y verbos, y después tradúcela a decisiones. «Un taxi a las tres de la mañana bajo la lluvia» no es un prompt, pero obliga a responder: ¿a qué tempo camina ese taxi?, ¿qué instrumento hace de lluvia?, ¿la voz canta o murmura?, ¿la energía sube o se queda plana porque el conductor está agotado? La escena responde las cinco preguntas; el prompt solo las traduce a palabras que el motor conoce.',
+          'Esa traducción es literalmente el trabajo del productor. A un músico de estudio nunca se le pide «ponlo triste»: se le entrega una escena, una duración en segundos y una referencia de sonido. Si aprendes a traducir escenas en decisiones, la herramienta que uses deja de importar. Dominas un lenguaje transferible, no un truco de plataforma, y ese lenguaje sigue sirviendo cuando cambie el motor de mañana.',
+        ],
+      },
+      {
+        heading: 'Qué le pides al motor y qué le quitas',
+        body: [
+          'Antes de generar, decide también qué no vas a pedir: una voz específica con nombre propio, un solo virtuoso imposible, una producción de orquesta de ochenta músicos. Imitar artistas nombrándolos está bloqueado o es jurídicamente riesgoso en la mayoría de las plataformas, además de creativamente pobre. Describe en su lugar las propiedades que hacen reconocible ese estilo: tempo, articulación, espacio de mezcla, actitud y registro vocal. Conservas la intención sin copiar la identidad.',
+          'Y entrega poco, pero exacto. Entre diez y veinticinco términos que cubran las cinco decisiones rinden más que un párrafo de cuarenta. La razón es estadística: cada palabra ambigua que agregas empuja la correlación hacia otro vecindario y te aleja del que querías. Menos palabras, todas medidas, es la firma del prompt profesional. Si una palabra no paga su alquiler, fuera.',
+        ],
+      },
+    ],
+    examples: [
+      'Escena: «una cocinera cierra el restaurante y se queda sola». Traducción a cinco decisiones: bossa nova suave, 96 BPM, Sol mayor con séptimas, voz femenina en registro bajo y sin vibrato, estructura A-B-A con dinámica casi plana y solo de guitarra de nylon en la coda. El prompt salió de la escena, no del adjetivo «relajante».',
+      'Antes: «canción épica para motivar». Después: «rock instrumental, 128 BPM, Re menor, guitarra con palm mute en versos, cuerdas staccato entrando en el pre-coro, bombo en negras en el coro, clímax en el último coro con hi-hat a doble tempo, mezcla seca y ancha». El segundo se puede auditar fragmento por fragmento; el primero no.',
+      'Decisión de director: en lugar de «que suene a Billie Eilish», «pop minimalista, 94 BPM, voz femenina susurrada muy cerca del micrófono, sub-bajo senoidal que duplica la fundamental, percusión con caja distorsionada solo en coros, reverberación corta en versos y casi vacío de 200 a 500 Hz». Mantienes lo que hacía reconocible la referencia sin nombrar a nadie.',
+    ],
+    techniques: [
+      'Traducción escena→decisión: escribe la escena en una frase y respóndele por escrito las cinco preguntas (tempo, modo, voz, instrumentación, curva de energía) antes de tocar el prompt.',
+      'Inventario de mandos: marca en tu prompt qué decisión cubre cada término. Lo que no cae en ninguna de las cinco casillas es relleno y se elimina.',
+      'Descripción por propiedades: sustituye nombres de artistas por las propiedades medibles que producen ese sonido: registro, densidad, espacio, articulación, actitud.',
+      'Umbral de auditoría: un prompt es bueno si al escuchar puedes decir qué instrucción generó qué fragmento. Si no puedes, es una intención disfrazada de instrucción.',
+      'Bitácora de dos columnas: a la izquierda el prompt exacto, a la derecha qué entregó el audio. Esa memoria vale más que cualquier truco de semilla que encuentres en internet.',
+    ],
+    prompts: [
+      {
+        name: 'Traductor de escena a prompt',
+        outcome: 'Convertir una escena mental en un prompt con las cinco decisiones cubiertas.',
+        text: 'Género: {género y subgénero}. Tempo: {BPM} BPM. Tonalidad: {tonalidad y modo}. Voz: {registro} con {textura} y {articulación}. Instrumentación: {capa base} sosteniendo el groove, {capa armónica} en versos, {capa que entra en coros}. Estructura: {intro} / {verso} / {pre-coro} / {coro} / {puente} / {outro}, alrededor de {duración total}. Dinámica: {qué sube en el coro} y {qué baja en el puente}. Mezcla: {referencia de espacio} con {referencia de espectro}. La escena, sin adjetivos emocionales: {una frase de la escena}.',
+        variables: [
+          'género y subgénero',
+          'BPM',
+          'tonalidad y modo',
+          'registro',
+          'textura',
+          'articulación',
+          'capa base',
+          'capa armónica',
+          'capa que entra en coros',
+          'intro',
+          'verso',
+          'pre-coro',
+          'coro',
+          'puente',
+          'outro',
+          'duración total',
+          'qué sube en el coro',
+          'qué baja en el puente',
+          'referencia de espacio',
+          'referencia de espectro',
+          'una frase de la escena',
+        ],
+      },
+      {
+        name: 'Antídoto contra el adjetivo vacío',
+        outcome: 'Reescribir un prompt hecho de adjetivos como instrucciones comprobables.',
+        text: 'Sustituye «{adjetivo vago}» por cuatro decisiones: tempo entre {BPM mínimo} y {BPM máximo} BPM; {modo mayor o menor} con {grado de tensión armónica}; instrumentación con {qué suena en versos} y {qué se suma en coros}; voz en {registro}, con {articulación} y {cantidad de aire}. Genera y verifica si la emoción aparece sin haber nombrado nunca el adjetivo original.',
+        variables: ['adjetivo vago', 'BPM mínimo', 'BPM máximo', 'modo mayor o menor', 'grado de tensión armónica', 'qué suena en versos', 'qué se suma en coros', 'registro', 'articulación', 'cantidad de aire'],
+      },
+    ],
+    exercise: {
+      title: 'Cinco decisiones para una escena',
+      steps: [
+        'Elige una escena real de tu día (una cocina, una parada de autobús, un pasillo vacío) y escríbela en una sola frase, sin adjetivos emocionales.',
+        'Responde por escrito las cinco preguntas: ¿a qué tempo se mueve?, ¿qué modo y color?, ¿cómo es la voz?, ¿qué instrumentación con función?, ¿cómo sube y baja la energía?',
+        'Traduce las respuestas a un prompt de 10 a 25 términos con la plantilla «Traductor de escena a prompt».',
+        'Genera dos versiones del mismo prompt en el estudio local gratuito o en el estudio con voces del curso y escúchalas completas, sin saltar a los 20 segundos.',
+        'Anota en la bitácora qué decisión se escuchó, cuál se perdió y cuál sobra; con eso llegas listo a la Sesión 02.',
+      ],
+      deliverable:
+        'Una entrada de bitácora con la escena, las cinco decisiones, el prompt final y una nota que ligue cada fragmento del audio con la instrucción que lo produjo.',
+      checklist: [
+        'El prompt cubre las cinco decisiones y no contiene adjetivos emocionales sueltos tipo «hermoso» o «profesional».',
+        'La extensión quedó entre 10 y 25 términos; ningún término repetido hace el trabajo de otro.',
+        'Puedes señalar en el audio qué pasaje respondió a qué instrucción, y cuál instrucción no se notó.',
+        'Registraste el prompt exacto copiado, no resumido de memoria.',
+      ],
+    },
+    listening: [
+      {
+        title: 'Pop minimalista de susurro',
+        focus:
+          'Cuenta cuántos elementos suenan a la vez en el primer verso: voz, sub-grave y un solo percutor. Escucha la voz por delante de la música y con reverberación corta; la intimidad viene del espacio y del registro, no de la letra.',
+        search: 'Billie Eilish ocean eyes producción minimalista voz susurrada análisis',
+      },
+      {
+        title: 'Bossa nova: calma como articulación',
+        focus:
+          'Observa la voz en registro bajo, casi sin vibrato, pegada al pulso de la guitarra de nylon. La sensación de calma es una decisión de articulación y volumen, no un tempo extraordinariamente lento.',
+        search: 'João Gilberto bossa nova voz baja sin vibrato guitarra nylon pulso',
+      },
+      {
+        title: 'Rock instrumental con curva de energía',
+        focus:
+          'Escucha cómo la densidad, y no solo el volumen, marca la diferencia entre versos y coros: qué instrumento entra, cuál duplica su patrón y dónde se abre el estéreo.',
+        search: 'dinámica en rock instrumental versos coros densidad de arreglos análisis',
+      },
+    ],
+    pitfalls: [
+      {
+        mistake: 'Pedir una emoción sin dar ninguna decisión musical.',
+        fix: 'Cambia el adjetivo por las cuatro variables que lo producen: tempo, modo, instrumentación y articulación vocal.',
+      },
+      {
+        mistake: 'Copiar prompts ajenos sin saber qué hace cada término.',
+        fix: 'Explica en una línea qué aporta cada palabra. Lo que no puedas explicar, elimínalo o sustitúyelo por algo que sí controles.',
+      },
+      {
+        mistake: 'Nombrar artistas para obtener su sonido.',
+        fix: 'Describe propiedades: registro, densidad, espacio de mezcla y actitud vocal. Nombrar voces o obras ajenas puede violar los términos de la plataforma.',
+      },
+      {
+        mistake: 'Juzgar el resultado en los primeros 15 segundos.',
+        fix: 'Escucha la canción completa dos veces antes de decidir; el motor suele reservar sus mejores pasajes para el segundo tercio.',
+      },
+    ],
+    takeaway:
+      'La IA no compone tu canción: ejecuta el mapa de decisiones que tú le dibujas.',
+  },
+  {
+    id: 'm01-l02',
+    moduleIndex: 1,
+    lessonNumber: 2,
+    title: 'BPM, tonalidad, energía y estructura sin tecnicismos',
+    kicker: 'Sesión 02 · Lenguaje mínimo',
+    minutes: 16,
+    objective:
+      'Manejar BPM, modo, energía y estructura con lenguaje propio, para pedirlos y auditarlos sin depender de nadie.',
+    blocks: [
+      {
+        heading: 'BPM: la velocidad que decide el cuerpo',
+        body: [
+          'BPM son pulsaciones por minuto: cuántos golpes marca el metrónomo en 60 segundos. 60 BPM es un latido por segundo; 120, dos. Ese número decide cómo se mueve un cuerpo y, por lo tanto, el género posible: el reggaetón suele convivir entre 85 y 95, el house alrededor de 120 a 128, el trap entre 130 y 160 con feel a medio tiempo, el lo-fi entre 70 y 90. No es una ley, es la zona donde el patrón rítmico respira cómodo.',
+          'El error más común al medir: confundir el pulso con su doble o su mitad. Si cuentas 170 pero la canción se baila a 85, estás escuchando las corcheas. Truco estable: marca con el pie el golpe que tu cuerpo no puede ignorar, normalmente el bombo o el cajón, y cuenta cuántos golpes caben en 15 segundos multiplicando por cuatro. Una app de tapping te confirma el número en diez segundos.',
+          'Con el número en la mano, ya puedes dirigir: «94 BPM» es una instrucción; «tempo medio» es una opinión. Y cuando quieras tensión sin velocidad, pide medio tiempo: mismo BPM, sensación a la mitad, que en el prompt se escribe como halftime feel o pulso en negras por compás de dos.',
+        ],
+      },
+      {
+        heading: 'Tonalidad y modo: el color, no la suerte',
+        body: [
+          'La tonalidad nombra la casa de la canción (Do, Re, Mi…) y el modo su iluminación: mayor suena abierto y resuelto, menor suena tenso o melancólico. En la práctica con IA, lo que más te importa es el modo y si la armonía se mueve en cuatro grados simples o se mete en acordes prestados y séptimas. Menos cambios y modo claro = canción que se deja cantar; séptimas, novenas y acordes prestados = color sofisticado y menos memorizable.',
+          'La tonalidad absoluta también afecta a la voz, aunque casi nadie lo pide: una canción en registro muy alto obliga a la voz a beltear y cambia el carácter de la interpretación. Si quieres una voz grave y cercana, tiene sentido pedir tonalidades bajas y melodía en rango estrecho. Si quieres euforia, rango amplio y tonalidad que permita subidas. Describe el rango, no solo la nota.',
+          'Y una verdad incómoda que ahorra discusiones: el motor a veces no respeta la tonalidad que escribiste, porque el peso estadístico del género puede más que la palabra. Por eso conviene verificarla oyendo la nota final del coro, que casi siempre revela la casa real. Si necesitas exactitud armónica para un músico humano, entrega además la progresión en grados (I-vi-IV-V), que el modelo respeta mejor que las notas sueltas.',
+        ],
+      },
+      {
+        heading: 'Energía: la variable que la IA sí obedece',
+        body: [
+          'Energía no es volumen. Es cuántos elementos suenan a la vez, qué tan rápido se mueven en subdivisión, cuánto ataquen y qué tan abierto esté el espectro. Una balada puede tener más energía que un tema dance si entran cuerdas en corcheas, platillos a doble tempo y una voz con más aire. Por eso «baja energía» produce a veces algo fuerte: el motor lo asocia a un adjetivo de mood, no a una densidad instrumentable.',
+          'Escríbela como curva y por sección: verso con dos capas y pulso en negras, pre-coro sumando percusión y una guitarra en corcheas, coro con cuatro capas, platillos y voz doblada, puente que se cae a voz y un solo instrumento, último coro con una capa más que el anterior. Esa lista es una instrucción auditable; «que explote el coro» no.',
+          'La curva también define la forma en que se recuerda tu canción. El oído humano marca los cambios, no los promedios: una canción plana en energía resulta larga aunque dure dos minutos, y una con tres cambios claros resulta corta aunque dure cuatro. Cuando alguien diga «se hace pesada», casi siempre significa que la curva no tiene bajadas.',
+        ],
+      },
+      {
+        heading: 'Estructura: bloques con nombres y con minutos',
+        body: [
+          'La estructura estándar del pop es intro, verso, pre-coro, coro, verso, pre-coro, coro, puente, coro, outro. Su lógica es simple: el verso acumula información, el pre-coro crea tensión, el coro la descarga y el puente reencuadra para que el último coro no suene repetido. Aprende los bloques por su función, no por su orden, porque el orden es una convención y la función es una necesidad del oído.',
+          'Para dirigir una máquina, los nombres no bastan: agrega duración. «Verso de 8 compases, coro de 8, puente de 4» se traduce en tiempos; «estructura interesante» no se traduce en nada. Si no lees partitura, usa la regla de los bloques de 16 segundos: a 120 BPM, cuatro compases duran unos 8 segundos y ocho compases unos 16, así que puedes escribir la estructura como una sucesión de segundos.',
+          'Y controla el reloj desde el principio: una canción para radio o para un reel rara vez necesita más de tres minutos. Decide primero el destino y después la estructura. Pide el coro antes del segundo minuto o el oyente de la plataforma se va antes de tu mejor pasaje. Eso no es contentar al mercado: es respetar el tiempo de quien te escucha.',
+        ],
+      },
+    ],
+    examples: [
+      'Prompt que usa los cuatro conceptos juntos: «synth-pop, 112 BPM, La menor, voz masculina en rango medio con falsete solo en el último verso, versos con bajo y pulso en negras, pre-coro sumando arpegio de sintetizador en corcheas, coro con cuatro capas y platillos a doble tempo, puente a voz y pad, estructura total 2:50 con el primer coro antes del minuto 0:55, mezcla con sub-grave controlado y agudos suaves».',
+      'Medición real en bitácora: «canción A: cuento 92 con el pie, la app marca 184 → estaba escuchando corcheas, BPM correcto 92. Modo menor. Nota final del coro en Re → tonalidad Re menor. Energía: 2 capas en verso, 5 en coro». Cuatro datos y ya puedes replicar la receta.',
+      'Decisión de estructura por segundos: intro 8 s, verso 16 s, pre-coro 8 s, coro 16 s, verso 16 s, coro 24 s, puente 8 s, coro final 24 s, outro 8 s = 2:32. Escrito así, el motor entiende de largo y el resultado llega con la forma pedida.',
+    ],
+    techniques: [
+      'Conteo de 15 segundos: marca el golpe obvio con el pie, cuenta los golpes en 15 segundos y multiplica por cuatro. Verifica con una app de tapping para descartar el doble o la mitad.',
+      'Prueba del último acorde: para identificar tonalidad y modo sin teoría, escucha la nota con la que cierra el coro y cántala; si suena resuelta y luminosa tiende a mayor, si queda suspendida o sombría tiende a menor.',
+      'Curva en cinco puntos: dibuja la energía de la referencia en cinco momentos (primer verso, primer coro, segundo verso, puente, último coro) del 1 al 5. Ese dibujo es tu instrucción de dinámica.',
+      'Presupuesto de segundos: escribe la estructura como suma de segundos y revisa el total antes de generar. Si el total no cabe en la duración pedida, el motor inventará un final.',
+      'Coro antes del minuto uno: regla de operación para música de plataforma; si tu coro llega después, adelanta la forma o acepta una tasa de abandono alto.',
+    ],
+    prompts: [
+      {
+        name: 'Ficha de los cuatro conceptos',
+        outcome: 'Un prompt donde BPM, modo, curva de energía y estructura con tiempos quedan explícitos.',
+        text: 'Género: {género}. Tempo: {BPM} BPM, feel {straight, halftime o doble}. Tonalidad: {tonalidad} en {modo}, melodía vocal en rango {estrecho, medio o amplio}. Energía por sección: verso {nivel 1-5} con {capas}, pre-coro {nivel} sumando {instrumento}, coro {nivel} con {elemento que abre el espectro}, puente {nivel} con {elemento que queda solo}. Estructura en segundos: {intro} / {verso} / {pre-coro} / {coro} / {puente} / {coro final} / {outro}, total {duración}. Mezcla: {graves}, {agudos} y {espacio}.',
+        variables: [
+          'género',
+          'BPM',
+          'straight, halftime o doble',
+          'tonalidad',
+          'modo',
+          'estrecho, medio o amplio',
+          'nivel 1-5',
+          'capas',
+          'nivel',
+          'instrumento',
+          'elemento que abre el espectro',
+          'elemento que queda solo',
+          'intro',
+          'verso',
+          'pre-coro',
+          'coro',
+          'puente',
+          'coro final',
+          'outro',
+          'duración',
+          'graves',
+          'agudos',
+          'espacio',
+        ],
+      },
+      {
+        name: 'Auditoría de energía por secciones',
+        outcome: 'Convertir una canción plana en una curva con entradas y salidas concretas.',
+        text: 'Mantén {género} y {BPM} BPM, y reescribe solo la dinámica: versos con {n} capas y ataque {suave o seco}; pre-coro en ascenso con {elemento rítmico que duplica subdivisión}; coros con {elemento grave}, {elemento agudo} y voz {doblada o sencilla}; puente reducido a {voz más un instrumento}; último coro con {una capa adicional respecto al anterior}. El cambio de energía debe escucharse en la primera palabra del coro, no por volumen general.',
+        variables: ['género', 'BPM', 'n', 'suave o seco', 'elemento rítmico que duplica subdivisión', 'elemento grave', 'elemento agudo', 'doblada o sencilla', 'voz más un instrumento', 'una capa adicional respecto al anterior'],
+      },
+    ],
+    exercise: {
+      title: 'Radiografía de tres canciones de referencia',
+      steps: [
+        'Elige tres canciones de géneros distintos que te gusten y escúchalas completas una vez sin anotar nada.',
+        'Mide el BPM con el conteo de 15 segundos y confírmalo con una app; anota también si el feel es recto, a medio tiempo o doble.',
+        'Identifica el modo y la tonalidad probable con la prueba del último acorde, y marca si la melodía vocal usa un rango estrecho o amplio.',
+        'Escribe la estructura con nombres y segundos de cada bloque, hasta que la suma coincida con la duración real de la canción.',
+        'Dibuja la curva de energía en cinco puntos del 1 al 5 y señala qué instrumento entra o sale en cada cambio.',
+        'Redacta un prompt con la ficha de los cuatro conceptos que replique esa receta pero con tu propio tema y tu propia voz.',
+      ],
+      deliverable:
+        'Una tabla con tres filas (BPM, feel, modo y tonalidad, estructura en segundos, curva de energía) y un prompt derivado de la fila que más te interesa.',
+      checklist: [
+        'El BPM de cada canción está medido, no adivinado, y confirmado con una app.',
+        'La suma de los bloques en segundos coincide con la duración real, con tolerancia de cinco segundos.',
+        'La curva de energía menciona qué instrumento entra o sale en cada cambio, no solo «sube» o «baja».',
+        'El prompt final replica la estructura medida sin copiar ninguna melodía ni nombre de obra.',
+      ],
+    },
+    listening: [
+      {
+        title: 'Groove de pop funk: línea de bajo que ES el pulso',
+        focus:
+          'Escucha el bajo y la batería como una sola máquina. Marca con el pie el pulso y comprueba si el BPM se siente recto o con síncopas; después cuenta cuántos instrumentos suenan en el verso, normalmente muy pocos.',
+        search: 'Michael Jackson Billie Jean bass drum groove separation análisis de mezcla',
+      },
+      {
+        title: 'Son cubano: el tres como guitarra de acompañamiento',
+        focus:
+          'Localiza el patrón arpegiado del tres cubano y la clave rítmica por encima del bajo. Escucha cómo un solo instrumento repite la misma figura toda la canción y aun así la energía se sostiene: eso es groove con una capa.',
+        search: 'Buena Vista Social Club Chan Chan tres cubano clave pattern son montuno',
+      },
+      {
+        title: 'Balada con curva dramática',
+        focus:
+          'En una balada en español con final de ópera, sigue la voz: cuándo cambia de pecho a cabeza, cuándo entra el vibrato y cuántas capas instrumentales hay en el primer verso frente al último coro. Es una clase de dinámica sin efectos.',
+        search: 'José José El Triste dinámica vocal balada crescendo arreglo análisis',
+      },
+    ],
+    pitfalls: [
+      {
+        mistake: 'Pedir «tempo medio» en lugar de un número de BPM.',
+        fix: 'Escribe el BPM y el feel: «92 BPM, halftime». El número ancla el género; el feel explica por qué no parece rápido.',
+      },
+      {
+        mistake: 'Confundir energía con volumen general.',
+        fix: 'Pide densidad de capas, subdivisión y ataques. El volumen lo decide la masterización, la energía la decide el arreglo.',
+      },
+      {
+        mistake: 'Escribir la estructura sin duración por bloque.',
+        fix: 'Agrega segundos o compases a cada sección y revisa que la suma quepa en la duración total pedida.',
+      },
+      {
+        mistake: 'Asumir que el motor respetó la tonalidad que escribiste.',
+        fix: 'Verifica con la nota final del coro y, si necesitas precisión, entrega la progresión en grados romanos además del nombre de la tonalidad.',
+      },
+    ],
+    takeaway:
+      'BPM, modo, energía y estructura no son vocabulario de conservatorio: son los cuatro mandos que el motor obedece.',
+  },
+  {
+    id: 'm01-l03',
+    moduleIndex: 1,
+    lessonNumber: 3,
+    title: 'Ejercicio: describe una escena en cinco decisiones musicales',
+    kicker: 'Sesión 03 · Práctica guiada',
+    minutes: 12,
+    objective:
+      'Cerrar el módulo entregando un brief de una canción con cinco decisiones y una referencia, listo para convertirse en prompt.',
+    blocks: [
+      {
+        heading: 'Qué es un brief y por qué se escribe antes de generar',
+        body: [
+          'Un brief es una hoja de una cara donde quedas claro contigo mismo antes de gastar generaciones. Contiene la escena, la función de la canción (dónde va a sonar), las cinco decisiones, una referencia de sonido y un criterio de éxito escrito. Parece burocracia; en realidad es lo que impide que passes doscientas generaciones persiguiendo una idea que no supiste formular en dos minutos.',
+          'La diferencia entre un brief y un prompt es el nivel de detalle. El brief explica el porqué de cada decisión y qué se considera éxito; el prompt es la traducción comprimida. Cuando un resultado no te gusta, si tienes brief corriges la decisión; si solo tienes prompt, corriges la suerte. En las colaboraciones profesionales el brief además se comparte, así que el músico o el cliente entienden tu intención sin leer tu mente.',
+        ],
+      },
+      {
+        heading: 'Las cinco decisiones, con formato obligatorio',
+        body: [
+          'Primera: género y subgénero, uno solo. Segunda: tempo en BPM más el feel. Tercera: tonalidad y modo, más el rango vocal que necesitas. Cuarta: descripción de voz en cuatro ejes (registro, textura, articulación, acento), o «instrumental» con la melodía protagonista. Quinta: estructura con segundos y curva de energía por bloque. Si alguna casilla queda vacía, no es un brief: es un deseo con buena redacción.',
+          'Añade dos campos que casi nadie pone y que salvan la sesión. Uno: qué NO quieres, en dos líneas («sin palmas gospel, sin voz femenina con vibrato, sin drop de dubstep»). El motor también obedece exclusiones explícitas. Dos: la referencia de mezcla, descrita como espacio, no como marca («reverberación corta, voz delantera, graves concentrados en el centro, agudos sin filo»).',
+        ],
+      },
+      {
+        heading: 'Cómo saber si tu brief es suficientemente bueno',
+        body: [
+          'Con tres pruebas. Prueba del compañero: alguien que no conoce tu idea lee el brief y puede generar algo que tú aceptarías; si no, falta información. Prueba de la exclusión: dos de tus «no quiero» sobrevivieron y el resultado no los violó. Prueba del criterio: al escuchar puedes decir en voz alta si cumpliste el criterio de éxito escrito, sin cambiar la definición a posteriori.',
+          'Y una advertencia de método: el brief se puede corregir, pero no se reescribe a mitad de generación. Si cambias la escena entera después de la tercera toma, no estás iterando, estás abandonando. Registra el cambio como versión nueva con fecha. Ese hábito es el que hace que a la semana puedas explicar qué aprendiste, que es el único activo que te queda.',
+        ],
+      },
+    ],
+    examples: [
+      'Brief real de un alumno: «Escena: un mercado a las siete de la mañana antes de abrir. Función: tema de apertura para un podcast de cocina. Género: cumbia electrónica suave, 96 BPM feel recto. Tonalidad: La menor, melodía protagonista en sintetizador, rango medio. Voz: instrumental, con una frase cantada sin palabras solo en el coro. Estructura: intro 8 s, A 16 s, B 16 s, A 16 s, coda 8 s, total 1:10, energía 2-2-3-4-2. No quiero: ni trompetas brillantes, ni dembow, ni voz susurrada íntima. Referencia de mezcla: percusión seca al frente, bajo corto, estéreo moderado. Criterio de éxito: alguien dice qué hora es solo con escucharlo».',
+      'Del brief al prompt: «cumbia electrónica instrumental, 96 BPM, La menor, melodía en sintetizador de timbre redondo, güira y percusión latina seca al frente, bajo eléctrico corto sin sub-grave, frase vocal sin palabras doblada en el bloque B, estructura 8/16/16/16/8 segundos, energía que sube en el bloque B y baja en la coda, mezcla seca con reverberación corta y estéreo moderado». Observa que el prompt no dice «mañana» ni «mercado»: dice las decisiones.',
+      'Un brief fallido y su corrección: «quiero algo lindo y nostálgico para el video de mi papá». Corrección con las cinco casillas: «vals peruano moderno, 108 BPM, Mi mayor, guitarra criolla arpegiada en versos, cajón entrando en el segundo compás, voz masculina madura con vibrato suave y acento limeño, estructura verso-coro-verso-coro-total 2:40, energía 2-3-2-4, sin sintetizadores ni batería electrónica; criterio de éxito: que mi hermana lo reconozca como la música de su infancia».',
+    ],
+    techniques: [
+      'Casillas obligatorias: escribe el brief en una tabla de seis filas (género, tempo/feel, tonalidad/rango, voz, estructura/dinámica, mezcla) y no generes hasta que esté llena.',
+      'Dos exclusiones explícitas: declara qué no quieres. Reducen más el ruido que añadir un adjetivo positivo más.',
+      'Referencia de mezcla sin marca: describe espacio, espectro y profundidad en palabras medibles, en lugar de decir «que suene como tal canción».',
+      'Prueba de la hora: si tu música debe evocar una escena concreta, pide a alguien que adivine la hora, el lugar o el clima. Si falla, falta una decisión.',
+      'Versión con fecha: si cambias la escena, guarda el brief anterior con fecha y abre uno nuevo. Nunca borres: colecciona decisiones.',
+    ],
+    prompts: [
+      {
+        name: 'Brief de una canción en seis campos',
+        outcome: 'Producir la hoja de brief completa antes de escribir el prompt.',
+        text: 'Escena (una frase, sin adjetivos emocionales): {escena}. Función y destino (dónde va a sonar): {destino}. 1) Género: {género y subgénero}. 2) Tempo: {BPM} BPM con feel {recto, medio tiempo o doble}. 3) Tonalidad: {tonalidad} en {modo}, rango vocal {estrecho, medio o amplio}. 4) Voz: {registro} / {textura} / {articulación} / {acento}, o instrumental con {melodía protagonista}. 5) Estructura y energía: {bloque 1 en segundos, nivel 1-5} / {bloque 2} / {bloque 3} / {bloque 4}, total {duración}. 6) Mezcla: {graves} / {agudos} / {espacio}. No quiero: {exclusión 1}, {exclusión 2}. Criterio de éxito comprobable: {qué debe notar un oyente}.',
+        variables: ['escena', 'destino', 'género y subgénero', 'BPM', 'recto, medio tiempo o doble', 'tonalidad', 'modo', 'estrecho, medio o amplio', 'registro', 'textura', 'articulación', 'acento', 'melodía protagonista', 'bloque 1 en segundos, nivel 1-5', 'bloque 2', 'bloque 3', 'bloque 4', 'duración', 'graves', 'agudos', 'espacio', 'exclusión 1', 'exclusión 2', 'qué debe notar un oyente'],
+      },
+      {
+        name: 'Del brief al prompt comprimido',
+        outcome: 'Convertir un brief de seis campos en un prompt de 25 a 45 términos.',
+        text: 'Resume tu brief en un solo bloque, sin perder decisiones: {género}, {BPM} BPM {feel}, {tonalidad} {modo}, {voz o melodía protagonista}, {capa rítmica} con {patrón}, {capa armónica} que entra en {sección}, estructura {bloque con segundos} y energía {nivel} en {sección clave}, {elemento que sube en el clímax}, {elemento que se retira en el puente}, mezcla {graves}, {agudos} y {espacio}. Elimina toda palabra que no sea una decisión: {palabras eliminadas}.',
+        variables: ['género', 'BPM', 'feel', 'tonalidad', 'modo', 'voz o melodía protagonista', 'capa rítmica', 'patrón', 'capa armónica', 'sección', 'bloque con segundos', 'nivel', 'sección clave', 'elemento que sube en el clímax', 'elemento que se retira en el puente', 'graves', 'agudos', 'espacio', 'palabras eliminadas'],
+      },
+    ],
+    exercise: {
+      title: 'Brief de una canción, del mapa sonoro al prompt',
+      steps: [
+        'Elige una escena con lugar y hora concreta que puedas describir en una frase sin adjetivos emocionales.',
+        'Declara el destino de la pieza: reel, podcast, videojuego, regalo familiar o simple canción para subir.',
+        'Llena las seis casillas del brief con la plantilla y escribe dos exclusiones explícitas («sin…»).',
+        'Escribe el criterio de éxito como algo que un tercero pueda notar: «que se reconozca la hora», «que den ganas de caminar».',
+        'Genera dos tomas del mismo prompt en el estudio (local gratuito o con voces), escucha completa y evalúa contra el criterio escrito.',
+        'Comprime el brief en un prompt final de 25 a 45 términos y guárdalo junto a la toma seleccionada en tu bitácora.',
+      ],
+      deliverable:
+        'Entregable del módulo: un brief de una canción con escena, emoción traducida a decisiones, referencia de mezcla, curva de energía y estructura, más el prompt final y la toma que cumplió el criterio.',
+      checklist: [
+        'Las seis casillas del brief están llenas y las cinco decisiones básicas aparecen también en el prompt.',
+        'El prompt tiene entre 25 y 45 términos y ninguna palabra sin función.',
+        'Un oyente externo cumplió o rompió el criterio de éxito sin que tuvieras que explicárselo.',
+        'Guardaste el prompt exacto, la fecha y el nombre de la toma seleccionada en la bitácora.',
+      ],
+    },
+    listening: [
+      {
+        title: 'Música que describe un lugar',
+        focus:
+          'Escucha una pieza de cumbia electrónica y busca los elementos que anclan el lugar: un percutor tradicional, un patrón de güira o un timbre de sintetizador. Identifica qué instrumento haría la función de «hora del día» si tuvieras que componer algo similar.',
+        search: 'cumbia electrónica colombiana instrumentos tradicionales sintetizador análisis',
+      },
+      {
+        title: 'Bolero de cámara: la decisión de espacio',
+        focus:
+          'Escucha cuánta reverberación rodea a la voz y qué tan cerca está del micrófono. Compara esa cercanía con una producción urbana actual y deduce qué decisiones de mezcla producen intimidad sin cambiar la letra.',
+        search: 'bolero mexicano producción voz cercana reverberación contraste mezcla actual',
+      },
+      {
+        title: 'Banda sonora que evoca una escena sin palabras',
+        focus:
+          'Elige un cue instrumental de cine y detecta cómo se logra la sensación de clima o estación: registro de las cuerdas, velocidad del arpegio, presencia de viento o ruido de fondo. Eso es una escena traducida a decisiones.',
+        search: 'film score evocar clima estación orquestación recursos análisis',
+      },
+    ],
+    pitfalls: [
+      {
+        mistake: 'Escribir el brief con la música ya sonando en la cabeza.',
+        fix: 'Redáctalo sin audífonos y verifícalo después generando. Si tu descripción solo tiene sentido para ti, todavía no es un brief.',
+      },
+      {
+        mistake: 'Cambiar la escena a la tercera generación.',
+        fix: 'Termina el ciclo brief-prompt-evaluación dos veces sobre la misma escena antes de abrir una nueva. Los cambios van en la decisión, no en el objetivo.',
+      },
+      {
+        mistake: 'Dejar vacío el campo de mezcla.',
+        fix: 'Agrega aunque sea dos líneas sobre graves, agudos y espacio. Sin referencia de mezcla, el motor decide por ti y pierdes la comparación entre tomas.',
+      },
+      {
+        mistake: 'Poner un criterio de éxito subjective («que me guste»).',
+        fix: 'Reemplázalo por una reacción observable de un tercero: que adivinen la hora, que tarareen el coro, que quieran caminar.',
+      },
+    ],
+    takeaway:
+      'Si no puedes escribir la canción en una hoja, tampoco puedes dirigirla en un prompt.',
+  },
+  {
+    id: 'm02-l04',
+    moduleIndex: 2,
+    lessonNumber: 4,
+    title: 'La anatomía de un prompt reproducible',
+    kicker: 'Sesión 04 · Estructura del prompt',
+    minutes: 15,
+    objective:
+      'Construir prompts con campos fijos y versionados que puedas relanzar dentro de un mes y obtener el mismo tipo de resultado.',
+    blocks: [
+      {
+        heading: 'Siete campos, en el mismo orden, siempre',
+        body: [
+          'Un prompt reproducible tiene siete campos: género y subgénero, BPM y feel, tonalidad y modo, voz (registro, textura, articulación, acento), instrumentación con función por capa, estructura con tiempos y dinámica, y referencia de mezcla. No es una receta mágica: es una lista de chequeo. Si un campo falta, mañana no sabrás qué cambiaste cuando el resultado sea peor, y la comparación entre tomas se vuelve imposible.',
+          'El orden importa por una razón práctica: los primeros términos tienen más peso en casi todos los motores, porque la atención del modelo se concentra al inicio. Por eso el género y el tempo van primero, y las preferencias suaves de mezcla al final. Si descubres una palabra que no logra aparecer, muévela hacia el frente y vuelve a probar antes de inventar sinónimos.',
+          'Escribe los campos siempre en el mismo orden y con las mismas etiquetas. Eso permite diff: dos prompts que se distinguen solo en el campo «voz» son una prueba controlada; dos prompts reescritos por completo son dos canciones distintas y ninguna conclusión aprendiste.',
+        ],
+      },
+      {
+        heading: 'Prompt de estilo, letra y campo de voz: tres cosas distintas',
+        body: [
+          'La mayoría de las plataformas separa al menos dos entradas: la descripción de estilo y la letra. Un error típico de principiante es meter la letra dentro del prompt de estilo, o la descripción de mezcla dentro de la letra. Cada caja alimenta a un subsistema distinto: estilo define el arreglo, letra define qué se canta y dónde, y las etiquetas de sección dentro de la letra ([Verso], [Coro], [Puente]) organizan la forma.',
+          'Las etiquetas de sección son tu control más fino y el menos usado. Escribir [Intro instrumental], [Verso], [Pre-coro], [Coro], [Puente: solo de guitarra], [Coro final con voz doblada] dentro del texto de la letra dice cuándo entra la música, no solo qué se dice. Un prompt de estilo no puede ordenar «el solo en el minuto 2:10»; la etiqueta de sección sí puede aproximarlo.',
+          'Y una advertencia sobre longitud por campo: el estilo no agradece párrafos. Dos o tres frases densas superan a diez líneas de buenas intenciones. La letra, en cambio, necesita completa: si le falta el coro, el motor lo inventa o lo omite, y ninguna de las dos opciones es la tuya.',
+        ],
+      },
+      {
+        heading: 'Versionar: la diferencia entre probar y acumular',
+        body: [
+          'Nombra cada prompt con código y cambio. Formato simple: cancion-v1, v2 con una nota de una línea («v3: subo BPM de 92 a 100, todo lo demás igual»). Sin esa nota, en dos días no sabes qué distinguía v2 de v3, y terminas re-generando cosas que ya habías descartado. La nota es lo que hace el prompt reproducible para tu yo del futuro, que es tu peor enemigo documental.',
+          'Guarda además la fecha, la plataforma y el plan con que generaste. Eso sirve dos veces: para reproducir el estilo si la plataforma cambia sus modelos, y para la trazabilidad de derechos que veremos en el módulo 5, donde hace falta poder afirmar cuándo y con qué herramienta se hizo una toma concreta.',
+          'Regla de tres versiones: si con tres cambios documentados sobre una misma decisión no mejoras el resultado, la decisión está mal elegida o la plataforma no es capaz de entregarla. Cambia el enfoque, no la formulación. Guardar veinte variaciones de un prompt que no funciona no es iterar: es posponer una decisión.',
+        ],
+      },
+    ],
+    examples: [
+      'Prompt de estilo reproducible (7 campos): «indie pop latino, 104 BPM feel recto, Re mayor, voz femenina registro medio con aire y articulación clara en español neutro, versos con guitarra rítmica y bajo redondo, pre-coro sumando pandereta y arpegio de teclas, coro con cuerdas largas y batería amplia, estructura intro 8 s, verso 16, pre-coro 8, coro 16, puente 8, coro 24, outro 8; mezcla con voz delantera, graves controlados sin sub, agudos suaves». Guarda esta forma en tu bitácora y reutilízala.',
+      'Diff real entre dos versiones: v2 «…94 BPM…» frente a v3 «…100 BPM, todo lo demás idéntico…». En v3 el verso resultó más narrado y el coro menos pesado. Conclusión registrada: el problema era tempo, no instrumentación. Con un prompt reescrito por completo, esa conclusión no existía.',
+      'Prompt mal formado y su reconstrucción: «canción bonita de amor con buen sonido, voz femenina tipo balada, que explote». Reconstrucción: «balada pop, 76 BPM, Sol mayor, voz femenina en registro medio con vibrato suave y dicción clara, piano de fieltro y cuerdas en versos, batería con escobillas entrando en pre-coro, coro con guitarra eléctrica en acordes abiertos y bajo en octavas, puente reducido a voz y piano, estructura total 3:20 con primer coro en 1:12, mezcla cálida con reverberación larga en coros y voz delantera en versos». Cinco palabras de opinión se convirtieron en ocho decisiones auditables.',
+    ],
+    techniques: [
+      'Campos fijos: usa la misma lista de siete etiquetas en cada prompt y en el mismo orden, para poder comparar dos tomas como se comparan dos líneas de un spreadsheet.',
+      'Peso por posición: pon género, BPM y voz al inicio; mezcla y adornos al final. Si una instrucción se ignora, muévela al frente antes de cambiarla de palabra.',
+      'Diff de una línea: al versionar, cambia un solo campo y escribe en la nota qué campo cambió y a qué valor. Si no puedes escribirlo, estás cambiando dos cosas.',
+      'Etiquetas de sección en la letra: [Intro], [Verso], [Pre-coro], [Coro], [Puente: …], [Outro] para controlar cuándo entra la música y no solo qué se dice.',
+      'Techo de tres versiones: tras tres cambios documentados sin mejora, cambia la decisión o la herramienta; no la redacción.',
+    ],
+    prompts: [
+      {
+        name: 'Prompt maestro de siete campos',
+        outcome: 'Un prompt completo y estable que puedes relanzar con cualquier generador.',
+        text: '{género y subgénero}, {BPM} BPM feel {recto, medio tiempo o doble}, {tonalidad} {modo}, voz {registro} con {textura}, {articulación} y acento {acento}, en {idioma}; instrumentación: {capa rítmica} con {patrón}, {capa armónica} en versos, {capa que entra en el coro}, {elemento de contraste en el puente}; estructura: {intro con segundos}, {verso}, {pre-coro}, {coro}, {puente}, {coro final}, {outro}, total {duración}; dinámica: {qué sube en el coro} y {qué se retira en el puente}; mezcla: {graves}, {agudos}, {espacio y profundidad de la voz}.',
+        variables: [
+          'género y subgénero',
+          'BPM',
+          'recto, medio tiempo o doble',
+          'tonalidad',
+          'modo',
+          'registro',
+          'textura',
+          'articulación',
+          'acento',
+          'idioma',
+          'capa rítmica',
+          'patrón',
+          'capa armónica',
+          'capa que entra en el coro',
+          'elemento de contraste en el puente',
+          'intro con segundos',
+          'verso',
+          'pre-coro',
+          'coro',
+          'puente',
+          'coro final',
+          'outro',
+          'duración',
+          'qué sube en el coro',
+          'qué se retira en el puente',
+          'graves',
+          'agudos',
+          'espacio y profundidad de la voz',
+        ],
+      },
+      {
+        name: 'Etiquetas de sección para la caja de letra',
+        outcome: 'Ordenar la forma dentro de la letra para que la estructura no dependa de la suerte.',
+        text: '[Intro instrumental: {elemento que presenta el tema}]\n[Verso 1: {voz y dinámica, por ejemplo baja y seca}]\n{versos, entre 4 y 8 líneas}\n[Pre-coro: {qué sube}]\n{líneas del pre-coro}\n[Coro: {gancho repetible, 2 a 4 líneas}]\n{líneas del coro}\n[Verso 2: {variación respecto al verso 1}]\n[Coro]\n[Puente: {contraste instrumental o de perspectiva}]\n[Coro final: {elemento adicional, por ejemplo voces dobladas}]\n[Outro: {cómo termina la canción}]',
+        variables: ['elemento que presenta el tema', 'voz y dinámica, por ejemplo baja y seca', 'versos, entre 4 y 8 líneas', 'qué sube', 'líneas del pre-coro', 'gancho repetible, 2 a 4 líneas', 'líneas del coro', 'variación respecto al verso 1', 'contraste instrumental o de perspectiva', 'elemento adicional, por ejemplo voces dobladas', 'cómo termina la canción'],
+      },
+      {
+        name: 'Nota de versionado para bitácora',
+        outcome: 'Registrar cada prompt de forma que se pueda reproducir y auditar meses después.',
+        text: '{canción}-v{n} · {fecha} · plataforma {plataforma y plan} · modelo {si la plataforma lo declara} · cambio único: {campo} de {valor anterior} a {valor nuevo} · prompt exacto: {prompt pegado} · duración generada {mm:ss} · resultado: {qué se escuchó del cambio} · decisión: {continuar, revertir o abandonar}.',
+        variables: ['canción', 'n', 'fecha', 'plataforma y plan', 'si la plataforma lo declara', 'campo', 'valor anterior', 'valor nuevo', 'prompt pegado', 'mm:ss', 'qué se escuchó del cambio', 'continuar, revertir o abandonar'],
+      },
+    ],
+    exercise: {
+      title: 'Escribir, versionar y relanzar un prompt de siete campos',
+      steps: [
+        'Toma el brief de la Sesión 03 y escríbelo otra vez como prompt de siete campos, en el mismo orden y con las mismas etiquetas.',
+        'Genera la toma v1 y anótala con la plantilla de versionado, pegando el prompt exacto y la duración real.',
+        'Cambia una sola casilla (BPM, modo, voz o instrumentación) y genera v2 con nota de una línea.',
+        'Cambia otra casilla distinta y genera v3. Escucha las tres seguidas, sin pausa, en el mismo volumen.',
+        'Relanza v1 una semana después: si el resultado sigue siendo de la misma familia, tu prompt es reproducible; si no, anota qué campo era ambiguo.',
+      ],
+      deliverable:
+        'Un prompt maestro de siete campos con tres versiones documentadas y la conclusión escrita de qué casilla produce qué efecto.',
+      checklist: [
+        'Las tres versiones difieren en un solo campo cada una y la nota lo dice explícitamente.',
+        'El prompt pegado en la bitácora es idéntico al que enviaste, copiado y no resumido.',
+        'Puedes afirmar qué cambió en el audio por cada modificación, con un pasaje concreto como evidencia.',
+        'Ninguna versión menciona nombres de artistas ni de obras registradas.',
+      ],
+    },
+    listening: [
+      {
+        title: 'Dos tomas del mismo material',
+        focus:
+          'Busca una misma canción en versión demo y versión de estudio. Escucha qué cambió: arreglo, espacio de la voz, densidad; no la melodía. Así entrenas el oído para separar la decisión del resultado, que es lo que hace falta al comparar tus v1, v2 y v3.',
+        search: 'canción versión demo versus master comparación de producción y arreglo',
+      },
+      {
+        title: 'Reggaetón con arreglo minimalista',
+        focus:
+          'Cuenta los campos del prompt que hace falta para describir esta clase de tema: tempo, patrón de dembow, pad atmosférico, voz en registro bajo con flow conversado. Escucha cómo el arreglo dice mucho con pocos elementos, que es exactamente lo que un prompt de siete campos intenta controlar.',
+        search: 'reggaetón minimalista pads atmosféricos flow conversado análisis de producción',
+      },
+    ],
+    pitfalls: [
+      {
+        mistake: 'Meter la letra dentro del prompt de estilo.',
+        fix: 'Usa cada caja para lo suyo: estilo describe el arreglo; la letra se pega en su propio campo, con etiquetas de sección.',
+      },
+      {
+        mistake: 'Cambiar todo el prompt entre tomas y concluir que la IA «no hace caso».',
+        fix: 'Vuelve a los siete campos y cambia uno solo. Sin diff no hay conclusión, solo ruido.',
+      },
+      {
+        mistake: 'No guardar la plataforma, el plan ni la fecha.',
+        fix: 'Agrega esos datos a la nota de versionado. Son la única trazabilidad que tendrás cuando hables de derechos o colabores con alguien.',
+      },
+      {
+        mistake: 'Escribir diez líneas de adornos y ninguna decisión.',
+        fix: 'Reduce a ocho o doce términos de decisión. Cada adjetivo decorativo que no sea medible puede desplazar el vecindario sonoro que buscabas.',
+      },
+    ],
+    takeaway:
+      'Un prompt es reproducible si al releerlo en un mes puedes cambiar una palabra y saber qué esperar.',
+  },
+
+  {
+    id: 'm02-l05',
+    moduleIndex: 2,
+    lessonNumber: 5,
+    title: 'Voz, género, instrumentación, tempo y mezcla en una sola dirección',
+    kicker: 'Sesión 05 · Dirección completa',
+    minutes: 18,
+    objective:
+      'Escribir una sola instrucción que dirija los cinco frentes sin que unos se coman a los otros.',
+    blocks: [
+      {
+        heading: 'Voz: cuatro ejes y el idioma',
+        body: [
+          'La voz es el elemento que el oído juzga primero y el que los prompts descuidan más. Dirígela en cuatro ejes: registro (grave, medio, agudo; y si quieres, «con falsete solo en el coro»), textura (sucia, aterciopelada, metálica, con aire), articulación ( Clara y percusiva, legada y suave, conversada) y acento (español neutro, caribeño, rioplatense, castellano, inglés con acento latino). Cuatro etiquetas concretas valen más que «voz bonita».',
+          'Decide también el idioma en el prompt de estilo, no solo en la letra. Si la plataforma no recibe instrucciones de idioma y la letra está en español, igual conviene escribir «canto en español» en el estilo: refuerza la fonética y reduce las sílabas mal pegadas al pulso. Y declara si la voz es principal o doble: «voz principal con doblaje en coros, sin armonías» o «armonías de tercera en el coro final».',
+          'Una nota seria: suplantación no es dirección. Clonar la voz de una persona real sin su consentimiento, o pedirla por nombre, suele estar prohibido por los términos de servicio de las plataformas y puede constituir violación de derechos de imagen y de voz. Lo que sí puedes hacer —y es lo profesional— es describir propiedades vocales que evocan una actitud sin apropiarse de una identidad.',
+        ],
+      },
+      {
+        heading: 'Género y subgénero: uno, no una lista',
+        body: [
+          'Escribir «pop, rock, latino, urbano, electrónico» no amplía opciones: diluye la dirección. El motor promedia los vecindarios y entrega un pastiche sin pulso claro. Elige un género y un subgénero, y si quieres influencia adicional declárala como elemento concreto: «pop, con guitarra de rock en el puente». La influencia como capa es una instrucción; la influencia como etiqueta es ruido.',
+          'El subgénero es donde está el control útil. «Reggaetón» es una plaza enorme; «reggaetón nocturno minimalista con dembow suave» ya limita percusión, armonía y espacio. «Rock» no dice nada; «rock post-punk con bajo de octavas y batería seca» dice casi todo. Baja un nivel en la jerarquía del género cada vez que el resultado suene genérico.',
+        ],
+      },
+      {
+        heading: 'Instrumentación con función, no con lista de compras',
+        body: [
+          'Enumerar instrumentos («piano, guitarra, cuerdas, sintetizador, bajo, batería») produce una sopa: todo suena todo el tiempo. Asigna función y sección: el bajo duplica el bombo y sostiene la fundamental; la guitarra hace corcheas en el pre-coro; el pad ocupa el fondo y nunca el centro; las cuerdas entran solo en coros. Una capa sin función se lee como relleno en la mezcla y te roba claridad.',
+          'Trabaja en rangos: pide que los instrumentos agudos no pisen la voz. En una balada, cuerdas largas por encima de la melodía vocal compiten en el mismo territorio; cuerdas en notas largas por debajo o en octava superior muy suave dejan espacio. En música urbana, el sub-bajo y el bombo se reparten el grave: si pides ambos «muy presentes», el resultado se embarra por debajo de 120 Hz.',
+          'Regla operativa: tres capas en el verso, cinco en el coro, una o dos en el puente. Ese presupuesto de arreglo es lo que produce dinámica audible sin tocar el volumen, y es la instrucción que más rápido mejora los resultados de un principiante.',
+        ],
+      },
+      {
+        heading: 'Tempo, feel y dónde pegas la melodía',
+        body: [
+          'El número de BPM no basta: 100 BPM puede sentirse recto, con swing o a medio tiempo. Añade siempre el feel y el ancla rítmica: «100 BPM, feel recto con hi-hat en corcheas» o «160 BPM, feel de medio tiempo, pulso en negras». Con eso evitas el error clásico de pedir velocidad y obtener una canción que suena dos veces más rápida de lo que querías.',
+          'También decides contra qué pulso canta la melodía. «Fraseo atrasado, la voz entra medio tiempo después del primer tiempo» produce una interpretación relajada; «fraseo adelantado y percusivo, cada sílaba sobre una corchea» produce tensión y energía. Esa frase de una línea es la que separa un rap cantado de una frase melódica pegada al beat, y casi nadie la escribe.',
+        ],
+      },
+      {
+        heading: 'Mezcla: cuatro palabras que sí se oyen',
+        body: [
+          'En un generador musical no mezclas, pero sí describes el resultado que quieres. Cuatro ejes funcionan: graves («sub-grave presente y corto» o «graves controlados sin sub»), agudos («agudos brillantes» frente a «agudos suaves, sin filo»), espacio («reverberación corta y voz delantera» frente a «reverberación larga, voz lejana») y estéreo («centro ocupado por voz y bombo, estéreo ancho solo en cuerdas»). Con esas cuatro frases cambias la impresión de producción más que diez adjetivos de mood.',
+          'Sé realista sobre el control: estas instrucciones mueven el balance general, no ecualizan una frecuencia específica. Si necesitas precisión, vas a tener que exportar y ajustar en un estudio externo, tema que el módulo 5 retoma. Aquí el objetivo es que la primera entrega llegue ya cerca de lo que pides, para que iteres de arreglo y no de parches.',
+        ],
+      },
+    ],
+    examples: [
+      'Dirección de los cinco frentes en un solo prompt: «urban pop latino, 92 BPM feel de medio tiempo con dembow suave, Do# menor, voz masculina en registro bajo con textura aterciopelada, articulación conversada y acento caribeño, canto en español; pads de sintetizador en el fondo sin invadir el centro, bajo sub-grave duplicando el bombo, guitarra eléctrica con trémolo solo en el puente, tres capas en versos y cinco en coros; fraseo atrasado medio tiempo; mezcla con graves cortos y controlados, agudos suaves, reverberación corta y voz delantera».',
+      'Decisión de reparto espectral: «balada pop, 74 BPM, Mi mayor, voz femenina media con aire; piano de fieltro en registro medio-grave, cuerdas en notas largas una octava arriba de la melodía solo en coros, bajo sintetizado suave sin sub-grave hasta el segundo coro; mezcla con centro libre para la voz, reverberación larga en coros y corta en versos». Observa que las cuerdas no se escriben por encima de la voz, sino una octava arriba y en notas largas: ahí está el espacio.',
+      'Error corregido en vivo: primer prompt «pop con guitarra, sintetizador, coro amplio» produjo una pared de sonido; segundo prompt conservó género y tempo y solo cambió el presupuesto de capas: «dos capas en versos, cuatro en coros, una en el puente». El problema no era la instrumentación, era la cantidad simultánea.',
+    ],
+    techniques: [
+      'Cuatro etiquetas de voz: registro, textura, articulación y acento, siempre en ese orden y todas en el mismo campo; así sabes en qué eje mover cuando la voz no funciona.',
+      'Influencia como capa: prohibido apilar géneros en la etiqueta; permite una influencia redactada como instrumento en una sección («guitarra de rock en el puente»).',
+      'Presupuesto de capas: tres en verso, cinco en coro, una o dos en puente. Es la forma más barata de crear dinámica audible.',
+      'Ancla de feel: después del BPM escribe qué instrumento marca la subdivisión; evita que el tempo se sienta el doble o la mitad.',
+      'Cuatro frases de mezcla: graves, agudos, espacio y estéreo. Un campo de mezcla con esas cuatro palabras rinde más que un párrafo sobre «calidad de estudio».',
+    ],
+    prompts: [
+      {
+        name: 'Dirección vocal completa en cuatro ejes',
+        outcome: 'Un campo de voz que el motor puede ejecutar y que tú puedes auditar.',
+        text: 'Voz {principal, masculina o femenina} en registro {grave, medio o agudo}, con {rango limitado o amplio} y {transición a falsete o belting} en {sección}; textura {aterciopelada, metálica, sucia o con aire}; articulación {percusiva, legada o conversada}; acento {español neutro, caribeño, rioplatense, castellano u otro}; idioma del canto: {idioma}; cantidad de aire: {baja, media o alta}; vibrato: {sin vibrato, suave, marcado}; doblajes: {sin doblajes, doblaje en coros o armonías de tercera}; colocación en la mezcla: {voz delantera pegada al micrófono o voz lejana en la música}.',
+        variables: ['principal, masculina o femenina', 'grave, medio o agudo', 'rango limitado o amplio', 'transición a falsete o belting', 'sección', 'aterciopelada, metálica, sucia o con aire', 'percusiva, legada o conversada', 'español neutro, caribeño, rioplatense, castellano u otro', 'idioma', 'baja, media o alta', 'sin vibrato, suave, marcado', 'sin doblajes, doblaje en coros o armonías de tercera', 'voz delantera pegada al micrófono o voz lejana en la música'],
+      },
+      {
+        name: 'Instrumentación con función y presupuesto',
+        outcome: 'Reemplazar la lista de instrumentos por capas con tarea, sección y rango.',
+        text: 'Capa rítmica: {bombo o patrón} con {subdivisión}, marca el pulso. Capa grave: {bajo o sub} que {duplica el bombo o camina por el acorde}, sin pasar de {límite de registro}. Capa armónica: {piano, guitarra o pad} en registro {medio o grave}, entrada en {sección}. Capa de contraste: {instrumento} solo en {sección}, en registro {una octava sobre o por debajo de la voz}. Capa de aire: {perk o textura} en {estéreo}, volumen {fondo}. Presupuesto: {n} capas en versos, {m} en coros, {k} en el puente. Centro del espectro reservado para {voz, bombo y bajo}.',
+        variables: ['bombo o patrón', 'subdivisión', 'duplica el bombo o camina por el acorde', 'límite de registro', 'piano, guitarra o pad', 'medio o grave', 'sección', 'instrumento', 'una octava sobre o por debajo de la voz', 'perk o textura', 'estéreo', 'fondo', 'n', 'm', 'k', 'voz, bombo y bajo'],
+      },
+    ],
+    exercise: {
+      title: 'Una instrucción, cinco frentes',
+      steps: [
+        'Toma tu prompt maestro de la Sesión 04 y verifícalo frente a los cinco frentes: voz, género, instrumentación con función, tempo y feel, mezcla. Subraya qué falta.',
+        'Reescribe el campo de voz con las cuatro etiquetas (registro, textura, articulación, acento) más idioma y doblajes.',
+        'Convierte tu lista de instrumentos en cinco capas con función, sección de entrada y rango, aplicando el presupuesto 3-5-1.',
+        'Añade el ancla de feel y las cuatro frases de mezcla (graves, agudos, espacio, estéreo).',
+        'Genera y escucha con una pregunta por frente: ¿se oye la voz en el registro pedido?, ¿hay tres capas en el verso?, ¿el centro está libre? Registra las respuestas y abre v2 con un solo frente modificado.',
+      ],
+      deliverable:
+        'Un prompt de dirección completa con los cinco frentes cubiertos y una tabla de auditoría con cinco casillas verificadas en el audio.',
+      checklist: [
+        'Los cinco frentes están presentes y ninguno está escrito como lista de adjetivos.',
+        'Cada instrumento del prompt tiene función, sección de entrada y rango declarados.',
+        'El campo de voz incluye los cuatro ejes, idioma y una instrucción de doblaje o armonía.',
+        'En la auditoría puedes afirmar qué frente se cumplió y cuál no, con un pasaje de evidencia.',
+      ],
+    },
+    listening: [
+      {
+        title: 'Dirección de voz en español: articulación y acento',
+        focus:
+          'Escucha una bachata y detecta cómo la articulación y el acento definen el género más que la letra: frases ligadas, vibrato al final del verso, voz al frente con poco eco. Después identifica qué instrumento hace la función de arpegio en corcheas.',
+        search: 'bachata dominicana guitarra arpegio corcheas voz al frente articulación',
+      },
+      {
+        title: 'Neo soul: registro, aire y fraseo atrasado',
+        focus:
+          'Pon atención en contra qué pulso canta la melodía: el fraseo va por detrás del bombo, con mucho aire y rango bajo. Eso es una instrucción de feel aplicada a la voz, y explica por qué la canción suena relajada sin ser lenta.',
+        search: 'neo soul fraseo atrasado detrás del beat voz con aire análisis',
+      },
+      {
+        title: 'Cumbia electrónica: presupuesto de capas',
+        focus:
+          'Cuenta capas en el primer verso y en el coro. La diferencia de densidad hace toda la dinámica. Localiza qué percutor se queda en el puente cuando todo lo demás sale.',
+        search: 'cumbia electrónica estructura densidad de capas percusión puente',
+      },
+    ],
+    pitfalls: [
+      {
+        mistake: 'Pedir una voz de artista real por nombre.',
+        fix: 'Describe los cuatro ejes vocales. Además de bloquearse o degradar el resultado, puede violar los términos de la plataforma y derechos de imagen y voz.',
+      },
+      {
+        mistake: 'Apilar géneros en la misma etiqueta.',
+        fix: 'Elige género y subgénero, y convierte cualquier otra influencia en un instrumento con sección.',
+      },
+      {
+        mistake: 'Escribir instrumentación sin rango y competir con la voz.',
+        fix: 'Declara en qué registro entra cada capa y reserva el centro para voz, bajo y bombo.',
+      },
+      {
+        mistake: 'Confiar en «mezcla profesional» como instrucción.',
+        fix: 'Sustitúyela por graves, agudos, espacio y estéreo. Si la plataforma no lo logra, exporta y ajusta en un estudio externo.',
+      },
+    ],
+    takeaway:
+      'Una dirección vale por sus cinco frentes: voz, género, capas con función, feel y mezcla; si falta uno, decide la máquina.',
+  },
+  {
+    id: 'm02-l06',
+    moduleIndex: 2,
+    lessonNumber: 6,
+    title: 'Cómo iterar: una variable a la vez y escucha crítica',
+    kicker: 'Sesión 06 · Iteración',
+    minutes: 16,
+    objective:
+      'Sustituir el «genera otra vez a ver si sale mejor» por un protocolo de prueba con una variable y escucha comparable.',
+    blocks: [
+      {
+        heading: 'Por qué dos tomas iguales no suenan iguales',
+        body: [
+          'Los motores de generación son estocásticos: muestrean dentro de un vecindario de probabilidad. Con el mismo prompt obtendrás variaciones, y esas variaciones tienen un tamaño real: en una misma toma pueden cambiar la longitud del intro, el timbre de la voz o si aparece un pasaje instrumental. Por tanto, comparar dos tomas sin haber cambiado nada no te dice nada sobre tu prompt: te muestra el ruido de base de la herramienta.',
+          'De ahí la regla de oro: para atribuir un efecto a una decisión necesitas una prueba controlada, no una corazonada. Cambia una sola variable, genera al menos dos tomas con esa variable nueva y escucha las dos. Si el cambio aparece en ambas, es la variable; si aparece en una sola, era ruido. Este pequeño aumento de costo te ahorra semanas de ajustes persiguiendo casualidades.',
+        ],
+      },
+      {
+        heading: 'Protocolo A/B en cuatro pasos',
+        body: [
+          'Uno: escribe la hipótesis en una línea («si subo el BPM a 100, el verso va a sonar más narrado y el coro menos pesado»). Dos: copia el prompt exacto y cambia únicamente el campo de la hipótesis, con nota de una línea. Tres: genera dos tomas por versión, cuatro audios en total. Cuatro: escúchalos en orden A1, B1, A2, B2, en el mismo volumen y en los mismos audífonos, anotando un comentario por audio antes de escuchar el siguiente.',
+          'Ese orden importa. El cerebro recuerda mal y compara peor: si escuchas las cuatro tomas seguidas y anotas al final, vas a recordar las dos últimas. Anotar en el momento, aunque sea una línea por audio, convierte una sesión de gusto en un experimento. Y si puedes, evalúa a ciegas con otra persona: la etiqueta A o B cambia decisiones reales más de lo que cualquiera quiere admitir.',
+          'Define antes de empezar cuándo paras. Sin criterio de salida, la iteración se convierte en procrastinación con forma de trabajo: diez versiones del mismo defecto, cada una justificada con un adjetivo nuevo. El criterio de salida se escribe en la hipótesis: «si la tercera versión sigue sin resolver el coro, cambio la melodía del gancho y no el arreglo».',
+        ],
+      },
+      {
+        heading: 'Escucha crítica: tres pasadas con un trabajo cada una',
+        body: [
+          'Primera pasada: cuerpo y memoria. ¿Se mueve la cabeza en el coro? ¿Recuerdas el gancho al terminar? No anotes defectos todavía; solo registra qué parte volverías a escuchar y cuál te saltaste. Segunda pasada: estructura. Marca los tiempos donde empieza cada sección, cuenta cuántas capas suenan en verso y en coro, y comprueba si el puente se siente como contraste o como relleno.',
+          'Tercera pasada: detalle molesto. Aquí buscas artefactos: sílabas pegadas, consonantes distorsionadas, costuras donde la forma cambia bruscamente, finales que se cortan, ruido bajo en los pasajes de silencio. Y buscas choques de espectro: si el grave se vuelve indefinible en el coro, algo está pisando al bajo. Escucha una de esas pasadas en volumen bajo: los desbalance de mezcla se notan antes; en volumen alto todo suena bien, y eso es una trampa conocida.',
+          'Regla de las tres escuchas: ninguna decisión definitiva con menos de tres escuchas. La primera engaña, la segunda cansa, la tercera revela. Si en la tercera escucha un pasaje sigue molestando, ese pasaje es el problema; si sigue gustando, ese pasaje es tu activo, no tu duda.',
+        ],
+      },
+      {
+        heading: 'Qué es ajustable y qué no',
+        body: [
+          'Ajustable por prompt: género, subgénero, tempo y feel, modo, densidad y funciones de capas, carácter y registro vocal, estructura general, tipo de espacio de mezcla, intensidad de dinámica. Ajustable solo regenerando: la melodía concreta del gancho, el timbre exacto, la interpretación de una sílaba, los micro-ataques. No ajustable: lo que la plataforma no soporta (stem aislado, tempo real, arreglo de compás exacto). Aprende a reconocer la tercera categoría, que es la que separa el progreso del enojo.',
+          'Cuando el defecto está en la categoría «no ajustable», cambia de estrategia: busca otra toma, edita el audio fuera con recorte y fundidos, o acepta que esa toma sirve para otro destino (un reel, un loop, una maqueta). Un productor profesional no es quien obtiene todo de una herramienta: es quien sabe qué pedirle, qué corregir después y qué renunciar.',
+        ],
+      },
+    ],
+    examples: [
+      'Hipótesis bien escrita: «si reduzco las capas del verso de 4 a 2, el coro va a sentirse más grande sin subir volumen». Prueba: v1 con 4 capas en verso (dos tomas), v2 con 2 capas y el resto idéntico (dos tomas). Resultado anotado: en las dos tomas de v2 el coro se siente más ancho; en una de las de v1 también, así que hay efecto pero hay ruido. Decisión: conservo v2 y dejo de ajustar el coro.',
+      'Hipótesis mal escrita: «probar cosas en el coro hasta que suene mejor». No hay variable, no hay resultado esperado, no hay salida. Corregida: «si pido la voz del coro doblada en octava superior, el gancho va a sostenerse en la segunda escucha». Eso se puede verificar o refutar en una sesión de veinte minutos.',
+      'Criterio de salida real: «si tras tres versiones el puente sigue sonando como verso repetido, dejo de modificar el arreglo y reescribo la melodía del puente en otra sesión; no genero una cuarta versión del mismo problema». Esa línea escrita antes de empezar evitó una tarde de cuarenta generaciones.',
+    ],
+    techniques: [
+      'Prueba de dos tomas por versión: genera dos audios con cada valor de la variable; el efecto que aparece en ambos es atribuible, el que aparece en uno es ruido.',
+      'Hipótesis de una línea: escribe «si cambio {variable}, entonces {efecto esperado}». Si no puedes formulada así, todavía no tienes un experimento, tienes curiosidad.',
+      'Ciegas simples: pide a alguien que elija entre A y B sin saber qué cambiaste. Su elección te dice si el efecto es audible o si eres tú justificando tu preferencia.',
+      'Escucha de volumen bajo: una pasada completa a bajo volumen para detectar desbalance; si algo desaparece o se grita, ya sabes dónde está el problema.',
+      'Etiquetas de defecto: clasifica cada problema en ajustable por prompt, ajustable regenerando o fuera de alcance. La tercera categoría se resuelve con edición externa o cambio de destino.',
+      'Corte de tres versiones: máximo tres intentos por decisión antes de cambiar la decisión misma. El contador se registra en la bitácora.',
+    ],
+    prompts: [
+      {
+        name: 'Hipótesis de una variable',
+        outcome: 'Convertir una frustración difusa en un experimento auditable de veinte minutos.',
+        text: 'Versión base: {nombre y número}. Variable única a probar: {campo}, de {valor actual} a {valor nuevo}. Hipótesis: si cambio {campo}, entonces {efecto audible esperado} en {sección}. Nada más cambia: {lista de campos que conservo idénticos}. Tomas por versión: {2}. Orden de escucha: {A1, B1, A2, B2}. Criterio de salida: si tras {3} versiones {defecto} persiste, entonces {siguiente movimiento}.',
+        variables: ['nombre y número', 'campo', 'valor actual', 'valor nuevo', 'efecto audible esperado', 'sección', 'lista de campos que conservo idénticos', '2', 'A1, B1, A2, B2', '3', 'defecto', 'siguiente movimiento'],
+      },
+      {
+        name: 'Checklist de escucha crítica en tres pasadas',
+        outcome: 'Un formato para anotar cada escucha y llegar a una decisión con evidencia.',
+        text: 'Pasada 1 (cuerpo): ¿en {mm:ss} muevo la cabeza? ¿recuerdo el gancho {sí o no}? ¿qué parte saltaría? {nota}. Pasada 2 (forma): secciones detectadas en {tiempos}; capas en verso {n}, capas en coro {m}; ¿el puente se siente contraste? {sí o no}; duración total {mm:ss}. Pasada 3 (detalle): artefactos en {mm:ss}; sílaba mal pegada en {palabra}; choque de espectro en {zona}; final {deliberado o cortado}. Decisión: {conservar, iterar una variable, editar fuera o descartar}.',
+        variables: ['mm:ss', 'sí o no', 'nota', 'tiempos', 'n', 'm', 'sí o no', 'mm:ss', 'mm:ss', 'palabra', 'zona', 'deliberado o cortado', 'conservar, iterar una variable, editar fuera o descartar'],
+      },
+    ],
+    exercise: {
+      title: 'Iteración de una variable con escucha documentada',
+      steps: [
+        'Identifica el defecto que más te molesta de tu mejor toma hasta ahora y escríbelo como fenómeno, no como opinión («el coro no abre», no «el coro es malo»).',
+        'Elige UNA variable que crees responsable (densidad de capas, BPM, rango vocal, cantidad de aire, espacio de reverberación) y redacta la hipótesis con la plantilla.',
+        'Genera dos tomas de la versión A y dos de la versión B, con el prompt base pegado y un solo campo modificado.',
+        'Escucha en orden A1, B1, A2, B2, con las tres pasadas de la checklist, anotando una línea por audio antes de pasar al siguiente.',
+        'Cierra con una decisión explícita: conservar, iterar otra variable, editar fuera del motor o descartar, y registra el corte de versiones para que la próxima sesión no repita el intento.',
+      ],
+      deliverable:
+        'Una tabla A/B con cuatro tomas, la hipótesis escrita, la atribución del efecto y la decisión final justificada en dos líneas.',
+      checklist: [
+        'Solo un campo del prompt cambia entre A y B, y la nota lo verifica literalmente.',
+        'Hay dos tomas por versión, no una, para poder separar efecto de ruido.',
+        'Las tres pasadas están anotadas con marcas de tiempo, no con adjetivos.',
+        'La decisión final incluye un criterio de salida registrado antes de la tercera versión.',
+      ],
+    },
+    listening: [
+      {
+        title: 'A/B de una misma idea en dos arreglos',
+        focus:
+          'Busca una canción que exista en versión acústica y versión de estudio. Escucha qué cambió y qué se quedó: la melodía y la letra son idénticas, así que todo lo que notas es arreglo, densidad y espacio. Ese es exactamente el tipo de comparación que haces en una prueba A/B controlada.',
+        search: 'versión acústica versus versión de estudio misma canción comparación arreglo',
+      },
+      {
+        title: 'Referencia de mezcla con poco material',
+        focus:
+          'En un tema de trap o reggaetón minimalista, escucha cuántos elementos pelean por el grave y por qué el sub-bajo se siente claro. Después haz la prueba inversa: bájalo de volumen y verifica qué se pierde primero. Eso entrena la escucha de balance, que es la pasada 3 de tu checklist.',
+        search: 'trap minimalista mezcla sub-bajo claro equilibrio de graves referencia',
+      },
+      {
+        title: 'Artefactos de generación en voces sintéticas',
+        focus:
+          'Escucha una canción generada con IA de dominio público o etiquetada como tal y busca costuras: sílabas pegadas, consonantes metálicas, cambios bruscos de sección. El objetivo no es criticar la herramienta: es aprender a reconocer el defecto que después buscarás en tus propias tomas.',
+        search: 'AI generated music vocal artifacts consonants metallic listening test',
+      },
+    ],
+    pitfalls: [
+      {
+        mistake: 'Cambiar tres variables y atribuir la mejora a la primera que pensaste.',
+        fix: 'Una variable por versión, con prompt base pegado y diff de una línea. Sin control no hay aprendizaje acumulable.',
+      },
+      {
+        mistake: 'Juzgar en la primera escucha y descartar la toma.',
+        fix: 'Aplica la regla de las tres escuchas: cuerpo, forma y detalle. La primera escucha sirve para medir reacción, no para decidir.',
+      },
+      {
+        mistake: 'Comparar audios en volúmenes distintos.',
+        fix: 'Normaliza el volumen de las cuatro tomas antes de escuchar. Un audio percibido como más fuerte casi siempre se vota como mejor.',
+      },
+      {
+        mistake: 'Iterar indefinidamente un defecto que la plataforma no puede resolver.',
+        fix: 'Clasifica el defecto en «fuera de alcance» y cambia de estrategia: otra toma, edición externa o destino distinto para el audio.',
+      },
+    ],
+    takeaway:
+      'Iterar es cambiar una cosa y poder decir qué causó qué; generar veinte veces no es iterar.',
+  },
+  {
+    id: 'm02-l07',
+    moduleIndex: 2,
+    lessonNumber: 7,
+    title: 'Ejercicio: tres versiones del mismo hook y checklist de calidad',
+    kicker: 'Sesión 07 · Práctica de módulo',
+    minutes: 20,
+    objective:
+      'Entregar tres generaciones documentadas del mismo gancho y seleccionar una versión con justificación auditable.',
+    blocks: [
+      {
+        heading: 'Un gancho, tres direccionalidades',
+        body: [
+          'Un gancho es la idea que se repite y se recuerda: dos o cuatro compases con una melodía simple y una frase verbal que cabe en una respiración. Para este ejercicio eliges un gancho y lo defiendes en tres versiones del prompt, cambiando una variable por versión. La primera versión es tu base; la segunda ataca el arreglo; la tercera ataca la interpretación o el tempo. Nunca cambies el gancho: si el gancho cambia, ya no comparas versiones, comparas canciones distintas.',
+          'Escribe el gancho antes de generar, en la caja de letra con etiquetas de sección, y repítelo literalmente en las tres tomas. Puedes acompañarlo de una instrucción de entrega: «el gancho se canta idéntico en cada coro, con la misma melodía». Sin esa línea, el motor tiende a variar la frase, y tu comparación se contamina porque ahora hay cuatro variables cambiando.',
+        ],
+      },
+      {
+        heading: 'Qué hace buena a una versión: la checklist',
+        body: [
+          'La checklist de calidad de Play and Go tiene ocho puntos, agrupados en cuatro preguntas. Memoria: ¿el gancho aparece antes del minuto uno?, ¿lo tararearías sin audio?. Forma: ¿se distinguen verso, pre-coro y coro al oído?, ¿el puente es contraste o relleno?. Sonido: ¿la voz se entiende en el primer verso?, ¿hay un momento en que el grave se vuelve indefinible?. Intención: ¿el final es deliberado (fade, golpe seco o caída a silencio) o se corta a media idea? Si fallas dos puntos de la misma pregunta, tienes una decisión que tomar, no un arreglo que parchar.',
+          'Cada punto se evalúa con una marca de tiempo. Sin tiempo no hay evidencia: «el coro abre bien» no se puede auditar; «0:52 entra la segunda capa y se siente la apertura» sí. Esta disciplina parece escolar y es la misma que usan los editores de música para devolverse tomas entre sí.',
+        ],
+      },
+      {
+        heading: 'Cómo justificar la versión seleccionada',
+        body: [
+          'Un criterio de selección honesto nombra tres cosas: qué gana la elegida, qué pierde respecto a las otras y qué se haría después con ella. Ejemplo de justificación válida: «elijo B; gana claridad de voz en el verso y apertura del coro, pierde la textura del sinte del puente, y el siguiente paso es exportarla y alargar cuatro compases el outro». Una justificación inválida: «me gustó más». No es una opinión malintencionada, es una decisión que no se puede repetir mañana.',
+          'Cierra siempre con un plan de una línea: publicar, seguir iterando una variable, pedir feedback ciego a otra persona o archivarla para un destino distinto (un reel, un loop, una base para letra). Una versión no elegida no es un fracaso: es un activo sin destino asignado. Ese plan convierte el ejercicio en parte de un flujo y no en un triángulo de muestras.',
+        ],
+      },
+    ],
+    examples: [
+      'Gancho de trabajo: «no me busques cuando ya no hay luz», cuatro sílabas por pie, cae en el tiempo fuerte del tercer compás. Versión A (base): «pop alternativo, 96 BPM, La menor, voz femenina con aire, tres capas en verso, cinco en coro, reverberación corta». Versión B: idéntica, cambiando solo «cinco capas en coro» por «coro con cuerdas en notas largas y guitarra de feedback en segundo plano». Versión C: idéntica a B, cambiando solo 96 BPM por 104 BPM.',
+      'Tabla de resultado: A aparece el gancho en 0:58 y la voz se entiende bien, pero el coro no abre. B abre el coro en 1:02 con las cuerdas, aunque el gancho aparece tarde y la letra se confunde en el segundo verso. C con 104 BPM adelanta el gancho a 0:47, abre el coro y conserva la dicción. Selección justificada: C gana en memoria y forma; pierde la textura de feedback del puente; siguiente paso: exportar y pedir una escucha ciega.',
+      'Checklist aplicada con tiempos: «0:11 primer verso, dicción clara», «0:47 gancho», «1:22 puente: contraste real, se queda voz y pad», «2:31 final con caída a silencio, deliberado», «1:05-1:10 el grave se vuelve indefinible cuando entran el bombo y el sub juntos».',
+    ],
+    techniques: [
+      'Gancho ancla: escribe el gancho literal y añade la instrucción de repetición idéntica; así las tres versiones son versiones y no tres canciones.',
+      'Rotación de variable por versión: versión A base, B arreglo, C tempo o interpretación. Nunca dos cambios en la misma versión.',
+      'Checklist con marcas de tiempo: cada punto de calidad se responde con mm:ss. Sin tiempo no hay evidencia auditable.',
+      'Justificación de tres partes: qué gana, qué pierde, qué sigue. Si te falta la tercera parte, todavía no elegiste: te convenció la novedad.',
+      'Feedback ciego: envía A, B y C sin etiquetas a dos personas y pide «cuál volverías a escuchar». La repetición espontánea es el mejor criterio de memoria que existe.',
+    ],
+    prompts: [
+      {
+        name: 'Tres versiones del mismo gancho',
+        outcome: 'Un set A/B/C con una sola variable rotando por versión, listo para la checklist.',
+        text: 'Gancho literal que se repite idéntico en cada coro: {frase de 4 a 10 palabras}. Base: {género}, {BPM} BPM {feel}, {tonalidad} {modo}, voz {registro, textura, articulación, acento}, {n} capas en verso y {m} en coro, estructura {segundos por bloque}, mezcla {graves, agudos, espacio}. Versión B = base, cambia solo {campo de arreglo} a {valor}. Versión C = versión B, cambia solo {tempo, feel o instrucción de interpretación} a {valor}. En las tres: el gancho se canta con la misma melodía y no se añade material nuevo en los coros.',
+        variables: ['frase de 4 a 10 palabras', 'género', 'BPM', 'feel', 'tonalidad', 'modo', 'registro, textura, articulación, acento', 'n', 'm', 'segundos por bloque', 'graves, agudos, espacio', 'campo de arreglo', 'valor', 'tempo, feel o instrucción de interpretación', 'valor'],
+      },
+      {
+        name: 'Checklist de calidad de ocho puntos',
+        outcome: 'Un formato de evaluación para seleccionar versión con evidencia.',
+        text: 'Memoria: el gancho aparece antes de {0:60} ({mm:ss}), ¿lo tararearía sin audio? {sí o no}. Forma: se distinguen verso {mm:ss}, pre-coro {mm:ss}, coro {mm:ss}; el puente es contraste {sí o no}. Sonido: se entiende la voz en el primer verso {sí o no}, problema de grave en {mm:ss}; artefactos en {mm:ss}. Intención: el final es {fade, golpe seco o caída a silencio} y es deliberado {sí o no}. Puntuación: {n} de 8 puntos cumplidos. Selección: {versión}, gana {algo}, pierde {algo}, siguiente paso {una línea}.',
+        variables: ['0:60', 'mm:ss', 'sí o no', 'mm:ss', 'mm:ss', 'mm:ss', 'sí o no', 'sí o no', 'mm:ss', 'mm:ss', 'fade, golpe seco o caída a silencio', 'sí o no', 'n', 'versión', 'algo', 'algo', 'una línea'],
+      },
+    ],
+    exercise: {
+      title: 'Set A/B/C del mismo gancho con selección justificada',
+      steps: [
+        'Escribe un gancho de 4 a 10 palabras y una melodía interior que puedas cantar; déjalo literal en la caja de letra con etiquetas de sección.',
+        'Genera la versión A con tu prompt maestro de siete campos y dos tomas; guarda el prompt exacto.',
+        'Genera la versión B cambiando solo un campo de arreglo (capas del coro, instrumentación del puente o mezcla) y dos tomas.',
+        'Genera la versión C cambiando solo tempo, feel o dirección de interpretación sobre B, y dos tomas.',
+        'Aplica la checklist de ocho puntos con marcas de tiempo a la mejor toma de cada versión y puntúa.',
+        'Selecciona una versión con justificación de tres partes (gana, pierde, sigue) y envíala a dos personas a ciegas para un voto de repetición.',
+      ],
+      deliverable:
+        'Entregable del módulo: tres generaciones documentadas del mismo gancho, la checklist con tiempos aplicada y una versión seleccionada con justificación escrita.',
+      checklist: [
+        'El gancho es idéntico en las tres versiones y se canta en la misma melodía.',
+        'Cada versión cambia una sola variable respecto a la anterior, con nota explícita del campo.',
+        'La checklist está respondida con marcas de tiempo, no con adjetivos, y tiene puntuación numérica.',
+        'La justificación de selección nombra qué gana, qué pierde y cuál es el siguiente paso.',
+      ],
+    },
+    listening: [
+      {
+        title: 'Ganchos que llegan antes del minuto',
+        focus:
+          'Toma tres éxitos de pop latino recientes y cronometra en qué segundo aparece la frase que se repite. Vas a encontrar que rara vez pasan el 1:00. Después identifica cuántas palabras tiene el gancho y si cabe en una respiración.',
+        search: 'pop latino gancho hook primer minuto estructura radio_analysis',
+      },
+      {
+        title: 'Versión que abre el coro con arreglo',
+        focus:
+          'Escucha un tema urbano y marca qué entra exactamente en el coro: una capa aguda, un doble de voz, un cambio de subdivisión. Esa entrada es el resultado de una instrucción de arreglo, y es lo que buscas cuando tu versión B «no abre».',
+        search: 'cómo abrir el coro en producción urbana capas que entran en el estribillo',
+      },
+    ],
+    pitfalls: [
+      {
+        mistake: 'Cambiar el gancho entre versiones «para ver cuál funciona mejor».',
+        fix: 'Un gancho, tres direccionalidades. Si el material melódico cambia, necesitas un ejercicio de composición, no de prompting.',
+      },
+      {
+        mistake: 'Puntuar la checklist por impresión general.',
+        fix: 'Cada punto exige una marca de tiempo y un sí o no. Sin evidencia temporal, estás recordando la última toma que escuchaste.',
+      },
+      {
+        mistake: 'Elegir la versión más reciente.',
+        fix: 'Compara A, B y C en el mismo orden en las tres pasadas y decide con puntuación; la novedad se siente como calidad.',
+      },
+      {
+        mistake: 'No definir destino para las versiones no elegidas.',
+        fix: 'Asigna un uso a cada descarte: loop, reel, base para otra letra, archivo con fecha. Nada se tira, todo se reubica.',
+      },
+    ],
+    takeaway:
+      'Tres versiones del mismo gancho con una variable cada una te dicen más que treinta canciones al azar.',
+  },
+  {
+    id: 'm03-l08',
+    moduleIndex: 3,
+    lessonNumber: 8,
+    title: 'Registro, textura, articulación y acento de voz',
+    kicker: 'Sesión 08 · Voz',
+    minutes: 18,
+    objective:
+      'Dirigir una voz con los cuatro ejes y entender qué se puede pedir y qué no en una plataforma de IA.',
+    blocks: [
+      {
+        heading: 'Registro: dónde vive la voz',
+        body: [
+          'El registro es la zona de notas donde se canta, no el sexo de la voz. Grave, medio o agudo, y sobre todo el rango que usa: un rango estrecho (unas seis o siete notas) suena íntimo y conversado; un rango amplio (una octava o más) suena eufórico o dramático. Cuando pides «voz aguda» sin rango, obtienes una voz forzada; cuando pides «registro medio con rango estrecho en versos y salto a falsete en el coro», diriges una interpretación.',
+          'El registro interactúa con la tonalidad. Una melodía escrita para un registro alto obliga a beltear; si además el arreglo está lleno, la voz desaparece en la mezcla y el motor la sube de volumen con distorsión. Por eso conviene escribir en el prompt el registro que necesitas y la relación con el arreglo: «voz en registro medio, el arreglo baja una octava cuando entra la melodía vocal».',
+          'Un detalle operativo: pide la transición explícita. «Cambio a falsete en la segunda línea del coro», «voz de pecho durante el verso y cabeza en el último coro». Sin esa frase, el modelo decide la transición donde quiere, y suele elegirla en el peor lugar para la letra.',
+        ],
+      },
+      {
+        heading: 'Textura: el material de la voz',
+        body: [
+          'La textura es de qué está hecha la voz: aterciopelada, con aire (breathy), metálica, rasposa, limpia, nasal, oscura. Es el eje que más define el género percibido: un mismo canto con aire suena íntimo y con textura metálica suena rock. Escríbela con dos adjetivos técnicos y no cinco emocionales: «con aire y borde rasposo en los coros» funciona; «emotiva y profunda» no describe material sonoro.',
+          'El aire tiene un costo que conviene conocer: mucho aire reduce inteligibilidad en los graves de la voz y puede perderse en una mezcla densa o en el altavoz de un teléfono. Si el texto importa, pide aire en los versos y menos aire en el coro, que es la estrategia que sostiene la letra sin perder intimidad al principio.',
+        ],
+      },
+      {
+        heading: 'Articulación: cómo se sueltan las palabras',
+        body: [
+          'La articulación decide si se entiende y si se siente rápida o relajada. Percusiva y adelantada al pulso: rap, cumbia, pop bailable. Ligada y atrás del pulso: balada, bolero, neo soul. Conversada, con sílabas medio tragadas: urbano, indie cantado. Es la diferencia entre «se escucha una voz» y «se entiende lo que dicen», y es el eje que más sufren las voces generadas cuando el español del prompt se escribe con acento estadístico.',
+          'La forma de controlarlo es escribir la relación con el pulso: «cada sílaba sobre una corchea, consonantes marcadas» o «fraseo legato atrasado medio tiempo, vocales abiertas». Conviene además pedir consonantes nadas suaves si el motor sisea, porque los esses y ceces distorsionadas son el artefacto más común de voz generada en español.',
+        ],
+      },
+      {
+        heading: 'Acento e idioma: lo que la plataforma sabe de ti',
+        body: [
+          'El acento es una instrucción legítima y describe una región, no una persona: español neutro, caribeño, rioplatense, andino, castellano peninsular, mexicano regional; o inglés con acento latino, portugués brasileño. Declara el acento y el idioma también en el prompt de estilo, no solo en la letra: refuerza la fonética y evita que el motor cante español con vocales de inglés, defecto extremadamente común.',
+          'Y el límite, con honestidad: dirigir un acento está bien; imitar una voz identificable no. Clonar la voz de una artista o de una persona real sin consentimiento viola casi siempre los términos de servicio y puede violar derechos de imagen y de voz, que en varios países de América Latina se protegen por ley aunque no haya registro. No digas su nombre: describe las propiedades que te gustan y regístralas en tu bitácora para poder repetirlas.',
+        ],
+      },
+      {
+        heading: 'Doblajes, armonías y coros: la voz como capa múltiple',
+        body: [
+          'Una voz también se dirige en plural. Pide doblaje (la misma línea en dos tomas al mismo tiempo, que engrosa sin subir volumen), armonía (una voz adicional en tercera o quinta), o coro (muchas voces, que abre el espacio). En el prompt se escribe así: «versos a voz seca y sencilla, coros con doblaje y armonía de tercera, sin coro masivo». Con esa línea controlas la dinámica del estribillo sin tocar la instrumentación.',
+          'Cuidado con el exceso: armonías pedidas sin dirección tienden a sonar de Gospel o jingle, y un coro masivo en una canción íntima la vuelve impersonal. Una sola instrucción de contraste —«solo doblaje en el último coro»— es más eficaz que describir todas las capas de voces del mundo.',
+        ],
+      },
+    ],
+    examples: [
+      'Cuatro ejes en un prompt de estilo: «balada pop latina, 72 BPM feel recto, Mi mayor; voz femenina en registro medio con rango estrecho en versos y salto a cabeza en el último coro, textura con aire y borde limpio, articulación ligada atrasada medio tiempo, acento mexicano neutral, canto en español, consonantes sin siseo; versos a voz sencilla y seca, coros con doblaje y armonía de tercera, sin coro masivo; mezcla con voz delantera, reverberación corta en versos y larga en coros».',
+      'La misma letra con tres voces: sobre «ya no hay luz en la cocina» se generaron tres perfiles. Uno con registro grave, mucho aire y articulación conversada resultó íntimo y adulto. Otro con registro medio y articulación percusiva resultó pop y entendible, pero perdió la confesión. El tercero con rango amplio y belting en el coro resultó dramático y tapó la instrumentación. La letra era idéntica: los tres resultados eran tres canciones distintas. Conclusión registrada: la dirección vocal es contenido, no adorno.',
+      'Corrección de un defecto típico: «seseo distorsionado en los coros». Se añadió a la voz: «esses suaves, consonantes menos marcadas en coros» y se bajó la densidad de capas agudas en el coro. El artefacto desapareció en las dos tomas siguientes, así que la atribución fue válida.',
+    ],
+    techniques: [
+      'Cuatro etiquetas, siempre en orden: registro (y rango), textura, articulación (y relación con el pulso), acento (y idioma). El orden te permite cambiar un eje por versión.',
+      'Transición explícita: declara en qué sección y en qué línea ocurre el falsete, la cabeza o el belting. Si no la escribes, el motor la inventa en el peor sitio.',
+      'Aire con plan de inteligibilidad: mucho aire en versos para intimidad, menos aire en coros para que se entienda el mensaje clave.',
+      'Contraste de capas vocales: voz sencilla en verso, doblaje en pre-coro, doblaje y armonía de tercera en coro. Es dinámica hecha con voces, sin sumar instrumentos.',
+      'Acento de región, no de persona: usa nombres geográficos y descriptores fonéticos; nunca nombres de artistas, que además de riesgo legal degradan la dirección.',
+    ],
+    prompts: [
+      {
+        name: 'Perfil vocal en cuatro ejes',
+        outcome: 'Una descripción de voz que se puede repetir, variar y auditar.',
+        text: 'Voz {femenina, masculina o neutra} en registro {grave, medio o agudo}, rango {estrecho o amplio} con {n} notas aproximadas; {transición a falsete, cabeza o belting} en {sección}; textura {con aire, aterciopelada, metálica, rasposa o limpia}; articulación {percusiva adelantada, legada atrasada o conversada} respecto al pulso; acento {región} cantando en {idioma}; consonantes {nítidas o suavizadas, con esses sin siseo}; doblaje: {ninguno, en coros, en toda la canción}; armonías: {ninguna, tercera, quinta, coro masivo}; colocación: {voz delantera pegada, voz dentro de la música, voz lejana}.',
+        variables: ['femenina, masculina o neutra', 'grave, medio o agudo', 'estrecho o amplio', 'n', 'transición a falsete, cabeza o belting', 'sección', 'con aire, aterciopelada, metálica, rasposa o limpia', 'percusiva adelantada, legada atrasada o conversada', 'región', 'idioma', 'nítidas o suavizadas, con esses sin siseo', 'ninguno, en coros, en toda la canción', 'ninguna, tercera, quinta, coro masivo', 'voz delantera pegada, voz dentro de la música, voz lejana'],
+      },
+      {
+        name: 'Dirección de doblajes y armonías por sección',
+        outcome: 'Usar las voces como capa de dinámica, sin ensuciar el centro.',
+        text: 'Versos: voz {sencilla, sin doblaje}, con {muy poco aire} y colocación {delantera}. Pre-coro: entra {doblaje suave} y sube {el aire o la presencia}. Coro: voz principal con {doblaje en la misma línea} más {armonía de tercera o quinta}, {sin coro masivo}, con {reverberación más larga que en versos}. Puente: se retiran doblajes y queda {voz sola con un instrumento}. Último coro: se añade {una capa vocal nueva respecto al coro anterior}. Centro del espectro libre para {voz}, y las armonías viven {una octava arriba o en registro medio}.',
+        variables: ['sencilla, sin doblaje', 'muy poco aire', 'delantera', 'doblaje suave', 'el aire o la presencia', 'doblaje en la misma línea', 'armonía de tercera o quinta', 'sin coro masivo', 'reverberación más larga que en versos', 'voz sola con un instrumento', 'una capa vocal nueva respecto al coro anterior', 'voz', 'una octava arriba o en registro medio'],
+      },
+    ],
+    exercise: {
+      title: 'La misma letra, tres perfiles vocales',
+      steps: [
+        'Escribe cuatro líneas de coro que quepan en una respiración y úsalas sin cambios en las tres tomas.',
+        'Perfil 1: registro grave, mucho aire, articulación conversada, rango estrecho, sin doblajes. Genera dos tomas.',
+        'Perfil 2: registro medio, textura limpia, articulación percusiva adelantada, doblaje en el coro. Genera dos tomas.',
+        'Perfil 3: rango amplio con belting en el coro, articulación ligada atrasada, armonía de tercera. Genera dos tomas.',
+        'Escucha las seis tomas seguidas y responde con una línea por perfil: ¿qué se entiende?, ¿qué emoción produce?, ¿en qué altavoz se pierde la letra?',
+        'Elige el perfil que sirve al mensaje de la canción y registra en la bitácora qué eje exacto produjo la diferencia.',
+      ],
+      deliverable:
+        'Tres perfiles vocales documentados cantando la misma letra, con una comparación de una línea por perfil y el perfil elegido justificado.',
+      checklist: [
+        'La letra es idéntica en los tres perfiles; solo cambian los cuatro ejes y los doblajes.',
+        'Cada perfil declara los cuatro ejes más idioma y acento en el prompt de estilo.',
+        'Puedes citar un segundo exacto donde la inteligibilidad cambia entre perfiles.',
+        'Ningún prompt menciona nombres de artistas ni intenta reproducir una voz identificable.',
+      ],
+    },
+    listening: [
+      {
+        title: 'Belting y rango amplio en balada latinoamericana',
+        focus:
+          'Busca una balada con clímax vocal y sigue dos cosas: el rango que recorre la voz entre el primer verso y el último coro, y cuántas capas instrumentales lo acompañan en cada momento. La tensión viene de la transición de registro, no de que la letra diga «te necesito».',
+        search: 'balada latinoamericana clímax vocal belting rango estrecho a amplio análisis',
+      },
+      {
+        title: 'Voz íntima: aire, registro bajo y poco arreglo',
+        focus:
+          'Escucha una canción de autor en español con voz muy cercana: registra cuánto aire usa, cómo el rango se queda estrecho y qué instrumento sostiene. Eso es articulación y textura dirigiendo la emoción, sin dinámicas fuertes.',
+        search: 'canción de autor española voz íntima cercana registro bajo guitarra',
+      },
+      {
+        title: 'Acento y dicción en rap cantado',
+        focus:
+          'Localiza un tema urbano con flow conversado y escucha el acento regional como marca de identidad: cómo se abrevian sílabas y cómo la articulación se apoya en el pulso. Después compara con un tema del mismo género en otro acento y nota cuánto cambia el carácter con la misma música.',
+        search: 'flow conversado acento regional urbano dicción sílabas rap en español',
+      },
+    ],
+    pitfalls: [
+      {
+        mistake: 'Pedir «voz bonita» o «voz con sentimiento».',
+        fix: 'Describe material: registro, rango, aire, articulación contra el pulso. La emoción aparece como consecuencia verificable.',
+      },
+      {
+        mistake: 'Intentar que suene a una artista concreta.',
+        fix: 'Describe propiedades y región de acento. Imitar una voz identificable puede violar los términos de la plataforma y derechos de imagen y voz.',
+      },
+      {
+        mistake: 'Ignorar el idioma en el prompt de estilo.',
+        fix: 'Declara «canto en español» y el acento también en el estilo; así evitas vocales de inglés cantando letra en español.',
+      },
+      {
+        mistake: 'Llenar el coro de armonías sin dirección.',
+        fix: 'Pide contraste por sección: sencilla en verso, doblaje en pre-coro, doblaje y tercera en coro, retirada en el puente.',
+      },
+    ],
+    takeaway:
+      'Registro, textura, articulación y acento son cuatro mandos; con ellos la voz dirige la canción en vez de decorarla.',
+  },
+  {
+    id: 'm03-l09',
+    moduleIndex: 3,
+    lessonNumber: 9,
+    title: 'Escribir versos, pre-coro, coro y puente con métrica funcional',
+    kicker: 'Sesión 09 · Letra y métrica',
+    minutes: 20,
+    objective:
+      'Escribir una letra cuya métrica sostenga el pulso y cuya forma cumpla la función de cada sección.',
+    blocks: [
+      {
+        heading: 'La métrica no es poesía: es encaje',
+        body: [
+          'En una canción la métrica decide si la frase cabe en el compás. Un verso de ocho sílabas sobre cuatro tiempos en 96 BPM cae cómodo; una frase de catorce sílabas sobre el mismo espacio obliga a atropellar las palabras o a que el motor estire vocales hasta que suenan a otro idioma. Por eso el defecto «se traga sílabas» rara vez es un fallo de la IA: es una letra que no cabe donde la escribiste.',
+          'Cuenta sílabas como se cuentan en español, no como se ven. La sinalefa fusiona vocales entre palabras: «no hay agua» se canta como una sola cadena vocálica, así que cuenta menos sílabas de las que marcó el procesador de texto. Y aplica la regla del acento final: si la última palabra del verso es aguda, suma una sílaba; si es llana, deja el número; si es esdrújula, resta una. Con esas dos correcciones tu conteo coincide con lo que se canta.',
+          'No hace falta ser poeta. Hace falta que el conteo sea constante dentro de una misma sección: si tus cuatro versos miden 8, 8, 9 y 11, el tercero y el cuarto no van a caber igual. Y siempre: lee la letra en voz alta sobre un metrónomo al BPM de la canción antes de generar. Dos minutos de metrónomo ahorran veinte generaciones.',
+        ],
+      },
+      {
+        heading: 'Verso: información. Pre-coro: tensión. Coro: sentencia',
+        body: [
+          'El verso acumula datos concretos: quién, dónde, qué pasó. Es el lugar de los sustantivos y de las imágenes, con métrica pareja y melodía que se repite entre estrofas. Un verso que ya esloganiza deja al coro sin nada que decir, y ese es el motivo más común de una canción que «suena rara»: todas las secciones compitiendo por el mismo trabajo.',
+          'El pre-coro prepara la salida: sube el rango, acorta las frases o repite una palabra, y alarga la vocal final. Es un trampolín, no una estrofa más. Cuatro líneas máximo, y si puedes dos, mejor. Su función es que el oído espere algo; si el pre-coro se canta igual que el verso, el coro llega sin impulso.',
+          'El coro sentencia: una frase de cuatro a diez palabras que se pueda cantar sin leer, idealmente con el título dentro. Repetible, con métrica corta y vocal abierta en la palabra fuerte («luz», «mar», «verano» sostienen la nota mejor que «abecedario»). El coro no explica: afirma. Si tu coro tiene tres ideas, tienes un verso disfrazado.',
+          'El puente reencuadra: otro punto de vista, otro tiempo verbal, otra persona gramatical, o una duda. Suele ser el único lugar de la canción donde puedes romper la métrica a propósito, porque su función es el contraste. Después de un buen puente, el último coro suena a decisión y no a repetición.',
+        ],
+      },
+      {
+        heading: 'Rima, acento y dónde recae la palabra fuerte',
+        body: [
+          'La rima consonante (todos los sonidos finales coinciden) se nota y ayuda a la memoria, pero en exceso se vuelve infantil y previsibles; la asonante (solo coinciden las vocales) suena natural y en español sostiene muchísimas canciones populares. Regla práctica: rima en el coro, suelta o asonante en los versos, para que la estructura se escuche aunque la melodía cambie.',
+          'Más importante que la rima es la recurrencia del acento. El español es una lengua de acentos, y la melodía debe respetarlos: si acentúas «te amo» en «a», funciona; si la música obliga a decir «te Ámo» o «te AMO» fuera de lugar, el oyente siente un error aunque no sepa nombrarlo. Revisa cada línea cantada: la sílaba tónica de la palabra final debería caer en un tiempo fuerte del compás.',
+          'Y una táctica de gancho: repite el acento y el contorno, no la rima. «Ya no hay luz / ya no hay voz» funciona por estructura paralela y métrica gemela, no por la rima de «luz» y «voz». Las paralelas son la herramienta más subestimada del pop en español: dos líneas de idéntica longitud y distinto contenido, con la misma melodía.',
+        ],
+      },
+      {
+        heading: 'Cómo entregar la letra a un generador sin que la maltrate',
+        body: [
+          'Escribe la letra con etiquetas de sección en su propio campo: [Verso 1], [Pre-coro], [Coro], [Verso 2], [Puente], [Coro final]. Añade, si la plataforma lo permite, indicaciones cortas entre corchetes dentro de la sección: [hablado], [pausa], [solo de guitarra]. Esas etiquetas son la única manera de decirle al modelo dónde va la información y dónde el silencio.',
+          'No escribas instrucciones de interpretación dentro de la letra como si fueran verso. «(suave, casi susurrado)» mezclado con la letra puede terminar cantado. Las indicaciones de emoción van en el prompt de estilo o en tu bitácora de dirección; dentro de la letra van etiquetas estructurales, breves y coherentes.',
+          'Y un recordatorio de derechos: si la letra es tuya, eso es autoría humana, y es la parte de tu canción con la protección más clara. Guárdala con fecha, versión y tu nombre, antes de generar. Cuando en el módulo 5 hables de registro y splits, ese archivo con fecha es tu mejor evidencia.',
+        ],
+      },
+    ],
+    examples: [
+      'Métrica funcional verificada. Verso en ocho sílabas: «se apagó la luz del patio» (contando sinalefa: se-a-pa-gó-la-luz-del-pa-tio; con «apagó» aguda la suma final queda en ocho). Coro en seis: «ya no hay luz, ya no hay voz» (paralelas gemelas, acentos en «luz» y «voz» cayendo en tiempo fuerte). Ambas se leen sobre metrónomo a 96 BPM antes de generar, y encajan sin forzar vocales.',
+      'Letra con etiquetas lista para pegar: [Intro instrumental: pad y guitarra], [Verso 1: voz baja y seca] cuatro líneas de ocho sílabas, [Pre-coro: sube el rango] dos líneas de seis, [Coro: doblaje, acento en el primer tiempo] «ya no hay luz / ya no hay voz / sigo encendiendo / lo que se apagó», [Verso 2], [Coro], [Puente: voz y pad, cambio de persona] cuatro líneas de diez, [Coro final: una capa vocal más], [Outro: caída a silencio].',
+      'Error real y su corrección: verso original de trece sílabas («y me quedé mirando la cocina vacía que ya no va a volver»), resultado cantado con sílabas atropelladas. Reescrito en dos líneas de siete y seis: «me quedé mirando / la cocina vacía». La idea es idéntica y ahora cabe en el compás; la segunda corrección, añadir [pausa] antes, resolvió el resto. Cero cambios en el prompt de estilo.',
+    ],
+    techniques: [
+      'Conteo con sinalefa y acento final: fusiona vocales entre palabras y aplica +1 si la última palabra es aguda, 0 si es llana, -1 si es esdrújula. Ese número es tu longitud real.',
+      'Prueba del metrónomo: lee la letra en voz alta sobre el BPM de la canción antes de generar; donde tropiezas, el modelo también tropieza.',
+      'Una función por sección: verso informa, pre-coro tensa, coro sentencia, puente reencuadra. Si dos secciones hacen lo mismo, reescribe una.',
+      'Paralelas gemelas: dos líneas con idéntica métrica y contorno melódico, contenido distinto. Es el atajo más fiable para un gancho memorable.',
+      'Vocales sostenibles en el gancho: coloca en la nota larga una palabra con vocal abierta y final agudo o llano; evita palabras esdrújulas en el punto de clímax.',
+      'Etiquetas estructurales dentro de la letra y direcciones de interpretación fuera: la forma viaja con la letra, la emoción viaja en el prompt de estilo.',
+    ],
+    prompts: [
+      {
+        name: 'Plantilla de letra con métrica por sección',
+        outcome: 'Una letra completa que cabe en el compás y con funciones separadas.',
+        text: '[Verso 1: {qué información entrega}] {n} líneas de {sílabas por verso}, rima {asonante o suelta}, acentos finales en {tiempo fuerte del compás}.\n[Pre-coro: {qué sube}] {2 a 4} líneas de {sílabas más cortas}, terminando en {vocal abierta para el salto}.\n[Coro: {la sentencia}] gancho de {4 a 10} palabras con {título dentro}, {2 a 4} líneas, rima {consonante}, {paralela gemela} en las dos primeras.\n[Verso 2: {nueva información, misma métrica del verso 1}]\n[Puente: {cambio de persona, tiempo o punto de vista}] {n} líneas de {métrica distinta a propósito}.\n[Coro final: {variación o capa vocal nueva}]\n[Outro: {cómo termina la idea}].',
+        variables: ['qué información entrega', 'n', 'sílabas por verso', 'asonante o suelta', 'tiempo fuerte del compás', 'qué sube', '2 a 4', 'sílabas más cortas', 'vocal abierta para el salto', 'la sentencia', '4 a 10', 'título dentro', '2 a 4', 'consonante', 'paralela gemela', 'nueva información, misma métrica del verso 1', 'cambio de persona, tiempo o punto de vista', 'métrica distinta a propósito', 'variación o capa vocal nueva', 'cómo termina la idea'],
+      },
+      {
+        name: 'Revisión de encaje silábico',
+        outcome: 'Detectar y arreglar la línea que el motor no alcanza a cantar.',
+        text: 'Línea que se traga sílabas: {línea}. BPM de la canción: {BPM}. Sílabas contadas con sinalefa y acento final: {n}. Sílabas que caben en {duración de la frase}: {m}. Corrección aplicada: {partir la línea en dos / quitar átonos / cambiar la palabra final a otra de {x} sílabas / moverla a otro tiempo del compás}. Vuelve a leerla en voz alta con metrónomo antes de regenerar y verifica que la sílaba tónica caiga en {tiempo fuerte}.',
+        variables: ['línea', 'BPM', 'n', 'duración de la frase', 'm', 'partir la línea en dos / quitar átonos / cambiar la palabra final a otra de {x} sílabas / moverla a otro tiempo del compás', 'x', 'tiempo fuerte'],
+      },
+      {
+        name: 'Puente que reencuadra',
+        outcome: 'Escribir un contraste que haga sonar el último coro como decisión.',
+        text: 'Puente: cambia {la persona gramatical, el tiempo verbal o el punto de vista}; métrica {distinta, por ejemplo de 8 a 11 sílabas}; melodía en registro {más grave o más agudo} que el coro; letra que dice {lo que el narrador todavía no admitía}; termina en {palabra con vocal abierta} que encadena con el gancho {frase del gancho}. Arreglo: {qué se retira} y queda {voz con un instrumento}.',
+        variables: ['la persona gramatical, el tiempo verbal o el punto de vista', 'distinta, por ejemplo de 8 a 11 sílabas', 'más grave o más agudo', 'lo que el narrador todavía no admitía', 'palabra con vocal abierta', 'frase del gancho', 'qué se retira', 'voz con un instrumento'],
+      },
+    ],
+    exercise: {
+      title: 'Letra completa con métrica verificada',
+      steps: [
+        'Define el título y el gancho primero: una frase de 4 a 10 palabras que contenga el título y quepa en una respiración.',
+        'Escribe dos versos de ocho sílabas (o el número que elijas) con rimas asonantes, y un pre-coro de dos líneas más cortas.',
+        'Cuenta cada línea con sinalefa y regla del acento final, y anota el número al lado; iguala el conteo dentro de cada sección.',
+        'Pon el metrónomo al BPM de la canción y lee toda la letra en voz alta: marca con una X cada línea donde tropieces.',
+        'Reescribe solo las líneas marcadas, sin cambiar el gancho, y vuelve a leer hasta que ninguna tropiece.',
+        'Escribe el puente con métrica deliberadamente distinta y un cambio de persona, y graba una lectura hablada de la letra completa para oír la forma.',
+      ],
+      deliverable:
+        'Una letra completa con etiquetas de sección, conteo silábico anotado por línea y una lista de las líneas reescritas tras la prueba del metrónomo.',
+      checklist: [
+        'El conteo silábico está escrito al lado de cada verso y coincide dentro de cada sección.',
+        'La letra se lee completa sobre metrónomo sin tropezar en ninguna línea.',
+        'El gancho contiene el título y se mantiene igual en todos los coros.',
+        'Verso, pre-coro, coro y puente cumplen funciones distintas y el puente cambia algo estructural.',
+      ],
+    },
+    listening: [
+      {
+        title: 'Bachata: métrica corta y fraseo ligado',
+        focus:
+          'Escucha cómo las líneas del coro son breves, cantadas con vocales abiertas en la nota final, y cómo el patrón arpegiado de la guitarra sostiene una métrica muy regular. Cuenta las sílabas de una línea del coro: vas a encontrar un número pequeño y constante.',
+        search: 'bachata métrica de verso fraseo ligado guitarra arpegio patrón regular',
+      },
+      {
+        title: 'Rap cantado: acentos de palabra contra acentos de compás',
+        focus:
+          'Sigue una estrofa y comprueba si las sílabas tónicas caen en los golpes del bombo. Donde no caen, el rapero adelanta o atrasa la frase: eso es resolver un conflicto métrico con interpretación, y es una solución que puedes pedir en el prompt.',
+        search: 'rap en español acento de palabra contra acento de compás flow síncopa',
+      },
+      {
+        title: 'Pop de autor: coro como sentencia',
+        focus:
+          'Identifica cuántas palabras tiene el gancho y cuánto tiempo ocupa. Compara la densidad de información del verso con la del coro: el verso cuenta, el coro afirma. Ese contraste es la función de sección hecha audible.',
+        search: 'estructura de canción pop verso cuenta coro afirma función de secciones',
+      },
+    ],
+    pitfalls: [
+      {
+        mistake: 'Contar sílabas visuales en lugar de cantadas.',
+        fix: 'Aplica sinalefa y la regla del acento final (+1 aguda, 0 llana, -1 esdrújula), y verifica leyendo sobre metrónomo.',
+      },
+      {
+        mistake: 'Escribir el coro con más de una idea.',
+        fix: 'El coro sentencia: cuatro a diez palabras y el título dentro. Mueve el resto de las ideas al segundo verso.',
+      },
+      {
+        mistake: 'Forzar rima consonante y deformar la palabra.',
+        fix: 'Usa asonante o paralelas gemelas. Ninguna rima vale una sílaba tónica fuera de lugar.',
+      },
+      {
+        mistake: 'Poner indicaciones de emoción dentro de la letra.',
+        fix: 'Déjalas en el prompt de estilo; dentro de la letra solo etiquetas estructurales cortas como [Coro] o [puente: voz y pad].',
+      },
+    ],
+    takeaway:
+      'Una letra que no cabe en el compás no la arregla la IA: la arregla el conteo de sílabas.',
+  },
+  {
+    id: 'm03-l10',
+    moduleIndex: 3,
+    lessonNumber: 10,
+    title: 'Ejercicio: dirección vocal para una interpretación real',
+    kicker: 'Sesión 10 · Práctica de módulo',
+    minutes: 16,
+    objective:
+      'Entregar una letra anotada con dirección vocal y dinámica por sección, y verificarla en dos generaciones.',
+    blocks: [
+      {
+        heading: 'Anotar la interpretación: un lenguaje mínimo',
+        body: [
+          'Una letra anotada es una partitura de intención. Usa seis marcas y no inventes más: [baja] para registro o volumen menor, [sube] para rango o energía, [aire] para textura susurrada, [seco] para voz sin reverberación y sin doblaje, [doblaje] para capa doble en el coro, [pausa] para silencio antes de la línea siguiente. Al lado de cada sección escribes qué pasa en los cuatro ejes vocales. Con eso, cualquier colaborador puede entender tu dirección sin leer tu mente.',
+          'La anotación vive en dos lugares. Dentro de la letra van las etiquetas estructurales y las marcas de forma ([Coro], [puente: voz y pad]). En la bitácora de dirección va la traducción al prompt de estilo, que es donde realmente el modelo puede ejecutarlas: «versos con voz aireada y registro medio con rango estrecho, coros con doblaje y armonía de tercera, esses sin siseo, acento mexicano neutral, canto en español».',
+        ],
+      },
+      {
+        heading: 'Del guion de emoción al instructivo de sonido',
+        body: [
+          'El paso más difícil de este ejercicio es traducir lo que sientes en instrucciones oíbles. «Quiero que suene a que se rinde» se descompone: registro que baja, ritmo que se atrasa, aire que sube, y arreglo que se retira. «Quiero que suene desafiante»: articulación percusiva, consonantes marcadas, rango que se mantiene, doblaje en el coro. Escribe la emoción y debajo sus cuatro traducciones técnicas; esa tabla es tu guion de interpretación.',
+          'Y una advertencia honesta: no todo se puede dirigir con prompt. El matiz de una sílaba concreta, un quejido a mitad de frase o un respiro escuchado suelen quedar fuera de tu control fino en estas plataformas. Cuando eso importe, la solución profesional es generar varias tomas y elegir, o exportar y grabar una guía de voz propia encima. Anotar la interpretación sigue sirviendo: ahora sabes qué buscar en cada toma.',
+        ],
+      },
+      {
+        heading: 'Cómo evaluar si tu dirección llegó',
+        body: [
+          'Tres pruebas rápidas sobre la toma generada. Primera, la prueba del primer verso: ¿se canta en el registro y con el aire que pediste? Si el verso suena igual que el coro, tu dirección de dinámica no se aplicó: vuelve a escribirla con qué capas se retiran, no con adjetivos. Segunda, la prueba de inteligibilidad: ¿entiendes la frase clave del coro sin ver la letra? Si no, el eje articulación o la densidad del arreglo fallaron. Tercera, la prueba de contraste: señala tres segundos del puente y tres del último coro; si suenan parecido, no hay curva.',
+          'Registra los resultados en la bitácora con marcas de tiempo, y cierra con una sola corrección para la versión siguiente. Este ejercicio entrena el hábito que más vale en el curso: escribir qué querías, oír qué obtuviste, y nombrar la distancia con una palabra técnica.',
+        ],
+      },
+    ],
+    examples: [
+      'Guion de interpretación anotado: [Verso 1] [aire][baja] «me quedé mirando / la cocina vacía»; [Pre-coro] [sube][seco] dos líneas; [Coro] [doblaje] «ya no hay luz / ya no hay voz»; [Puente] [aire][pausa][baja] cuatro líneas; [Coro final] [doblaje][armonía de tercera]; [Outro] [seco][pausa]. Cada marca corresponde a una instrucción concreta del prompt de estilo.',
+      'Traducción de una emoción: quiero «renuncia». Registro: desciende una quinta en la última línea del coro. Ritmo: fraseo atrasado, la frase termina antes del tiempo fuerte. Textura: más aire, menos borde. Arreglo: sale la percusión y queda pad. Resultado buscado: que el oyente perciba que se suelta, sin que la letra lo diga.',
+      'Ficha de una toma evaluada: «Prueba 1 verso: cumple (registro medio, aire audible en 0:14). Prueba 2 inteligibilidad: falla en el coro (0:52, la palabra luz se cierra por densidad de agudos). Prueba 3 contraste: cumple (puente 1:58 solo voz y pad). Corrección única para v2: bajo una capa aguda del coro y pido consonantes nítidas; no toco nada más.»',
+    ],
+    techniques: [
+      'Seis marcas nada más: [baja], [sube], [aire], [seco], [doblaje], [pausa]. Un lenguaje pequeño y constante se puede auditar; un lenguaje rico, no.',
+      'Tabla emoción→instrucción: escribe la emoción y debajo cuatro traducciones técnicas (registro, ritmo contra el pulso, textura, arreglo). Diriges la segunda fila.',
+      'Prueba de los tres segundos: compara tres segundos del puente con tres del último coro. Si suenan parecidos, no hay dirección de dinámica.',
+      'Corrección única por versión: de las tres pruebas, arregla primero la que más duele y regenera. Arreglar todo a la vez borra el aprendizaje.',
+      'Guía vocal propia: cuando el matiz fino no se puede pedir, graba una guía cantada aunque sea tarareada y genera sobre esa referencia si la plataforma lo permite; si no, usa la guía para elegir toma.',
+    ],
+    prompts: [
+      {
+        name: 'Prompt de dirección vocal por sección',
+        outcome: 'Alinear cada sección de la letra con una instrucción vocal ejecutable.',
+        text: 'Voz {registro base} en {tonalidad}, {textura} y {articulación}, acento {región}, canto en {idioma}. Versos: registro {más grave}, aire {alto}, voz {sencilla, sin doblaje}, fraseo {legado atrasado}. Pre-coro: sube {el rango o la densidad}, {seco} y {acortando frases}. Coros: {doblaje}, registro {más agudo}, consonantes {nítidas}, armonía {tercera o quinta} {solo en el último coro}. Puente: {voz con un instrumento}, {pausa} antes de la última línea, {baja}. Último coro: {una capa vocal nueva}. Es esse y cece: {suaves, sin siseo}.',
+        variables: ['registro base', 'tonalidad', 'textura', 'articulación', 'región', 'idioma', 'más grave', 'alto', 'sencilla, sin doblaje', 'legado atrasado', 'el rango o la densidad', 'seco', 'acortando frases', 'doblaje', 'más agudo', 'nítidas', 'tercera o quinta', 'solo en el último coro', 'voz con un instrumento', 'pausa', 'baja', 'una capa vocal nueva', 'suaves, sin siseo'],
+      },
+      {
+        name: 'Ficha de evaluación de interpretación',
+        outcome: 'Convertir la escucha en tres veredictos y una corrección.',
+        text: 'Canción: {título} · versión {v}. Prueba 1, primer verso ({mm:ss}): {cumple o falla}, evidencia {qué se oye}. Prueba 2, inteligibilidad de la frase clave ({mm:ss}): {cumple o falla}, evidencia {qué palabra se pierde y por qué}. Prueba 3, contraste puente/último coro ({mm:ss} vs {mm:ss}): {cumple o falla}. Corrección única para la siguiente versión: {un solo eje de los cuatro}. Lo que dejo de tocar: {campos conservados}.',
+        variables: ['título', 'v', 'mm:ss', 'cumple o falla', 'qué se oye', 'mm:ss', 'cumple o falla', 'qué palabra se pierde y por qué', 'mm:ss', 'mm:ss', 'cumple o falla', 'un solo eje de los cuatro', 'campos conservados'],
+      },
+    ],
+    exercise: {
+      title: 'Letra anotada, dirección ejecutada y evaluación con tres pruebas',
+      steps: [
+        'Toma la letra de la Sesión 09 y anótala con las seis marcas, al menos una por sección.',
+        'Escribe la tabla emoción→instrucción para las dos emociones centrales de la canción, cuatro traducciones técnicos por emoción.',
+        'Construye el prompt de dirección vocal por sección y pégalo junto a la letra en tu bitácora.',
+        'Genera dos tomas en el estudio con voces, o dos en el estudio local si trabajas instrumental con una melodía silbada como referencia.',
+        'Aplica las tres pruebas con marcas de tiempo y elige UNA sola corrección; ejecuta v2 cambiando únicamente ese eje.',
+        'Cierra con tres líneas: qué pidió tu dirección, qué devolvió el motor y qué aprendiste sobre qué se puede dirigir.',
+      ],
+      deliverable:
+        'Entregable del módulo: letra completa con anotaciones de interpretación y dinámica, el prompt de dirección correspondiente y la ficha de evaluación con tres veredictos.',
+      checklist: [
+        'Cada sección de la letra tiene al menos una marca de las seis, sin marcas nuevas inventadas.',
+        'El prompt de estilo repite literalmente la dirección anotada: cada marca tiene su traducción.',
+        'La ficha de evaluación tiene tres veredictos con marca de tiempo y una única corrección para v2.',
+        'La frase clave del coro se entiende sin leer la letra en la versión final.',
+      ],
+    },
+    listening: [
+      {
+        title: 'Interpretación de balada con curva escrita',
+        focus:
+          'Escucha una balada con arreglo orquestal y sigue solo la voz del primer verso al último coro: dónde baja el registro, dónde sube el aire, dónde aparece el vibrato. Después deduce las cuatro líneas de guion que habrían producido eso.',
+        search: 'balada interpretación vocal curva de dinámica registro aire vibrato análisis',
+      },
+      {
+        title: 'Doblaje y armonías como dinámica',
+        focus:
+          'Localiza en un pop actual en qué segundo entran los doblajes de voz y cuántas capas vocales hay en el primer verso frente al último coro. Esa entrada tardía es una instrucción de dirección vocal, no un truco de mezcla.',
+        search: 'vocal doubling chorus harmonies layered pop dynamics when do they enter',
+      },
+      {
+        title: 'Dicción en español cantado',
+        focus:
+          'Compara dos cantantes del mismo género con acentos regionales distintos y escucha cómo cambia el carácter sin cambiar la melodía. Registra qué consonantes se suavizan y cuáles se marcan: es la materia de tu eje de articulación.',
+        search: 'dicción y acento regional en canto pop español comparación consonantes',
+      },
+    ],
+    pitfalls: [
+      {
+        mistake: 'Anotar emociones sueltas («triste aquí») sin traducción técnica.',
+        fix: 'Cada marca de emoción debe bajar a registro, ritmo contra el pulso, textura o arreglo. Si no baja, no es dirección.',
+      },
+      {
+        mistake: 'Pedir la misma intensidad vocal en verso y coro.',
+        fix: 'Escribe el contraste con qué se retira en el verso y qué se suma en el coro, no con adjetivos de volumen.',
+      },
+      {
+        mistake: 'Corregir cinco cosas después de una mala toma.',
+        fix: 'Una corrección por versión, con marca de tiempo como evidencia. Así sabrás qué arregló qué.',
+      },
+      {
+        mistake: 'Confiar en que el matiz fino de una sílaba va a salir igual dos veces.',
+        fix: 'Acepta que eso no es dirigible por prompt: genera varias tomas y elige, o graba una guía vocal propia.',
+      },
+    ],
+    takeaway:
+      'Dirigir una voz es escribir qué se oye en cada sección y verificarlo con marcas de tiempo.',
+  },
+  {
+    id: 'm04-l11',
+    moduleIndex: 4,
+    lessonNumber: 11,
+    title: 'Instrumentación por género y función de cada capa',
+    kicker: 'Sesión 11 · Capas',
+    minutes: 20,
+    objective:
+      'Asignar a cada instrumento una función y un lugar en el espectro, según el género que elegiste.',
+    blocks: [
+      {
+        heading: 'Las siete funciones de una producción',
+        body: [
+          'Toda producción se reparte en funciones, no en instrumentos. Una: pulso, lo que marca el tiempo (bombo, cajón, kick, tambora). Dos: groove, lo que hace que el cuerpo se mueva (dembow, güira, hi-hat en corcheas, montuno). Tres: fundamental, la nota grave que ancla la armonía (bajo eléctrico, synth bass, tuba). Cuatro: armonía, lo que sostiene los acordes (piano, guitarra, pad, cuerdas). Cinco: melodía complementaria, la contra melodía que responde a la voz. Seis: voz. Siete: aire, lo que llena sin informar (perk, ruidos, texturas, platillos).',
+          'Escribe siempre el prompt en esos términos y después pon el instrumento: «groove: güira en corcheas», «fundamental: bajo eléctrico redondo duplicando el bombo». Con eso eliminas el modo lista de compras, que es la causa de que todo suene todo el tiempo. Y detectas la capa vacía: si no tienes quién haga la fundamental, el motor la inventa o la canción se queda sin piso.',
+          'Regla de oro por sección: una función puede quedar vacía; dos funciones en el mismo instrumento, casi nunca. Un pad que hace armonía, contra melodía y aire al mismo tiempo produce una masa informe, y eso es lo que la gente llama «suena amateur» sin saber nombrarlo.',
+        ],
+      },
+      {
+        heading: 'Mapa por género: qué capa es obligatoria',
+        body: [
+          'Reggaetón y trap: dembow o patrón de hi-hat como groove, sub-bajo como fundamental sin melodía, pad o arpegio corto como armonía, voz con flow como melodía principal, poco aire. Si falta el patrón rítmico característico, no es urbano, es pop con percusión. El sub-bajo debe ser corto y rítmico, no una nota larga que emborra el centro.',
+          'Pop y balada: pulso en batería o escobillas, armonía en piano o guitarra acústica, fundamental en bajo, cuerdas o sintetizador como capa que entra en el coro, contra melodía en el puente. El presupuesto 3-5-1 funciona aquí mejor que en cualquier otro género, porque la forma es la que pide la curva.',
+          'Rock: pulso en bombo y caja, groove en corcheas de guitarra con palm mute, fundamental en bajo siguiendo la raíz, armonía en acordes abiertos del segundo plano, voz al frente con doblaje en coros. La guitarra debe tener función declarada: rítmica con palm mute en versos y acordes abiertos en coros; «guitarra eléctrica» sin función te devuelve un solo donde querías un colchón.',
+          'Música caribeña y latinoamericana: la güira, el tres, la tambora, el cajón, el bajo tumbao y los metales no son color local, son funciones específicas. Antes de pedir «salsa» o «bachata» o «cumbia», escríbelas: quién hace la clave, quién el montuno, quién el tumbao, quién el mambó. Los metales son capa de acento, no armonía continua, y pedirlos siempre suena a jingle.',
+        ],
+      },
+      {
+        heading: 'Espectro: quién vive dónde',
+        body: [
+          'Reparte las capas por territorio de frecuencia y tendrás claridad sin mezclar. Graves de 20 a 120 Hz: solo el sub y el bombo, y decide cuál de los dos manda; si ambos son «muy presentes», pelean. Bajos de 120 a 400 Hz: bajo, cuerpo de guitarra, fundamental de piano. Medios de 400 a 2000 Hz: territorio de la voz, y aquí cualquier instrumento «presente» compite con ella. Medios-agudos de 2 a 6 kHz: consonantes, ataque de cuerdas, presencia. Agudos de 6 a 20 kHz: platillos, aire, brillo.',
+          'Escribirlo en el prompt se ve así: «guitarras en registro medio-grave sin invadir la voz», «cuerdas en notas largas una octava sobre la melodía y muy suave», «teclas cortas sin brillo, no pasan de 4 kHz». Es la forma de pedir espacio sin tener un ecualizador en la mano, y suele ser más eficaz que cualquier adjetivo de calidad.',
+          'El truco más rentable de esta lección: cuando algo suene a barro, no le subas a nada; quita una capa o bájale una octava. La mayoría de los problemas de densidad se arreglan por sustracción, y la sustracción sí es dirigible con prompt.',
+        ],
+      },
+      {
+        heading: 'Cuántas capas: presupuesto y silencio',
+        body: [
+          'El presupuesto clásico es tres capas en el verso, cinco en el coro, uno o dos en el puente. No es una norma estética: es una técnica para que la curva de energía exista sin mover volúmenes. Si empiezas con cinco en el verso, llegas al coro sin nada que sumar, y a partir de ahí solo te queda subir, que es exactamente lo que hace que una canción se sienta plana y cansada.',
+          'El silencio también es una capa. Un compás sin nada antes del último verso, una batería que sale durante dos tiempos, la voz sola una línea: son decisiones que el motor ejecuta si las escribes («caja de ritmos se detiene un compás antes del coro, entra la voz sola»). Si nunca pides silencio, tu producción va a sonar ocupada siempre, y ocupada no significa intensa.',
+        ],
+      },
+    ],
+    examples: [
+      'Prompt de capas con función, género urbano: «reggaetón nocturno, 92 BPM feel de medio tiempo, Fa menor; groove: dembow suave con hi-hat en corcheas; fundamental: sub-bajo senoidal corto y rítmico que duplica el bombo, sin contenido melódico; armonía: pad de sintetizador oscuro en registro medio, sin pasar de 3 kHz; melodía complementaria: guitarra con trémolo solo en el puente, una octava sobre la voz; voz masculina en registro bajo con flow conversado y mucho aire, canto en español con acento caribeño; mezcla: centro reservado a voz y sub, agudos sin filo, reverberación corta». Siete funciones declaradas, ninguna decorativa.',
+      'Prompt de capas, rock: «rock alternativo, 132 BPM feel recto, Sol menor; pulso: bombo y caja secos; groove: guitarra con palm mute en corcheas solo en versos; fundamental: bajo que sigue la raíz con ataque redondo; armonía: segunda guitarra en acordes abiertos entrando en pre-coro; voz masculina media con borde rasposo y articulación percusiva; doblaje en coros; puente: batería fuera, queda bajo y voz; último coro: una capa de sintetizador muy suave en agudos; mezcla con voz al frente, graves cortos, estéreo moderado en guitarras». Aquí la guitarra cambia de función entre secciones y eso está escrito.',
+      'Auditoría de una toma real: «suena embarrado» → conteo de capas: 6 en el verso (2 de ellas en el mismo territorio medio), sub-bajo y bombo ambos marcados como muy presentes, pad ocupando 300-900 Hz donde canta la voz. Corrección en una sola versión: «bajo y bombo, solo el bombo manda en el centro grave; pad movido a registro agudo y reducido; quito una capa del verso». Resultado: se entendió la voz en 0:18, sin cambiar género, tempo ni mezcla.',
+    ],
+    techniques: [
+      'Prompt por función: escribe primero la tarea (pulso, groove, fundamental, armonía, melodía complementaria, aire) y después el instrumento. Nunca empieces por la lista de instrumentos.',
+      'Auditoría de vacíos: revisa las siete funciones y marca cuál no tiene dueño. Un vacío de fundamental o de groove se oye como canción que no aterriza.',
+      'Reparto espectral en una línea: declara qué instrumento no puede entrar en 400-2000 Hz mientras canta la voz, y quién manda en el centro grave.',
+      'Presupuesto 3-5-1: tres capas en verso, cinco en coro, una o dos en puente. Es la forma más barata de crear dinámica real.',
+      'Sustracción antes que adición: ante un resultado sucio, quita una capa o baja una octava; no añadas claridad ni subas presencia.',
+      'Silencio escrito: pide un compás sin percusión o una línea a voz sola. El contraste negativo se dirige igual que el positivo.',
+    ],
+    prompts: [
+      {
+        name: 'Matriz de capas con función',
+        outcome: 'Un prompt donde cada instrumento tiene tarea, sección y territorio.',
+        text: 'Género: {género} · {BPM} BPM · {tonalidad} {modo}. Pulso: {instrumento} con {patrón}. Groove: {instrumento} en {subdivisión}. Fundamental: {bajo o sub} que {duplica el bombo o sigue la raíz}, {corto o largo}, {manda él o el bombo} en el centro grave. Armonía: {instrumento} en registro {medio o grave}, entra en {sección}, sin invadir {400-2000 Hz}. Melodía complementaria: {instrumento} solo en {sección}, {una octava sobre la voz}. Voz: {registro, textura, articulación, acento}. Aire: {texturas o perk} en {estéreo}, al {fondo}. Presupuesto: {n} capas en versos, {m} en coros, {k} en el puente. Silencio: {qué se detiene y cuándo}.',
+        variables: ['género', 'BPM', 'tonalidad', 'modo', 'instrumento', 'patrón', 'subdivisión', 'bajo o sub', 'duplica el bombo o sigue la raíz', 'corto o largo', 'manda él o el bombo', 'instrumento', 'medio o grave', 'sección', '400-2000 Hz', 'una octava sobre la voz', 'registro, textura, articulación, acento', 'texturas o perk', 'estéreo', 'fondo', 'n', 'm', 'k', 'qué se detiene y cuándo'],
+      },
+      {
+        name: 'Ficha de género con sus funciones obligatorias',
+        outcome: 'No dejar nunca vacía la capa que define al género.',
+        text: 'Género declarado: {género y subgénero}. Capa rítmica definitoria: {dembow, güira, tambora, montuno, clave, hi-hat en corcheas, palm mute, escobillas}, patrón: {descripción del patrón}. Capa grave definitoria: {sub-bajo corto, bajo tumbao, bajo con ataque redondo}, quiénes mandan en el centro: {bombo o bajo}. Capa armónica definitoria: {tres cubano, guitarra de bachata, Rhodes, pad oscuro, cuerdas largas}. Capa de acento: {metales, perk, sintetizador brillante} que entra {solo en coros o solo en el puente}, no continua. Canto: {idioma y acento}. Si falta alguna de estas cuatro, el resultado no es {género}, es genérico.',
+        variables: ['género y subgénero', 'dembow, güira, tambora, montuno, clave, hi-hat en corcheas, palm mute, escobillas', 'descripción del patrón', 'sub-bajo corto, bajo tumbao, bajo con ataque redondo', 'bombo o bajo', 'tres cubano, guitarra de bachata, Rhodes, pad oscuro, cuerdas largas', 'metales, perk, sintetizador brillante', 'solo en coros o solo en el puente', 'idioma y acento', 'género'],
+      },
+    ],
+    exercise: {
+      title: 'Auditoría de capas de una canción propia y de una referencia',
+      steps: [
+        'Elige una referencia del género que estás trabajando y una toma tuya con el mismo género.',
+        'Cuenta cuántas capas suenan en el primer verso de cada una, y luego en el coro; anota los números y los segundos exactos.',
+        'Clasifica cada capa en las siete funciones e identifica qué función está vacía o duplicada en tu toma.',
+        'Escribe el mapa espectral de tu toma en tres líneas: quién manda en el centro grave, quién ocupa los medios donde canta la voz, quién está en los agudos.',
+        'Genera v2 aplicando una sustracción (quitar una capa o bajar una octava) y una redistribución, sin cambiar género ni tempo.',
+        'Compara ambas en volumen igual y responde si la voz se entiende mejor en la primera estrofa.',
+      ],
+      deliverable:
+        'Una matriz con siete funciones por versión (referencia y tu v1 y v2), el mapa espectral en tres líneas y una nota de qué sustracción resolvió la claridad.',
+      checklist: [
+        'Las siete funciones tienen dueño asignado o vacío declarado, tanto en la referencia como en tu toma.',
+        'El conteo de capas por sección está expresado en números, no en impresiones.',
+        'La corrección de v2 es una sustracción o una redistribución, no un añadido.',
+        'La voz se entiende en el primer verso de v2 sin leer la letra, escuchando en el mismo volumen.',
+      ],
+    },
+    listening: [
+      {
+        title: 'Salsa: funciones repartidas sin solaparse',
+        focus:
+          'Escucha una salsa clásica e identifica quién hace la clave, quién el montuno del piano, quién el tumbao del bajo y quién los acentos de metales. Ninguna capa hace dos trabajos. Cuenta cuántas suenan en un mambo frente a un verso: ahí está el presupuesto de capas.',
+        search: 'salsa clásica clave montuno tumbao metales funciones de arreglos análisis',
+      },
+      {
+        title: 'Lo-fi: armonía con función doble declarada',
+        focus:
+          'Detecta en un beat de lo-fi qué instrumento trae los acordes (piano eléctrico), qué hace el groove (batería con swing) y qué textura ocupa el aire (vinilo). Escucha cómo el ruido de fondo funciona como capa legítima sin tapar la melodía.',
+        search: 'lo fi hip hop rhodes acordes swing batería textura de vinilo función de capas',
+      },
+      {
+        title: 'Pop actual: silencio como arreglo',
+        focus:
+          'Busca un pasaje donde la producción se detiene y queda la voz sola, y cronométralo. Escucha qué entra después y en qué orden, capa por capa. Ese orden es literalmente un prompt de arreglo.',
+        search: 'pop production drop out silence vocal solo then rebuild layers order',
+      },
+    ],
+    pitfalls: [
+      {
+        mistake: 'Pedir una lista de instrumentos sin funciones.',
+        fix: 'Escribe la función primero y el instrumento después; si una capa no tiene tarea, no la pidas.',
+      },
+      {
+        mistake: 'Sub-bajo y bombo ambos «muy presentes».',
+        fix: 'Declara quién manda en el centro grave y deja al otro en segundo plano o en otra octava.',
+      },
+      {
+        mistake: 'Metales o cuerdas sonando todo el tema.',
+        fix: 'Conviértelos en capa de acento con sección de entrada («metales solo en el mambo y el último coro»).',
+      },
+      {
+        mistake: 'Empezar el verso con la densidad del coro.',
+        fix: 'Aplica el presupuesto 3-5-1; si no te queda nada por sumar en el coro, el problema es el verso.',
+      },
+    ],
+    takeaway:
+      'Un instrumento entra a una mezcla por una función; dos funciones en el mismo lugar es lo que suena a amateur.',
+  },
+  {
+    id: 'm04-l12',
+    moduleIndex: 4,
+    lessonNumber: 12,
+    title: 'Tempo, groove, dinámica, tonalidad y referencias',
+    kicker: 'Sesión 12 · Producción',
+    minutes: 18,
+    objective:
+      'Convertir una decisión de género en un groove concreto con curva de dinámica y una referencia legalmente usable.',
+    blocks: [
+      {
+        heading: 'Tempo no es groove',
+        body: [
+          'Dos canciones a 96 BPM pueden sentirse radicalmente distintas: una con pulso en negras suela caminar, otra con hi-hat en tresillos corre sin avanzar. El tempo es el número; el groove es la distribución de acentos y subdivisiones alrededor de ese número. Por eso el prompt debe decir las dos cosas: «96 BPM, feel recto con hi-hat en corcheas y caja en el tercer tiempo» o «96 BPM, feel de tresillos con patrón de dembow y acento atrasado».',
+          'Aprende cuatro grooves y con ellos diriges media discografía contemporánea en español: dembow (patrón de tres tres y caja, acento característico), cuatro de bachata con güira en corcheas, montuno cubano (arpegio en corcheas sobre clave), y swing de lo-fi (batería atrasada con hi-hat en corcheas con acento en las débiles). Declara el groove con nombre cuando exista, y con descripción cuando no: los nombres anclan vecindarios, las descripciones los corrigen.',
+        ],
+      },
+      {
+        heading: 'Curva de dinámica: el plano de la canción',
+        body: [
+          'La dinámica es un plano de entradas y salidas. Escríbelo como una sucesión: verso 2 capas con pulso en negras; pre-coro 3 capas con subdivisión doblada; coro 5 capas con platillos y doblaje vocal; verso 2 igual que el primero pero con un elemento nuevo; puente 1 capa y voz; último coro 6 capas o, al revés, se cae todo y queda voz antes de reventar. Ese texto es una instrucción, y el motor la ejecuta mejor que cualquier «que explote».',
+          'Tres dispositivos producen el 80% de las dinámicas que reconoces: el drop-out (todo se detiene un compás y entra la voz), el build (una capa por compás hasta el clímax) y el drop (el clímax sin melodía, todo rítmico). Decláralos con nombre y con lugar: «drop-out un compás antes del último coro», «build de cuatro compases en el pre-coro», «drop instrumental después del segundo coro». Con eso diriges energía sin tocar volúmenes.',
+        ],
+      },
+      {
+        heading: 'Tonalidad y modo al servicio del groove',
+        body: [
+          'La tonalidad cumple tres trabajos en producción: define el registro cómodo de la voz, define el color y define dónde pueden bajar los instrumentos. En música bailable, el modo menor y el mayor funcionan distinto aunque el groove sea idéntico: menor suena nocturno, mayor suena festivo. Cambiar solo el modo entre dos versiones es la manera más limpia de probar dos destinos comerciales para la misma canción.',
+          'Para generar, la armonía simple resiste mejor: cuatro grados que se repiten permiten que el modelo se concentre en timbre y groove. Pide tensión donde importe («el puente con un acorde prestado, resuelve en el coro») en lugar de una progresión elaborada de principio a fin. Si necesitas exactitud para un arreglo posterior, escribe la progresión en grados romanos: el motor los respeta mejor que las notas.',
+          'Y una decisión práctica: no cambies de tonalidad a mitad de género. Si pides «cumbia electrónica en Do# menor con pads oscuros» y luego «coro eufórico en mayor», el motor tiene que modular sin haber sido entrenado para modular así. Es mejor cambiar la energía con capas que cambiar el modo dentro de la misma canción.',
+        ],
+      },
+      {
+        heading: 'Referencias: cómo usarlas sin copiar',
+        body: [
+          'Una referencia es una descripción de destino, no un permiso de copia. Lo que puedes tomar sin problema: tempo aproximado, densidad de capas, tipo de groove, balance entre voz y música, cantidad de espacio, curva de energía. Lo que no: melodías, letras, giros armónicos característicos, riffs reconocibles, ni la voz de esa artista. La diferencia legal está en la idea musical concreta, y los arreglos de producción general no son la obra protegida.',
+          'La forma profesional de usar referencias es hacer una ficha de cuatro líneas: qué capto de aquí (espacio), qué de aquí (groove), qué de aquí (curva de energía), qué de aquí (voz y lugar en la mezcla). Escribiendo las cuatro fuentes como propiedades, y no una sola como nombre, obtienes un sonido propio con estándar de calidad profesional. Además: no pegues el título de una obra en el prompt de estilo; varias plataformas bloquean o degradan esos intentos.',
+        ],
+      },
+    ],
+    examples: [
+      'Prompt con groove, dinámica y referencia descrita: «cumbia electrónica, 98 BPM feel recto con güira en corcheas y bajo tumbao en tiempos 2 y 4, La menor; armonía en sintetizador corto que no pasa de 3 kHz; versos 2 capas y pulso en negras; build de cuatro compases en el pre-coro sumando perk y arpegio; coro 5 capas con bajo desplazado; drop-out de un compás antes del último coro con voz sola; puente drop instrumental sin melodía; mezcla con percusión seca al frente y estéreo moderado». Fíjate que no hay ninguna obra nombrada.',
+      'Dinámica con tres dispositivos en una misma canción: build de cuatro compases en el pre-coro, drop instrumental de ocho compases después del segundo coro, drop-out de un compás antes del último coro. Tres momentos que el oyente recuerda, y cada uno se puede pedir por su nombre.',
+      'Ficha de referencia en uso: referencia A (espacio: reverberación corta, voz seca), referencia B (groove: patrón de medio tiempo con hi-hat en tresillos), referencia C (curva: 2-2-3-5-3), referencia D (voz: registro bajo con flow conversado). El prompt final mezcla las cuatro propiedades y el resultado no se parece a ninguna de ellas.',
+    ],
+    techniques: [
+      'Tempo + feel + acento: tres palabras obligatorias después del número, para que 96 no signifique dos canciones distintas.',
+      'Cuatro grooves base: dembow, güira de bachata en corcheas, montuno, swing de lo-fi. Decláralos con su nombre cuando exista y con una línea de descripción cuando no.',
+      'Nombra tus dispositivos: build, drop, drop-out. Un lenguaje corto y estándar te deja escribir la curva de dinámica en una línea por sección.',
+      'Modo como experimento controlado: genera la misma canción en menor y en mayor conservando tempo y capas. Dos destinos comerciales con una sola variable.',
+      'Progresión en grados: para tensiones específicas escribe I-vi-IV-V o «con un acorde prestado en el puente»; el modelo respeta mejor grados que notas sueltas.',
+      'Ficha de referencia de cuatro líneas: espacio, groove, curva, voz. Cada propiedad viene de una fuente distinta, así que el resultado es tuyo.',
+    ],
+    prompts: [
+      {
+        name: 'Groove y curva de dinámica',
+        outcome: 'Dirigir el movimiento rítmico y los tres momentos de energía con nombre propio.',
+        text: '{género}, {BPM} BPM, feel {recto, tresillos o medio tiempo}, acento característico en {tiempo o subdivisión}. Groove: {nombre del patrón} con {instrumento} en {subdivisión} y {instrumento} marcando {tiempos}. Pulso grave: {bombo o sub} en {dónde} y con {ataque}. Curva de dinámica: versos {n} capas con {elemento que sostiene}; pre-coro {build de cuántos compases sumando qué}; coros {m} capas con {elemento que abre}; puente {drop instrumental o voz sola durante cuántos compases}; último coro {drop-out de un compás antes y luego qué}. Tonalidad: {tonalidad} {modo}, progresión {grados romanos} y {tensión donde importa}.',
+        variables: ['género', 'BPM', 'recto, tresillos o medio tiempo', 'tiempo o subdivisión', 'nombre del patrón', 'instrumento', 'subdivisión', 'dónde', 'bombo o sub', 'ataque', 'n', 'elemento que sostiene', 'build de cuántos compases sumando qué', 'm', 'elemento que abre', 'drop instrumental o voz sola durante cuántos compases', 'drop-out de un compás antes y luego qué', 'tonalidad', 'modo', 'grados romanos', 'tensión donde importa'],
+      },
+      {
+        name: 'Ficha de referencia en cuatro líneas',
+        outcome: 'Extraer propiedades legales de varias fuentes sin nombrar ninguna obra.',
+        text: 'Espacio: {cantidad de reverberación y cercanía de la voz}. Groove: {patrón, subdivisión y dónde está el acento}. Curva: {niveles 1-5 en verso, pre-coro, coro, puente, último coro}. Voz: {registro, textura, articulación y función de los doblajes}. Fuentes consultadas: {cuatro referencias distintas, una propiedad por fuente}. Lo que conscientemente NO copio: {melodía, letra, riff, giro armónico característico, identidad vocal}. Prompt derivado: {pegar aquí solo las propiedades}.',
+        variables: ['cantidad de reverberación y cercanía de la voz', 'patrón, subdivisión y dónde está el acento', 'niveles 1-5 en verso, pre-coro, coro, puente, último coro', 'registro, textura, articulación y función de los doblajes', 'cuatro referencias distintas, una propiedad por fuente', 'melodía, letra, riff, giro armónico característico, identidad vocal', 'pegar aquí solo las propiedades'],
+      },
+    ],
+    exercise: {
+      title: 'Diseñar la curva de una canción con groove nombrado',
+      steps: [
+        'Elige un género y define su groove con nombre y descripción de una línea, más el lugar del acento.',
+        'Fija el tempo con feel y acento: tres palabras después del número de BPM.',
+        'Escribe la curva de dinámica en cinco secciones con niveles de 1 a 5 y qué entra o sale en cada cambio.',
+        'Asigna al menos dos dispositivos con nombre (build, drop, drop-out) a secciones concretas, con compases indicados.',
+        'Elige el modo y justifica por qué ese color conviene al destino de la canción; genera la misma idea en el modo opuesto.',
+        'Arma la ficha de referencia de cuatro líneas con cuatro fuentes distintas y pega solo las propiedades en el prompt final.',
+      ],
+      deliverable:
+        'Un prompt de producción con groove nombrado, curva de dinámica en cinco secciones, dos dispositivos con nombre y una ficha de referencia de cuatro propiedades.',
+      checklist: [
+        'Después del BPM aparecen feel y lugar del acento, sin ambigüedad.',
+        'La curva tiene niveles del 1 al 5 y especifica qué instrumento entra o sale en cada cambio.',
+        'Al menos dos momentos están declarados con nombre de dispositivo y con su posición en compases.',
+        'La ficha de referencia cita cuatro fuentes distintas y ninguna melodía ni voz identificable fue copiada.',
+        'Se generaron ambas versiones modales (mayor y menor) con el mismo arreglo y tempo.',
+      ],
+    },
+    listening: [
+      {
+        title: 'Clave y groove en música cubana',
+        focus:
+          'Escucha un son clásico y sigue dos capas independientes: la clave (quién la marca) y el montuno del piano. Identifica en qué momento entran los metales como acento y no como armonía. Es el mejor ejemplo de groove con repartición limpia de funciones.',
+        search: 'son cubano clave y montuno de piano análisis de groove capas',
+      },
+      {
+        title: 'Dembow y su acento',
+        focus:
+          'Localiza en un tema urbano el patrón de percusión y marca en qué tiempos cae el acento. Después escucha qué NO suena en el verso y cuántas cosas entran en el coro. Vas a oír la curva de dinámica hecha con un solo patrón.',
+        search: 'dembow patrón acento tiempos reggaetón análisis de groove',
+      },
+      {
+        title: 'Swing de lo-fi: atrasos deliberados',
+        focus:
+          'Escucha una batería de lo-fi e identifica que el bombo y la caja llegan ligeramente tarde. Esa holgura rítmica es la sensación de «humano», y se puede pedir en el prompt. Compara con una batería electrónica quantizada y nota la diferencia de temperatura.',
+        search: 'lo fi drums unquantized swing late groove human feel',
+      },
+    ],
+    pitfalls: [
+      {
+        mistake: 'Pedir tempo y asumir que eso define el groove.',
+        fix: 'Agrega feel, subdivisión y lugar del acento; o nombra el patrón (dembow, montuno, güira en corcheas).',
+      },
+      {
+        mistake: 'Escribir «sube la energía» sin qué entra o sale.',
+        fix: 'Nombra el instrumento, la subdivisión y la sección. La dinámica se describe con entradas y salidas.',
+      },
+      {
+        mistake: 'Poner el nombre de una canción como referencia en el prompt.',
+        fix: 'Extrae las cuatro propiedades a tu ficha y escríbelas como descripción. Evitas bloqueo, degradación y riesgo legal.',
+      },
+      {
+        mistake: 'Cambiar de modo a mitad de la canción para generar emoción.',
+        fix: 'Conserva el modo y cambia la energía con capas; si la modulación es esencial, hazla entre canciones o con edición externa.',
+      },
+    ],
+    takeaway:
+      'El groove se nombra, la dinámica se planifica con entradas y salidas, y la referencia se copia solo en propiedades.',
+  },
+  // __PART2__
+]
+
+export const COURSE_TOTAL_LESSONS = 16 // debe coincidir con COURSE_LESSONS.length; el SQL tiene 16 en course_total_lessons()
+
+export function lessonById(id: string): Lesson | undefined {
+  return COURSE_LESSONS.find((lesson) => lesson.id === id)
+}
+
+export function lessonsByModule(index: number): Lesson[] {
+  return COURSE_LESSONS.filter((lesson) => lesson.moduleIndex === index)
+}
+
+export const COURSE_BADGES: Array<{ code: string; name: string; requirement: string }> = [
+  {
+    code: 'primer_prompt',
+    name: 'Primer prompt',
+    requirement: 'Completa tu primera lección y escribe un prompt con las cinco decisiones básicas.',
+  },
+  {
+    code: 'oido_critico',
+    name: 'Oído crítico',
+    requirement: 'Completa 5 lecciones comparando versiones y documentando qué cambió en el audio.',
+  },
+  {
+    code: 'productor_ia',
+    name: 'Productor IA',
+    requirement: 'Completa las 16 lecciones del curso, incluida la entrega del portafolio final.',
+  },
+  {
+    code: 'primera_cancion',
+    name: 'Primera canción',
+    requirement: 'Marca una canción como lista en el estudio: tu primera pieza terminada y trazable.',
+  },
+]
