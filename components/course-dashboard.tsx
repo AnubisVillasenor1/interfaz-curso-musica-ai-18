@@ -242,6 +242,7 @@ export function CourseDashboard() {
     ['Academia', '/curso'],
     ['Estudio', '/studio'],
     ['Biblioteca', '/biblioteca'],
+    ['Comunidad', '/comunidad'],
     ['Membresías', '/precios'],
     ['Información', '/informacion'],
   ] as const
