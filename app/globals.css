@@ -412,6 +412,35 @@ html[data-theme='dark'] {
     border-color: oklch(0.884 0.121 200 / 0.4);
     transform: translateY(-1px);
   }
+  .crystal-button {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    background: linear-gradient(120deg, var(--color-cyan-glow), var(--color-aqua) 38%, var(--color-violet-glow) 76%, var(--color-amber-glow));
+    background-size: 220% 100%;
+    box-shadow: 0 0 0 1px oklch(0.95 0.04 200 / .28), 0 0 26px oklch(0.8 0.13 200 / .25), inset 0 1px oklch(1 0 0 / .6);
+    transition: transform .25s ease, background-position .55s ease, box-shadow .3s ease;
+  }
+  .crystal-button::before {
+    content: '';
+    position: absolute;
+    inset: 1px;
+    z-index: -1;
+    border-radius: inherit;
+    background: linear-gradient(115deg, oklch(1 0 0 / .32), transparent 30%, transparent 70%, oklch(1 0 0 / .2));
+    pointer-events: none;
+  }
+  .crystal-button:hover { transform: translateY(-3px) scale(1.015); background-position: 100% 0; box-shadow: 0 0 0 1px oklch(0.95 0.04 200 / .4), 0 0 38px oklch(0.8 0.13 200 / .38), inset 0 1px oklch(1 0 0 / .8); }
+  .crystal-button-secondary { color: var(--foreground); background: linear-gradient(120deg, oklch(1 0 0 / .13), oklch(0.8 0.13 205 / .12), oklch(0.73 0.15 292 / .16)); border: 1px solid oklch(0.88 0.12 200 / .42); backdrop-filter: blur(18px) saturate(155%); }
+  .crystal-button-secondary:hover { color: white; }
+  .crystal-panel { position: relative; overflow: hidden; border: 1px solid oklch(0.88 0.12 200 / .18); background: linear-gradient(145deg, oklch(1 0 0 / .09), oklch(0.73 0.15 292 / .06) 52%, oklch(0.88 0.12 200 / .04)); box-shadow: 0 24px 80px -40px oklch(0 0 0 / .9), inset 0 1px oklch(1 0 0 / .18); backdrop-filter: blur(22px) saturate(145%); }
+  .crystal-panel::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(115deg, oklch(1 0 0 / .16), transparent 22%, transparent 75%, oklch(0.88 0.12 200 / .08)); }
+  .crystal-link {  border: 1px solid transparent; transition: color .2s ease, border-color .2s ease, background .2s ease; }
+  .crystal-link:hover { color: var(--color-cyan-glow); border-color: oklch(0.88 0.12 200 / .22); background: oklch(1 0 0 / .04); }
+  .nav-link { transition: color .2s ease, text-shadow .2s ease; }
+  .nav-link:hover { color: var(--color-cyan-glow); text-shadow: 0 0 18px oklch(0.88 0.12 200 / .62); }
+  .assistant-orb::before { content: ''; position: absolute; inset: -5px; z-index: -1; border-radius: inherit; background: conic-gradient(from 120deg, var(--color-cyan-glow), var(--color-violet-glow), var(--color-amber-glow), var(--color-cyan-glow)); filter: blur(10px); opacity: .45; animation: spin 8s linear infinite; }
+  .crystal-divider { height: 1px; background: linear-gradient(90deg, transparent, var(--color-cyan-glow), var(--color-violet-glow), var(--color-amber-glow), transparent); box-shadow: 0 0 18px oklch(0.88 0.12 200 / .45); opacity: .78; }
 
   /* --- Chips / badges ------------------------------------------------ */
   .chip {
@@ -478,7 +507,7 @@ html[data-theme='dark'] {
   }
 
   /* ==================================================================
-     INTRO CINEMÁTICA — composición tipo title card de estudio
+     INTRO CINEM��TICA — composición tipo title card de estudio
      ================================================================== */
   .intro-shell {
     position: fixed;

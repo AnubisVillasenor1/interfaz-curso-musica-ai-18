@@ -35,7 +35,7 @@ export function IntroGate() {
         <button
           type="button"
           onClick={replay}
-          className="fixed bottom-5 right-5 z-40 hidden rounded-full border border-white/12 bg-black/45 px-4 py-2 font-mono text-[10px] uppercase tracking-[0.2em] text-[#9fdfe9] backdrop-blur-xl transition hover:border-[#6feaff]/45 hover:text-white md:block"
+          className="crystal-button crystal-button-secondary fixed bottom-24 right-5 z-40 hidden rounded-full px-5 py-3 font-mono text-[10px] uppercase tracking-[0.18em] text-[#dffbff] backdrop-blur-xl transition hover:text-white md:flex"
         >
           Ver la intro
         </button>
