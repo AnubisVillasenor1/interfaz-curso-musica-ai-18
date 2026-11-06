@@ -149,3 +149,34 @@ generados con el dominio real.
 
 Un agente que hoy llegue a la API pasa por `/robots.txt` y `/sitemap.xml`: esta corrección
 cuenta en Performance y Discoverability aunque no esté en la lista original de checks.
+
+### Verificado contra el deploy (2026-11-06, tras el push de `598a0b7`)
+
+13 peticiones anónimas reales a `https://interfaz-curso-musica-ai.vercel.app`, sin sesión
+y sin tocar credenciales (script: `C:/Users/tamvo/.qoder/tmp/probe-live.mjs`, salida cruda
+en `probe-out.txt`). Lo que se midió:
+
+| Superficie | Estado medido | Cabecera / cuerpo relevante |
+|---|---|---|
+| `GET /sitemap.xml` | 200, 4 539 B | `<loc>https://interfaz-curso-musica-ai.vercel.app/</loc>` — el sitemap ya no está vacío |
+| `GET /robots.txt` | 200, 238 B | `Allow: /` + `Host:` y `Sitemap:` con el dominio real; solo `/api/`, `/auth/callback`, `/perfil`, `/biblioteca`, `/studio` siguen excluidas |
+| `GET /` (og:url) | 200 | tarjeta social con el dominio de producción, no `localhost:3000` |
+| `GET /api/music/search?q=...` | 200 | `cache-control: public, max-age=60` — la #3 viaja desde el handler, no la pone Vercel |
+| `GET /api/music/search?q=a` | 400 | `{"error":"La búsqueda debe tener al menos 2 caracteres.","code":"query_too_short"}` |
+| `POST /api/agent` (vacio) | 400 | `{"error":"Escribe una pregunta.","code":"invalid_request"}` |
+| `POST /api/agent` (mensaje largo) | 413 | `{"code":"message_too_long","limit":2000}` |
+| `POST /api/agent` (pregunta válida) | 200 en 164 ms | `"source":"fallback"`, `"lessonIds":["m05-l16"]` — la procedencia sigue visible: sin proveedor configurado **no** se etiqueta como IA |
+| `entitlement`, `progress`, `songs`, `generate` sin sesión | 401 | los cuatro cuerpos llevan su `code` (`unauthorized`) |
+| `POST /api/checkout` sin sesión | 401 | `{"error":"Inicia sesión para inscribirte.","code":"unauthorized"}` |
+
+Lo que **no** pudo verificarse en vivo: los `200` de las cuatro rutas por-usuario con
+`private, no-store`, porque exigen sesión de Supabase y en esta sesión no se inicia sesión
+en la cuenta del dueño. Quedan verificados en código y en build. Los `401` salen con el
+`Cache-Control` por defecto de la plataforma (`public, max-age=0, must-revalidate`) porque
+`PRIVATE_HEADERS` va en las respuestas de éxito: un 401 no contiene datos de ninguna cuenta,
+así que se consideró correcto no tocarlo.
+
+Conclusión honesta sobre el score: el 69,5 sigue siendo la foto de la auditoría original y
+en el papel no se recalculará hasta que se corra de nuevo la rúbrica contra el código actual.
+Los cuatro quick wins de mayor ratio (#1–#4) están aplicados y **confirmados contra el
+deploy en las superficies anónimas**; #5, #7 y #8 siguen abiertos.
