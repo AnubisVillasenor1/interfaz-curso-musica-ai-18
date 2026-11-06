@@ -1000,6 +1000,14 @@ html[data-theme='dark'] {
     --pg-hairline: rgba(150, 214, 232, 0.14);
     --pg-keyline: rgba(150, 214, 232, 0.3);
     --pg-rise: cubic-bezier(0.16, 0.84, 0.24, 1);
+    /* Cuatro superficies flotantes: translúcidas porque van encima de una imagen
+       o de la página, y por eso no pueden ser `--pg-surface` a secas. Existían
+       hace tiempo, pero escritas a mano en el JSX; aquí quedan como vocabulario.
+       Nada de esto cambia un píxel: son los mismos valores rgba() medidos. */
+    --pg-veil: rgba(7, 21, 34, 0.82);      /* barra «Ahora suena» sobre la carátula */
+    --pg-plinth: rgba(13, 32, 48, 0.95);   /* peana del ecualizador, apoyada en el marco */
+    --pg-orb: rgba(11, 38, 53, 0.95);      /* esfera del asistente, cian sobre cian */
+    --pg-console: rgba(11, 29, 43, 0.96);  /* panel del asistente, el más opaco */
     /* Un solo paso de escala tipográfica, no tamaños inventados por sección. */
     --pg-step--2: 9.5px;
     --pg-step--1: 11px;

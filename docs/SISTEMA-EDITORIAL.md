@@ -29,6 +29,10 @@ la marca es cambiar este bloque.
 | `--pg-surface` | `#0b1f2e` | superficie de tarjetas y paneles |
 | `--pg-hairline` | `rgba(150,214,232,.14)` | separador de 1 px |
 | `--pg-keyline` | `rgba(150,214,232,.30)` | borde de contenedor |
+| `--pg-veil` | `rgba(7,21,34,.82)` | barra translúcida sobre la carátula |
+| `--pg-plinth` | `rgba(13,32,48,.95)` | peana del ecualizador flotante |
+| `--pg-orb` | `rgba(11,38,53,.95)` | esfera del asistente |
+| `--pg-console` | `rgba(11,29,43,.96)` | panel del asistente, el más opaco |
 | `--pg-rise` | `cubic-bezier(0.16,0.84,0.24,1)` | única curva de movimiento |
 
 Escala tipográfica (un solo sistema, sin tamaños inventados por sección):
@@ -140,33 +144,36 @@ Tres lecturas, sin redondear hacia arriba:
 1. **Un vocabulario, no cuarenta hex.** Si una pantalla necesita un color, se añade un
    token o una primitiva; nunca un literal en el JSX. Las excepciones están marcadas en la
    tabla de abajo y en el párrafo que la sigue.
-   Estado medido (6 de noviembre, `scripts/inventario-editorial.mjs`): **55 literales** de
-   color fuera de `globals.css` en 5 archivos, de los cuales **40 son tablas de datos y 15
-   son deuda real**. La cifra en bruto mentía —contaba también los literales que aparecen
-   dentro de un comentario— así que el script separa las dos cosas y hay que leerla así:
+   Estado medido (6 de noviembre, `scripts/inventario-editorial.mjs`): **40 literales** de
+   color fuera de `globals.css`, **todos ellos en dos tablas de datos**. La regla 1 está
+   limpia de literales de interfaz, y la cifra en bruto ya no engaña porque el script
+   separa lo que es vocabulario de lo que es UI:
 
    | Dónde | Cuántos | Qué son | Veredicto |
    |---|---|---|---|
-   | `lib/cinematic/scenes.ts` | 26 | Paleta por escena (`key`/`core`/`fog`/`ember`), seis escenas. | Excepción legítima: el literal es el token de su propio dominio, no es UI. |
-   | `lib/music/arrangement.ts` | 14 | Mapa de color por capa instrumental. | Excepción legítima por lo mismo. |
-   | `components/course-dashboard.tsx` | 13 | `style` en línea: 4 fondos de superficie y 9 veladuras de matiz. | **Deuda real.** |
-   | `components/cinematic/cinematic-intro.tsx` | 1 | `text-[rgba(176,203,214,.6)]`, clase arbitraria de Tailwind. | **Deuda real.** |
-   | `components/local-composer.tsx` | 1 | Borde cian al 25 %. | **Deuda real.** |
+   | `lib/cinematic/scenes.ts` | 26 | Paleta por escena (`key`/`core`/`fog`/`ember`), seis escenas. | El literal es el token de su propio dominio, no es UI. |
+   | `lib/music/arrangement.ts` | 14 | Mapa de color por capa instrumental. | Lo mismo. |
 
-   Fuera del recuento quedan tres excepciones que el script conoce por nombre:
-   `app/opengraph-image.tsx` (Satori no resuelve variables CSS), los respaldos de
-   `components/real-audio-studio.tsx` (primero leen el token con `getComputedStyle`) y el
-   `themeColor: '#04101a'` de `app/layout.tsx` (es metadata, no se pinta en el árbol).
+   Cuatro archivos están fuera del recuento porque su literal no es una decisión de
+   interfaz: `app/opengraph-image.tsx` (Satori no resuelve variables CSS), el
+   `themeColor: '#04101a'` de `app/layout.tsx` (es metadata, no se pinta en el árbol), los
+   respaldos de `components/real-audio-studio.tsx` (primero leen el token con
+   `getComputedStyle`) y `components/cinematic/cinematic-intro.tsx`, que se monta como
+   hermana de `.pg-shell` (`components/cinematic/intro-gate.tsx:34`) y por tanto no hereda
+   ninguna variable.
 
-   La deuda no es solo estética: cuatro de esos fondos —`rgba(7,21,34,.82)`,
-   `rgba(13,32,48,.95)`, `rgba(11,29,43,.96)` y `rgba(11,38,53,.95)`— son superficies
-   inventadas que no coinciden con `--pg-surface` (`#0b1f2e`), así que esas cuatro zonas no
-   se mueven si algún día cambia la paleta. Los otros nueve son alfas exactas de tokens que
-   ya existen (`rgba(117,233,242,x)` es `--pg-cyan`, `rgba(255,207,114,x)` es `--pg-amber`,
-   `rgba(7,18,31,.78)` es `--pg-bg`): esos se convierten a `color-mix` sin tocar un pixel.
-   Los cuatro primeros no: sustituirlos por el token cambia el tinte de la pantalla, así que
-   hay que hacerlos con la pantalla abierta.
-   `scripts/inventario-editorial.mjs` imprime la tabla en cada corrida para que la cifra
+   Lo que sí se arregló en esta misma ronda fueron los **15 literales de interfaz** que
+   quedaban, todos en `components/course-dashboard.tsx` y `components/local-composer.tsx`:
+   nueve eran alfas exactas de tokens que ya existían —`rgba(117,233,242,x)` es
+   `--pg-cyan`, `rgba(255,207,114,x)` es `--pg-amber`, `rgba(7,18,31,.78)` es `--pg-bg`— y
+   pasaron a escribirse `color-mix(in srgb, var(--token) x%, transparent)`, que con
+   `transparent` multiplica canal y deja el mismo color: cero píxeles de diferencia. Los
+   cuatro restantes eran superficies inventadas que no coincidían con `--pg-surface`
+   (`#0b1f2e`); se llamaban veil / plinth / orb / console y ahora son tokens con sus
+   valores históricos exactos, declarados una vez en `.pg-shell`. Nadie redondeó nada para
+   que la tabla saliera bonita: los cuatro siguen siendo distintos de `--pg-surface` a
+   propósito, porque van translúcidos encima de una imagen.
+   `scripts/inventario-editorial.mjs` imprime el recuento en cada corrida para que la cifra
    no vuelva a crecer sin que nadie la vea.
 2. **Ritmo vertical idéntico** en todas las secciones (`.pg-section`), no un `py` arbitrario.
 3. **El estado vive en el ARIA y el CSS lo lee** (`.pg-check[aria-pressed='true']`).

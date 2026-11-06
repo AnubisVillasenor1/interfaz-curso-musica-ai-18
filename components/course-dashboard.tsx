@@ -228,7 +228,7 @@ export function CourseDashboard() {
         siquiera es una clase válida. */}
     <div aria-hidden="true" className="pg-glow" />
 
-    <header className="sticky top-0 z-30 backdrop-blur-xl" style={{ borderBottom: '1px solid var(--pg-hairline)', background: 'rgba(7,18,31,.78)' }}>
+    <header className="sticky top-0 z-30 backdrop-blur-xl" style={{ borderBottom: '1px solid var(--pg-hairline)', background: 'color-mix(in srgb, var(--pg-bg) 78%, transparent)' }}>
       <div className="pg-container flex items-center justify-between py-4">
         <a href="/" className="flex items-center gap-3">
           <img src={logoMark} alt="" width={40} height={40} className="size-10 rounded-xl" />
@@ -307,7 +307,7 @@ export function CourseDashboard() {
             <audio ref={audioRef} src={sampleAudio} loop preload="none" onEnded={() => setPlaying(false)} />
             <div
               className="absolute inset-x-5 bottom-5 flex items-center justify-between gap-4 rounded-2xl p-4 backdrop-blur-xl"
-              style={{ border: '1px solid var(--pg-hairline)', background: 'rgba(7,21,34,.82)' }}
+              style={{ border: '1px solid var(--pg-hairline)', background: 'var(--pg-veil)' }}
             >
               <span className="block">
                 <span className="pg-eyebrow" style={{ letterSpacing: '.22em' }}>Ahora suena</span>
@@ -326,7 +326,7 @@ export function CourseDashboard() {
             </div>
             <div
               className="absolute right-5 -bottom-5 flex h-16 items-end gap-1 rounded-xl p-3"
-              style={{ border: '1px solid var(--pg-hairline)', background: 'rgba(13,32,48,.95)', boxShadow: '0 0 28px rgba(117,233,242,.16)' }}
+              style={{ border: '1px solid var(--pg-hairline)', background: 'var(--pg-plinth)', boxShadow: '0 0 28px color-mix(in srgb, var(--pg-cyan) 16%, transparent)' }}
               aria-hidden="true"
             >
               {[3, 7, 5, 9, 4, 8, 6, 10, 5, 7].map((height, index) => (
@@ -373,7 +373,7 @@ export function CourseDashboard() {
               <a
                 href={item.state === 'locked' ? '/precios' : '/curso'}
                 className="pg-card pg-card-hover flex items-center gap-4 p-4"
-                style={item.state === 'current' ? { borderColor: 'rgba(117,233,242,.45)' } : undefined}
+                style={item.state === 'current' ? { borderColor: 'color-mix(in srgb, var(--pg-cyan) 45%, transparent)' } : undefined}
               >
                 <span
                   className="pg-mark"
@@ -480,7 +480,7 @@ export function CourseDashboard() {
     <section id="estudio" className="pg-section">
       <div className="pg-container">
         <Reveal>
-          <div className="pg-card p-6 sm:p-10" style={{ borderColor: 'rgba(117,233,242,.3)' }}>
+          <div className="pg-card p-6 sm:p-10" style={{ borderColor: 'color-mix(in srgb, var(--pg-cyan) 30%, transparent)' }}>
             <div className="flex flex-wrap items-start justify-between gap-6">
               <div className="max-w-xl">
                 <p className="pg-eyebrow">Estudio Play and Go</p>
@@ -491,7 +491,7 @@ export function CourseDashboard() {
                   completa.
                 </p>
               </div>
-              <div className="pg-metric items-center px-5 py-4 text-center" style={{ border: '1px solid rgba(255,207,114,.24)', background: 'rgba(255,207,114,.07)' }}>
+              <div className="pg-metric items-center px-5 py-4 text-center" style={{ border: '1px solid color-mix(in srgb, var(--pg-amber) 24%, transparent)', background: 'color-mix(in srgb, var(--pg-amber) 7%, transparent)' }}>
                 <b>2 / día</b>
                 <span>Inscripción Pro</span>
               </div>
@@ -522,7 +522,7 @@ export function CourseDashboard() {
                 <div className="pg-card h-full p-5 text-center">
                   <span
                     className="mx-auto flex size-12 items-center justify-center rounded-2xl"
-                    style={{ background: 'rgba(255,207,114,.13)', color: 'var(--pg-amber)' }}
+                    style={{ background: 'color-mix(in srgb, var(--pg-amber) 13%, transparent)', color: 'var(--pg-amber)' }}
                   >
                     <badge.icon size={20} />
                   </span>
@@ -561,7 +561,7 @@ export function CourseDashboard() {
       aria-expanded={chatOpen}
       onClick={() => setChatOpen((value) => !value)}
       className="assistant-orb fixed bottom-5 right-5 z-40 flex items-center gap-2 rounded-full px-4 py-3 shadow-2xl backdrop-blur-xl transition hover:scale-[1.04]"
-      style={{ border: '1px solid rgba(117,233,242,.55)', background: 'rgba(11,38,53,.95)', color: 'var(--pg-cyan)' }}
+      style={{ border: '1px solid color-mix(in srgb, var(--pg-cyan) 55%, transparent)', background: 'var(--pg-orb)', color: 'var(--pg-cyan)' }}
     >
       <span className="hidden font-mono uppercase tracking-[.16em] sm:inline" style={{ fontSize: 'var(--pg-step--2)' }}>Pregúntale a la guía</span>
       <MessageCircle size={18} />
@@ -571,7 +571,7 @@ export function CourseDashboard() {
       <aside
         aria-label="Asistente del curso"
         className="pg-shell fixed bottom-24 right-5 z-40 flex w-[min(92vw,380px)] flex-col overflow-hidden rounded-3xl shadow-2xl backdrop-blur-xl"
-        style={{ border: '1px solid rgba(117,233,242,.32)', background: 'rgba(11,29,43,.96)' }}
+        style={{ border: '1px solid color-mix(in srgb, var(--pg-cyan) 32%, transparent)', background: 'var(--pg-console)' }}
       >
         <div className="flex items-center justify-between gap-4 p-4" style={{ borderBottom: '1px solid var(--pg-hairline)' }}>
           <div>

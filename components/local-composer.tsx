@@ -210,7 +210,7 @@ export function LocalComposer({ initialPrompt = '' }: { initialPrompt?: string }
     link.click()
   }
 
-  return <form onSubmit={create} className="pg-card flex flex-col gap-4 p-5 sm:p-6" style={{ borderColor: 'rgba(117,233,242,.25)' }}>
+  return <form onSubmit={create} className="pg-card flex flex-col gap-4 p-5 sm:p-6" style={{ borderColor: 'color-mix(in srgb, var(--pg-cyan) 25%, transparent)' }}>
     <div className="flex items-start justify-between gap-4">
       <div>
         <p className="pg-eyebrow">Motor local · sin costo</p>

@@ -36,9 +36,11 @@ console.log('doce más usadas: ' + uses.slice().sort((a, b) => b.count - a.count
 console.log('relaciones data-tone: ' + tones.length)
 console.log('archivos que montan .pg-shell: ' + files.filter((f) => contents.get(f).includes('pg-shell')).length)
 // Excepciones legítimas: Satori (opengraph) y el themeColor del metadata no resuelven
-// variables CSS —son un archivo aparte del árbol pintado—, y real-audio-studio lee el
-// token en ejecución con getComputedStyle antes de usar su respaldo.
-const excepciones = ['opengraph-image.tsx', 'real-audio-studio.tsx', 'app/layout.tsx']
+// variables CSS —son un archivo aparte del árbol pintado—, real-audio-studio lee el token
+// en ejecución con getComputedStyle antes de usar su respaldo, y la intro cinemática se
+// monta COMO HERMANA de .pg-shell (components/cinematic/intro-gate.tsx), así que allí
+// dentro un var(--pg-*) no hereda y el literal es la única forma de pintarlo.
+const excepciones = ['opengraph-image.tsx', 'real-audio-studio.tsx', 'app/layout.tsx', 'cinematic-intro.tsx']
 // Tablas de datos: el literal ES el token de su propio dominio (paleta de escena,
 // color de capa). No son UI, así que la regla 1 no les aplica; se cuentan aparte.
 const tablas = ['lib/cinematic/scenes.ts', 'lib/music/arrangement.ts']
