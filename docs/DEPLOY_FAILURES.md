@@ -1,28 +1,44 @@
 # Dónde están las fallas del deploy
 
-Medido el 2026-11-05 sobre `https://interfaz-curso-musica-ai.vercel.app` y sobre
-el log de build de Vercel. Nada de esta página es inferencia sin comprobación:
-cada afirmación trae la prueba que la sostiene.
+Medido el 2026-11-05 contra la API de Vercel con token de `anubisvillasenor1`,
+sobre la URL pública de producción y sobre el historial de git de las dos
+cuentas. Nada de esta página es inferencia sin comprobación: cada afirmación
+trae la prueba que la sostiene.
+
+Contexto del proyecto, leído de la API:
+
+| campo | valor |
+|---|---|
+| proyecto | `interfaz-curso-musica-ai` · `prj_ogAIlFJ2Vs9Sll0NIT0h0YKricG4` |
+| equipo | `tamvonlinenetwork` (TAMV Online Network, plan hobby) |
+| creado por | v0 — `v0Created: true` |
+| vínculo git | `type=github`, `org=AnubisVillasenor1`, `repo=interfaz-curso-musica-ai-18`, `repoId=1445550556`, `productionBranch=main` |
 
 ---
 
-## Falla 1 — Vercel no despliega el `main` que estamos construyendo
+## Falla 1 — Vercel lee otra cuenta, y esa cuenta la escribe v0
 
-**Prueba.** El log de build dice:
+**Prueba.** El vínculo del proyecto apunta a `AnubisVillasenor1` (tabla de arriba)
+y el log de build lo repite:
 
 ```
-Cloning github.com/AnubisVillasenor1/interfaz-curso-musica-ai-18 (Branch: main, Commit: 0efc8ec)
+Cloning github.com/AnubisVillasenor1/interfaz-curso-musica-ai-18 (Branch: main, Commit: 89cd2d1)
 ```
 
-y los dos remotos del proyecto responden cosas distintas:
+Los dos remotos del proyecto responden cosas distintas, y **Anubis se está
+moviendo solo**:
 
 | remoto | `refs/heads/main` |
 |---|---|
-| `AnubisVillasenor1/…` (el que clona Vercel) | `0efc8ec` |
-| `OsoPanda1/…` (donde van mis commits) | `d215ccb` |
+| `AnubisVillasenor1/…` (el que clona Vercel) | `89cd2d1` — «Revise project title and add description», 21:33, autor `AnubisVillasenor1` |
+| `OsoPanda1/…` (donde van mis commits) | `5b75081` |
 
-Las historias divergen: Anubis tiene 2 commits que yo no tengo y yo tengo 9 que
-Anubis no tiene.
+Lo que hay en producción ahora mismo es el deployment `dpl_HhW5KQQcMxpq8Tw4fYLahqXFjUHk`,
+construido el **4 de noviembre a las 06:47** desde el commit `fde148c`
+(«Merge pull request #2 from AnubisVillasenor1/feat/free-open-music-agent»). La
+URL `interfaz-curso-musica-ai.vercel.app` es alias de ese deployment, confirmado
+en `/v4/aliases`. Los dos intentos de production de hoy fallaron (03:29:xx y
+03:33 UTC) y por eso el sitio sigue en el build de hace dos días.
 
 **Qué se ve en producción por culpa de esto.** Sondeé la URL viva:
 
@@ -37,9 +53,11 @@ Anubis no tiene.
 
 Es decir: el curso de 16 sesiones, el cobro por producto, el cupo diario, el
 motor de audio local y la marca corrigida **no están en el sitio que ve la
-gente**, no porque estén mal, sino porque el deploy lee otro repositorio.
+gente**, no porque estén mal, sino porque el deploy lee otro repositorio. Y el
+build que sí lee tampoco lleva el fix de tipos: ni `0efc8ec` ni `89cd2d1` tienen
+`@types/three`.
 
-**Los 2 commits que solo están en Anubis**, revisados uno por uno:
+**Los commits que solo están en Anubis**, revisados uno por uno:
 
 - `0efc8ec` — README de 54 líneas.
 - `cd7e7b5` — reescritura de `components/cinematic/cinematic-intro.tsx` con
@@ -48,8 +66,20 @@ gente**, no porque estén mal, sino porque el deploy lee otro repositorio.
   115 y 121. El commit de Anubis añade además una escritura de ref durante el
   render (`actRef.current = act`) y un array `timeoutIds` que crece sin límite
   mientras el componente está montado.
+- `89cd2d1` — 3 líneas de README.
 
-Ninguna de las dos es trabajo que se pierda al cambiar el deploy de origen.
+No son la misma línea de tiempo. Las dos ramas están separadas desde `be6aa88`:
+medido con `git rev-list --count`, **OsoPanda lleva 10 commits que Vercel nunca
+ve** y **Anubis lleva 3 que nosotros no tenemos**. Todo lo de la tabla anterior
+está en esos 10; el fix de tipos está en `d215ccb`, que es uno de ellos.
+
+Ninguna de las tres de Anubis es trabajo que se pierda al cambiar el deploy de
+origen. El riesgo va al revés: mientras v0 siga escribiendo en Anubis, cada
+edición suya en `app/layout.tsx` —donde todavía vive `title: 'Sonora IA'` y
+`generator: 'v0.app'`— reemplaza la marca corrigida, y cada push suyo dispara un
+build que vuelve a caer en el mismo TS7016 porque el fix no está en esa rama.
+Por eso los dos intentos de production de hoy fallaron con errores idénticos.
+
 
 ---
 
@@ -70,29 +100,57 @@ mentía según el gestor desde el que se corriera.
 **Arreglo.** `@types/three` declarado en `devDependencies` con la misma versión
 menor que `three` (commit `d215ccb`), y `pnpm-lock.yaml` regenerado.
 
-**Verificación en el entorno del deploy, no en el mío:** copia limpia del árbol,
-`pnpm install --frozen-lockfile` (pasó, prueba de que el lock no está congelado
-contra un `package.json` viejo), `tsc --noEmit` en cero errores, `next build`
-completo en cero.
+**Verificación en el entorno del deploy, no en el mío:** copia limpia del
+árbol, `pnpm install --frozen-lockfile` (pasó, prueba de que el lock no está
+congelado contra un `package.json` viejo), `tsc --noEmit` en cero errores,
+`next build` completo en cero.
+
+**Y confirmado contra el log vivo.** Bajé el log completo del deployment
+`dpl_3aL6GUniS6X3dvEFMeZnxNtC88hY` con `vercel inspect --logs`: después de
+`Compiled successfully in 5.0s` hay exactamente dos líneas de error, ambas
+TS7016 sobre `three` (`cinematic-intro.tsx:5` y `cinematic-stage.tsx:7`), y
+nada más. No hay una segunda clase de fallo esperando detrás de la primera.
 
 ---
 
-## Falla 3 — Llaves de entorno: dos confirmadas ausentes, una presente
+## Falla 3 — El proyecto de Vercel no tiene ni una variable de entorno
 
-Se puede saber sin ver valores: cada ruta responde distinto según qué le falta.
+Contado por API (`GET /v9/projects/prj_ogAIlFJ2Vs9Sll0NIT0h0YKricG4/env`), sin
+leer valores: **0 variables declaradas**. Como control, `isabella-terminus-v6`,
+el otro proyecto del equipo, también devuelve 0, así que el cero no es un fallo
+de la consulta.
 
-| variable | estado en el proyecto de Vercel | cómo se sabe |
+Eso significa que `NEXT_PUBLIC_SUPABASE_URL`, la clave anónima,
+`SUPABASE_SERVICE_ROLE_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`,
+`API_KEY` y `NEXT_PUBLIC_APP_URL` no existen en el despliegue. Ningún cobro,
+ninguna cuota y ninguna canción guardada pueden funcionar allí.
+
+**La medición que antes leí mal, y por qué.** Sondeé `/api/checkout` en la URL
+viva y devolvió 401 «Inicia sesión para inscribirte.», no 503
+`SUPABASE_NOT_CONFIGURED`. Lo interpreté como «Supabase sí está configurado».
+Es al revés: el build en producción es `fde148c`, y ese commit llama a
+`createClient()` y acto seguido a `getUser()` sin el guard:
+
+```
+$ git show fde148c:app/api/checkout/route.ts
+ 8:  const supabase = await createClient()
+10:  if (!user?.email) return NextResponse.json({ error: 'Inicia sesión para inscribirte.' }, { status: 401 })
+```
+
+Sin variables, `getUser()` no encuentra sesión y el 401 sale igual. El guard
+que distingue «no hay llaves» de «no hay usuario» llegó después, en `3fcf0cf`,
+y nunca se desplegó. Un falso positivo con pinta de diagnóstico.
+
+Lo que sí queda firme medido en vivo: `POST /api/stripe/webhook` responde 503
+«Stripe webhook no configurado.», y esa línea se dispara con
+`!secret || !webhookSecret`.
+
+| variable | estado | cómo se sabe |
 |---|---|---|
-| `NEXT_PUBLIC_SUPABASE_URL` + clave anónima | **configuradas** | `POST /api/checkout` vivo da 401 «Inicia sesión para inscribirte.», y esa ruta devuelve 503 por `SUPABASE_NOT_CONFIGURED` *antes* de mirar la sesión |
-| `SUPABASE_SERVICE_ROLE_KEY` | **ausente** | `POST /api/stripe/webhook` vivo da 503 «Stripe webhook no configurado.», que se dispara con `!secret \|\| !webhookSecret` |
-| `STRIPE_WEBHOOK_SECRET` | **ausente** (o falta la anterior, el chequeo es conjunto) | misma línea 503 |
-| `STRIPE_SECRET_KEY` | sin medir | el checkout exige sesión antes de leer la clave; un visitante anónimo no puede provocar ese ramal |
-| `API_KEY` (generación de pago) | sin medir | `/api/generate` también corta por sesión primero |
-| `GENERATOR_CALLBACK_SECRET` | **no existe en el deploy** | la ruta que la usa es mía, y hoy no está desplegada (Falla 1) |
-| `NEXT_PUBLIC_APP_URL` | **no existe en el deploy** | idem; sin ella el checkout devuelve 503 a propósito y `robots.txt` cierra el indexado |
+| todas las del proyecto | **ausentes** | `env` devuelve lista vacía, y el control del otro proyecto da 0 también |
+| `NEXT_PUBLIC_APP_URL` | ausente | sin ella el checkout responde 503 a propósito y `robots.txt` cierra el indexado |
+| `GENERATOR_CALLBACK_SECRET` | ausente | la ruta que la usa no está desplegada (Falla 1) |
 
-Lo que significa la segunda fila: aunque alguien pague, **Stripe no puede
-entregar el acceso**. El cobro se produce y la plataforma nunca se entera.
 
 ---
 
@@ -109,24 +167,47 @@ de esa base no las tengo.
 
 ---
 
-## Falla 5 — El dominio no apunta al proyecto
+## Falla 5 — No hay dominio: la cuenta no tiene ninguno y la marca no resuelve
 
-```
-https://visitaraldelmonte.online   → sin respuesta HTTP (000, ~0.12 s)
-https://interfaz-curso-musica-ai.vercel.app → 200
-```
+Medido por API y por DNS, con controles para que el método no sea la explicación:
 
-El `.online` no sirve la app. Los correos siguen en Hostinger (eso es DNS de
-MX y no estorba para esto), pero el registro `A`/`CNAME` del sitio no está
-conectado al proyecto de Vercel, o está conectado a uno que ya no existe.
+| dato | valor | cómo se midió |
+|---|---|---|
+| dominios registrados en el equipo `tamvonlinenetwork` | **0** | `GET /v8/domains?teamId=tamvonlinenetwork` |
+| dominio montado en el proyecto | solo `interfaz-curso-musica-ai.vercel.app` | `GET /v6/projects/…/domains` |
+| `interfaz-curso-musica-ai.vercel.app` | alias vivo del deployment `dpl_HhW5…` | `GET /v4/aliases/…` |
+| `visitaraldelmonte.online` | **NXDOMAIN** — sin delegación de nameserver en el registro `.online` | `nslookup -type=NS/A` contra 8.8.8.8 y 1.1.1.1, dos veces |
+| `weboficial.com` | **SERVFAIL** (zona existe pero no resuelve; no es lo mismo que estar libre) | misma consulta |
+| control de que el método funciona | `github.com` → `dns1.p08.nsone.net`, `vercel.com` → `ns2.vercel-dns.com`, `qoder.online` → `launch1.spaceship.net` | misma consulta |
+
+Lo de `.online` importa más que el deploy: si el dominio no tiene NS en el
+registry, **tampoco funciona el correo** que cuelga de él, aunque Hostinger siga
+con los registros MX configurados del lado del proveedor de correo. Cualquier
+tarjeta, presupuesto o PDF que diga `@visitaraldelmonte.online` está apuntando a
+un nombre que hoy el DNS global declara inexistente. Antes de montar nada en
+Vercel hay que saber si la renovación está vencida o si se movieron los
+nameservers sin dejar delegación.
+
+Nada de esto lo toqué: DNS y pagos de dominio son escritura en infraestructura
+ajena.
 
 ---
 
 ## Orden para salir
 
-1. Conectar el proyecto de Vercel al repositorio cuyo `main` sí compila y ya
-   está verificado, y hacer un deploy manual desde `d215ccb`. Sin esto, todo lo
-   demás se comprueba contra un build viejo.
+1. Decidir qué rama es la real, porque hoy hay dos y Vercel lee la que pierde.
+   Las opciones, con su costo:
+   - **Remontar el proyecto a `OsoPanda1/…`** (cambio de vínculo en Vercel). El
+     build pasa en cuanto se monte: `d215ccb` ya compila verificado con pnpm.
+     v0 deja de poder pisar la rama de producción.
+   - **Merge de los 10 de OsoPanda a `AnubisVillasenor1/main`** sin tocar el
+     vínculo. Menos pasos de plataforma, pero deja las dos cuentas escribiendo
+     la misma rama: el siguiente push de v0 puede deshacer la marca o volver a
+     romper el build, y hay que resolver 3 commits ajenos en el camino.
+   Cualquiera de las dos hay que hacerla antes de mirar lo demás: hoy cualquier
+   comprobación contra producción se hace sobre `fde148c`, un build de hace dos
+   días. Lo que sí se puede sin tocar nada es un deploy manual desde `d215ccb`
+   para ver el sitio entero funcionando en una URL de preview.
 2. Añadir `NEXT_PUBLIC_APP_URL`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`,
    `SUPABASE_SERVICE_ROLE_KEY`, `GENERATOR_CALLBACK_SECRET` y `API_KEY` al
    proyecto, y volver a desplegar para que las variables de `NEXT_PUBLIC_*`
@@ -135,5 +216,8 @@ conectado al proyecto de Vercel, o está conectado a uno que ya no existe.
 4. Montar el endpoint de webhook de Stripe contra el dominio real y probar un
    cobro de test de punta a punta: pago → webhook → `entitlements` → canción
    diaria disponible.
-5. Conectar `visitaraldelmonte.online` al proyecto y, después, verificar
+5. Antes de montar el dominio, resolver el registro: `visitaraldelmonte.online`
+   está NXDOMAIN, así que no hay nada que conectar hasta que el nombre vuelva a
+   tener nameservers (renovación o delegación en el registrador — escritura en
+   infraestructura ajena, no la hago). Después conectar al proyecto y verificar
    `/robots.txt` y `/sitemap.xml` con el dominio puesto.
