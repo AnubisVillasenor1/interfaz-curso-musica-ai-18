@@ -5,7 +5,6 @@ import { ArrowLeft } from 'lucide-react'
 
 import { LessonView, type LessonNavItem } from '@/components/course/lesson-view'
 import { COURSE_LESSONS, COURSE_MODULES, lessonById, type CourseModule } from '@/lib/course'
-import { cn } from '@/lib/utils'
 
 type Props = { params: Promise<{ modulo: string; leccion: string }> }
 
@@ -62,31 +61,29 @@ export default async function CursoLeccionPage({ params }: Props) {
   const position = ordered.findIndex((item) => item.id === lesson.id)
 
   return (
-    <main className="min-h-screen bg-[#07121f] text-[#edfaff] selection:bg-[#75e9f2]/30">
-      <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_75%_5%,rgba(88,213,230,.14),transparent_30%),radial-gradient(circle_at_15%_80%,rgba(155,92,226,.12),transparent_32%)]" />
+    <main
+      className="pg-shell relative min-h-screen overflow-x-clip"
+      style={{ background: 'var(--pg-bg)', color: 'var(--pg-ink)' }}
+    >
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-0 -z-10"
+        style={{
+          background:
+            'radial-gradient(circle at 76% 2%, rgba(117,233,242,.13), transparent 33%), radial-gradient(circle at 14% 86%, rgba(192,158,255,.11), transparent 35%)',
+        }}
+      />
 
-      <header className="relative z-20 mx-auto flex max-w-4xl items-center justify-between gap-4 px-5 py-5 lg:px-8">
-        <Link
-          href={`/curso/${module.id}`}
-          className={cn(
-            'flex items-center gap-2 text-xs text-[#a9c0ca] hover:text-[#edfaff]',
-            'outline-none focus-visible:ring-2 focus-visible:ring-[#75e9f2] focus-visible:ring-offset-2 focus-visible:ring-offset-[#07121f]',
-          )}
-        >
-          <ArrowLeft size={15} aria-hidden="true" /> {module.title}
+      <header className="mx-auto flex w-full max-w-4xl items-center justify-between gap-4 px-5 py-5 lg:px-8">
+        <Link href={`/curso/${module.id}`} className="pg-navlink inline-flex items-center gap-2">
+          <ArrowLeft size={14} aria-hidden="true" /> {module.title}
         </Link>
-        <Link
-          href="/curso"
-          className={cn(
-            'text-[10px] uppercase tracking-[.24em] text-[#9fb8c7] hover:text-[#edfaff]',
-            'outline-none focus-visible:ring-2 focus-visible:ring-[#75e9f2] focus-visible:ring-offset-2 focus-visible:ring-offset-[#07121f]',
-          )}
-        >
+        <Link href="/curso" className="pg-navlink">
           Programa
         </Link>
       </header>
 
-      <div className="relative z-10 mx-auto max-w-4xl px-5 pb-20 pt-4 lg:px-8">
+      <div className="mx-auto w-full max-w-4xl px-5 pb-20 pt-4 lg:px-8">
         <LessonView
           lesson={lesson}
           courseModule={module}
@@ -95,8 +92,11 @@ export default async function CursoLeccionPage({ params }: Props) {
         />
       </div>
 
-      <footer className="relative z-10 border-t border-white/10 px-5 py-8 text-center text-xs text-[#78919d]">
-        Play and Go by TAMV ONLINE <span className="mx-2 text-[#75e9f2]">•</span> Orgullosamente Realmontenses
+      <footer className="mx-auto w-full max-w-4xl px-5 pb-14 lg:px-8">
+        <div className="pg-rule" />
+        <p className="pg-note mt-6 text-center">
+          Play and Go by TAMV ONLINE <span aria-hidden>·</span> Orgullosamente Realmontenses
+        </p>
       </footer>
     </main>
   )

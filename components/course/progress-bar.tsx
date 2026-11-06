@@ -163,10 +163,10 @@ export function ProgressBar({
   const percent = Math.min(100, Math.max(0, state.percent || Math.round((state.done / total) * 100)))
 
   return (
-    <div className={cn('rounded-2xl border border-white/10 bg-white/[.035] p-4 sm:p-5', className)}>
+    <div className={cn('pg-card p-5 sm:p-6', className)}>
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <p className="text-[10px] font-semibold uppercase tracking-[.24em] text-[#75e9f2]">{label}</p>
-        <p className="text-xs text-[#a9c0ca]">
+        <p className="pg-eyebrow">{label}</p>
+        <p className="font-mono" style={{ fontSize: 'var(--pg-step--1)', color: 'var(--pg-text)' }}>
           {state.signedIn
             ? `${state.done} de ${total} lecciones · ${percent}%`
             : `0 de ${total} lecciones · 0%`}
@@ -180,20 +180,21 @@ export function ProgressBar({
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuetext={`${state.done} de ${total} lecciones completadas`}
-        className="mt-3 h-2 w-full overflow-hidden rounded-full bg-white/10"
+        className="pg-meter mt-4"
       >
-        <div
-          className="h-full rounded-full bg-gradient-to-r from-[#75e9f2] to-[#c09eff] transition-[width] duration-500"
-          style={{ width: `${percent}%` }}
-        />
+        <div className="pg-meter-fill" style={{ width: `${percent}%` }} />
       </div>
 
-      {state.error && <p className="mt-3 text-xs text-[#ffcf72]">{state.error}</p>}
+      {state.error && (
+        <p role="alert" className="pg-note mt-3" style={{ color: 'var(--pg-amber)' }}>
+          {state.error}
+        </p>
+      )}
 
       {!state.signedIn && !state.loading && signInHint && (
-        <p className="mt-3 text-xs leading-5 text-[#8fa9b5]">
+        <p className="pg-note mt-3">
           Sin sesión no hay avance guardado.{' '}
-          <Link href="/auth" className={cn('font-medium text-[#75e9f2] underline underline-offset-4 hover:text-[#a0f4f9]', focusRing)}>
+          <Link href="/auth" className="pg-navlink underline underline-offset-4">
             Inicia sesión
           </Link>{' '}
           para marcar las lecciones que termines.
@@ -218,37 +219,27 @@ export function BadgeGrid({ badges, heading = 'Insignias' }: { badges?: string[]
       {COURSE_BADGES.map((badge) => {
         const isEarned = earned.has(badge.code)
         return (
-          <li
-            key={badge.code}
-            className={cn(
-              'rounded-2xl border p-4',
-              isEarned ? 'border-[#ffcf72]/40 bg-[#ffcf72]/[.07]' : 'border-white/10 bg-white/[.03]',
-            )}
-          >
-            <div className="flex items-center gap-2">
-              <span
-                className={cn(
-                  'flex size-9 shrink-0 items-center justify-center rounded-xl',
-                  isEarned ? 'bg-[#ffcf72]/20 text-[#ffcf72]' : 'bg-white/10 text-white/35',
-                )}
-                aria-hidden="true"
-              >
+          <li key={badge.code} className="pg-card pg-card-hover flex flex-col p-4">
+            <div className="flex items-center gap-3">
+              <span className="pg-mark" data-state={isEarned ? 'done' : undefined} aria-hidden="true">
                 <Trophy size={17} />
               </span>
-              <p className="text-sm font-medium">{badge.name}</p>
+              <p className="text-[15px] font-medium leading-snug">{badge.name}</p>
             </div>
-            <p className="mt-3 text-xs leading-5 text-[#8fa9b5]">{badge.requirement}</p>
+            <p className="pg-note mt-3">{badge.requirement}</p>
             {/* `primera_cancion` no se gana leyendo: se gana marcando una canción lista en el estudio. */}
             {badge.code === 'primera_cancion' && (
-              <Link
-                href="/studio"
-                className={cn('mt-2 inline-block text-[11px] font-medium text-[#8cecf3] underline underline-offset-4 hover:text-[#a0f4f9]', focusRing)}>
+              <Link href="/studio" className="pg-navlink mt-2 self-start underline underline-offset-4">
                 Ir al estudio
               </Link>
             )}
-            <p className={cn('mt-3 text-[10px] font-semibold uppercase tracking-[.2em]', isEarned ? 'text-[#ffcf72]' : 'text-[#5f7a88]')}>
-              {isEarned ? 'Ganada' : 'Por ganar'}
-            </p>
+            {isEarned ? (
+              <span className="pg-chip mt-3 self-start" data-tone="amber">
+                Ganada
+              </span>
+            ) : (
+              <p className="pg-note mt-3">Por ganar</p>
+            )}
           </li>
         )
       })}

@@ -1005,6 +1005,9 @@ html[data-theme='dark'] {
     --pg-step-0: 14px;
     --pg-step-1: 17px;
     --pg-step-2: 22px;
+    /* Paso de lectura: va entre el 0 y el 1 porque los párrafos de una lección
+       son largos y a 14 px se leen forzados. Es el único cuerpo de prosa. */
+    --pg-step-read: 0.9375rem;
     --pg-step-3: clamp(2rem, 1.3rem + 2.6vw, 3.1rem);
     --pg-step-4: clamp(2.9rem, 1.6rem + 5.4vw, 5.2rem);
     color: var(--pg-ink);
@@ -1053,6 +1056,10 @@ html[data-theme='dark'] {
     background: currentColor;
     opacity: 0.55;
   }
+  /* El tono distingue qué clase de cosa encabeza la línea —módulo, sesión,
+     insignia— sin cambiar la regla de 18 px que la ancla. */
+  .pg-eyebrow[data-tone='magenta'] { color: var(--pg-magenta); }
+  .pg-eyebrow[data-tone='violet'] { color: var(--pg-violet); }
 
   .pg-title {
     margin-top: 0.85rem;
@@ -1189,6 +1196,92 @@ html[data-theme='dark'] {
     color: var(--pg-muted);
   }
 
+  /* Marca de índice al frente de una fila de programa: el número de módulo o de
+     sesión, o la palomita cuando está terminada. El estado vive aquí y en el
+     chip, no en el fondo de la tarjeta: tres fondos distintos para tres
+     estados hacían que la rejilla pareciera una hoja de cálculo. */
+  .pg-mark {
+    display: flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 0.9rem;
+    border: 1px solid var(--pg-hairline);
+    font-family: var(--font-mono);
+    font-size: var(--pg-step-0);
+    color: var(--pg-violet);
+    background: rgba(192, 158, 255, 0.1);
+    transition: border-color 0.45s var(--pg-rise), background 0.45s var(--pg-rise), color 0.45s var(--pg-rise);
+  }
+  .pg-mark[data-state='part'] {
+    color: var(--pg-cyan);
+    border-color: rgba(117, 233, 242, 0.36);
+    background: rgba(117, 233, 242, 0.1);
+  }
+  .pg-mark[data-state='done'] {
+    color: #a9e6cc;
+    border-color: rgba(131, 215, 180, 0.34);
+    background: rgba(131, 215, 180, 0.12);
+  }
+
+  /* Nota de entregable: hairline sólo al lado izquierdo, como una cita. */
+  .pg-callout {
+    border-left: 1px solid rgba(255, 207, 114, 0.34);
+    border-radius: 0 0.9rem 0.9rem 0;
+    padding: 0.7rem 0.9rem;
+    background: rgba(255, 207, 114, 0.05);
+    font-size: var(--pg-step--1);
+    line-height: 1.6;
+    color: #d8c99d;
+  }
+  .pg-callout b { color: var(--pg-amber); font-weight: 600; }
+
+  /* Medidor de avance. */
+  .pg-meter {
+    height: 8px;
+    width: 100%;
+    overflow: hidden;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+  }
+  .pg-meter-fill {
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--pg-cyan), var(--pg-violet));
+    transition: width 0.6s var(--pg-rise);
+  }
+
+  /* Metadatos de una fila del programa: sesiones, minutos, avance. */
+  .pg-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem 1rem;
+    font-family: var(--font-mono);
+    font-size: var(--pg-step--2);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--pg-muted);
+  }
+  .pg-meta [data-state='part'] { color: var(--pg-cyan-soft); }
+
+  /* La flecha de las filas enlazadas avisa del destino con 2 px: el hairline
+     del hover ya dice que la tarjeta está viva. */
+  .pg-row-arrow {
+    flex: none;
+    align-self: flex-start;
+    margin-top: 0.25rem;
+    color: var(--pg-muted);
+    transition: color 0.4s ease, transform 0.4s var(--pg-rise);
+  }
+  .pg-card-hover:hover .pg-row-arrow,
+  .pg-card-hover:focus-visible .pg-row-arrow {
+    color: var(--pg-cyan);
+    transform: translateX(3px);
+  }
+
   .pg-chip {
     display: inline-flex;
     align-items: center;
@@ -1206,6 +1299,311 @@ html[data-theme='dark'] {
   .pg-chip[data-tone='violet'] { color: #d9c9ff; border-color: rgba(192, 158, 255, 0.28); background: rgba(192, 158, 255, 0.08); }
   .pg-chip[data-tone='amber'] { color: #f0dcae; border-color: rgba(255, 207, 114, 0.26); background: rgba(255, 207, 114, 0.07); }
   .pg-chip[data-tone='mint'] { color: #a9e6cc; border-color: rgba(131, 215, 180, 0.28); background: rgba(131, 215, 180, 0.08); }
+
+  /* ==================================================================
+     LECCIÓN DEL CURSO
+     ------------------------------------------------------------------
+     Es la página más leída del producto, así que el sistema aquí sólo
+     sirve para jerarquía: tres alturas de texto (cuerpo, subtítulo de
+     bloque, título de sección) y un contenedor de lectura que pesa
+     menos que el contenido. Los siete paneles de vidrio apilados que
+     tenía antes competían con los párrafos por la atención.
+     ================================================================== */
+
+  /* Contenedor de sección de lectura: el hairline de .pg-card sin el
+     degradado ni la sombra proyectada. */
+  .pg-panel {
+    border: 1px solid var(--pg-hairline);
+    border-radius: 1.5rem;
+    background: rgba(255, 255, 255, 0.025);
+  }
+
+  /* Bloque interior dentro de un panel: fondo del lienzo, no superficie. Dos
+     .pg-card una dentro de otra dan doble borde iluminado y doble sombra. */
+  .pg-inset {
+    border: 1px solid var(--pg-hairline);
+    border-radius: 1rem;
+    background: rgba(2, 8, 14, 0.34);
+    padding: 1rem 1.1rem;
+  }
+
+  .pg-prose {
+    max-width: 68ch;
+    font-size: var(--pg-step-read);
+    line-height: 1.85;
+    color: var(--pg-text);
+    text-wrap: pretty;
+  }
+
+  .pg-section-title {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: var(--pg-step-2);
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: -0.03em;
+    color: var(--pg-ink);
+  }
+  .pg-section-title svg { flex: none; }
+
+  .pg-block-title {
+    max-width: 68ch;
+    font-size: var(--pg-step-1);
+    font-weight: 600;
+    line-height: 1.45;
+    letter-spacing: -0.02em;
+    color: var(--pg-ink);
+  }
+
+  /* Idea central de la lección: lo único que se lee en cuerpo grande. */
+  .pg-lead {
+    max-width: 62ch;
+    font-size: var(--pg-step-1);
+    line-height: 1.6;
+    letter-spacing: -0.015em;
+    color: var(--pg-ink);
+    text-wrap: pretty;
+  }
+
+  /* Etiqueta corta de apoyo (checklist, variables, error/corrección). Va en
+     monoespaciada porque acompaña a datos, no a prosa. */
+  .pg-label {
+    font-family: var(--font-mono);
+    font-size: var(--pg-step--2);
+    font-weight: 600;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--pg-magenta);
+  }
+  .pg-label[data-tone='cyan'] { color: var(--pg-cyan); }
+  .pg-label[data-tone='violet'] { color: var(--pg-violet); }
+  .pg-label[data-tone='mint'] { color: #83d7b4; }
+  .pg-label[data-tone='amber'] { color: var(--pg-amber); }
+  .pg-label[data-tone='muted'] { color: var(--pg-muted); }
+
+  /* Bloque de prompt: se copia literal, así que conserva espacios y saltos
+     exactamente como salen de lib/course.ts. */
+  .pg-code {
+    border-radius: 0.9rem;
+    border: 1px solid var(--pg-hairline);
+    background: rgba(2, 8, 14, 0.5);
+    padding: 0.95rem 1.05rem;
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    line-height: 1.75;
+    color: #c5d8df;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  /* Variable de prompt. No es .pg-chip: el chip sube a mayúsculas y convertiría
+     {bpm} en {BPM}, corrompiendo justo lo que el alumno copia. */
+  .pg-var {
+    border-radius: 0.4rem;
+    padding: 0.1rem 0.34rem;
+    background: rgba(117, 233, 242, 0.13);
+    box-shadow: inset 0 0 0 1px rgba(117, 233, 242, 0.28);
+    color: var(--pg-cyan-soft);
+  }
+  .pg-var-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.32rem 0.62rem;
+    border-radius: 0.55rem;
+    font-family: var(--font-mono);
+    font-size: var(--pg-step--1);
+    line-height: 1.35;
+  }
+  /* Tinte violeta para el término de búsqueda de una escucha: es un literal que
+     se escribe en otro buscador, no una variable que se rellena en el prompt. */
+  .pg-var[data-tone='violet'] {
+    background: rgba(192, 158, 255, 0.12);
+    box-shadow: inset 0 0 0 1px rgba(192, 158, 255, 0.28);
+    color: #d4c7ff;
+  }
+
+  /* Enlace corto de acción (buscar, abrir, descargar). */
+  .pg-minilink {
+    font-size: var(--pg-step--1);
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    color: var(--pg-cyan-soft);
+    text-decoration: underline;
+    text-underline-offset: 4px;
+    transition: color 0.3s ease;
+  }
+  .pg-minilink:hover { color: var(--pg-ink); }
+
+  /* Paso numerado del ejercicio. */
+  .pg-num {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 0.6rem;
+    background: rgba(117, 233, 242, 0.13);
+    font-family: var(--font-mono);
+    font-size: var(--pg-step--1);
+    font-weight: 600;
+    color: var(--pg-cyan-soft);
+  }
+
+  /* Ejemplo: cita con llave a la izquierda, sin caja alrededor. */
+  .pg-quote {
+    max-width: 68ch;
+    border-left: 1px solid rgba(255, 158, 234, 0.42);
+    padding-left: 1rem;
+    font-size: var(--pg-step-read);
+    line-height: 1.8;
+    color: var(--pg-text);
+  }
+
+  /* El hilo que separa el error de su corrección sólo hace falta cuando son
+     dos columnas; en móvil ya los separa el salto de línea. */
+  @media (min-width: 768px) {
+    .pg-pitfall-fix {
+      border-left: 1px solid var(--pg-hairline);
+      padding-left: 1rem;
+    }
+  }
+
+  /* Nota con llave de color: el tono cambia sólo el tinte, nunca la geometría. */
+  .pg-callout[data-tone='violet'] {
+    border-color: rgba(192, 158, 255, 0.36);
+    background: rgba(192, 158, 255, 0.06);
+    color: #c5d8df;
+  }
+  .pg-callout[data-tone='violet'] b { color: var(--pg-violet); }
+
+  /* El objetivo de una sesión es contenido, no letra pequeña: la nota de una
+     tarjeta va a --pg-step--1, la del hero sube al cuerpo de lectura. Sólo
+     cambia el tamaño; el tinte del tono sigue mandando sobre el texto. */
+  .pg-callout[data-size='lead'] {
+    font-size: var(--pg-step-0);
+    line-height: 1.75;
+  }
+
+  /* Tarjeta de prompt: cuerpo de .pg-card con el tinte del objeto. */
+  .pg-card-prompt {
+    border-color: rgba(192, 158, 255, 0.26);
+    background:
+      linear-gradient(158deg, rgba(192, 158, 255, 0.085), rgba(255, 255, 255, 0.02) 50%, rgba(192, 158, 255, 0.04)),
+      var(--pg-surface);
+  }
+
+  /* Casilla de checklist. El estado es aria-pressed y el CSS lo lee: la
+     semántica y la pintura no pueden contradecirse, y el JSX deja de llevar
+     un condicional de clases por cada botón. */
+  .pg-check {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    width: 100%;
+    border: 1px solid var(--pg-hairline);
+    border-radius: 0.9rem;
+    padding: 0.7rem 0.9rem;
+    text-align: left;
+    font-size: var(--pg-step-0);
+    line-height: 1.7;
+    color: #a9c0ca;
+    background: rgba(255, 255, 255, 0.025);
+    transition: border-color 0.35s var(--pg-rise), background 0.35s var(--pg-rise), color 0.35s var(--pg-rise);
+  }
+  .pg-check:hover { border-color: var(--pg-keyline); }
+  .pg-check[aria-pressed='true'] {
+    border-color: rgba(131, 215, 180, 0.38);
+    background: rgba(131, 215, 180, 0.07);
+    color: #c5d8df;
+  }
+  .pg-check-box {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.15rem;
+    height: 1.15rem;
+    margin-top: 0.18rem;
+    border-radius: 0.4rem;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    color: transparent;
+    transition: border-color 0.35s var(--pg-rise), background 0.35s var(--pg-rise), color 0.35s var(--pg-rise);
+  }
+  .pg-check[aria-pressed='true'] .pg-check-box {
+    border-color: rgba(131, 215, 180, 0.6);
+    background: rgba(131, 215, 180, 0.18);
+    color: #83d7b4;
+  }
+
+  /* Confirmación de estado (lección registrada, insignia nueva). A diferencia
+     del chip, respeta las mayúsculas escritas por quien redactó el texto. */
+  .pg-flag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    border: 1px solid rgba(131, 215, 180, 0.4);
+    border-radius: 999px;
+    padding: 0.5rem 0.95rem;
+    font-size: var(--pg-step--1);
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: #a9e6cc;
+    background: rgba(131, 215, 180, 0.1);
+  }
+  .pg-flag[data-tone='amber'] {
+    border-color: rgba(255, 207, 114, 0.4);
+    background: rgba(255, 207, 114, 0.1);
+    color: #f0dcae;
+  }
+  .pg-flag svg { flex: none; }
+
+  /* Línea de estado bajo aria-live: color según el resultado, nunca los dos. */
+  .pg-status {
+    max-width: 68ch;
+    font-size: var(--pg-step-0);
+    line-height: 1.7;
+    color: var(--pg-cyan-soft);
+  }
+  .pg-status[data-tone='error'] { color: var(--pg-amber); }
+
+  /* Variante compacta del botón, para acciones dentro de una tarjeta. */
+  .pg-btn-sm {
+    padding: 0.55rem 1.05rem;
+    font-size: var(--pg-step--1);
+  }
+
+  /* Enlaces dentro de una línea de metadatos (miga de la lección). */
+  .pg-meta a { color: var(--pg-cyan-soft); }
+  .pg-meta a:hover { color: var(--pg-ink); }
+  .pg-meta [aria-current='page'] { color: var(--pg-text); }
+
+  /* Título de un objeto pequeño dentro de una tarjeta: el nombre de un prompt,
+     el de una referencia de escucha. Menos peso que .pg-block-title. */
+  .pg-item-title {
+    font-size: var(--pg-step-0);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--pg-ink);
+  }
+
+  /* Número de técnica: monoespaciada alineada con el cuerpo, sin caja. */
+  .pg-num-inline {
+    font-family: var(--font-mono);
+    font-size: var(--pg-step--1);
+    font-weight: 600;
+    color: var(--pg-cyan);
+  }
+
+  /* Acento de color para los iconos que jalonan cada sección. Existe como clase
+     porque `text-[var(--pg-cyan)]` es ambiguo para Tailwind (¿tamaño o color?)
+     y un hex suelto en el JSX es justo lo que este sistema vino a quitar. */
+  .pg-accent-cyan { color: var(--pg-cyan); }
+  .pg-accent-violet { color: var(--pg-violet); }
+  .pg-accent-magenta { color: var(--pg-magenta); }
+  .pg-accent-amber { color: var(--pg-amber); }
+  .pg-accent-mint { color: #83d7b4; }
 
   /* Botones: el primario lleva el barrido de luz lento (el mismo gesto que el
      CTA de la intro); el secundario no compite, sólo se abre el hairline. */
