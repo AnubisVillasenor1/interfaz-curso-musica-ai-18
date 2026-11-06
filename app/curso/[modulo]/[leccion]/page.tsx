@@ -65,14 +65,7 @@ export default async function CursoLeccionPage({ params }: Props) {
       className="pg-shell relative min-h-screen overflow-x-clip"
       style={{ background: 'var(--pg-bg)' }}
     >
-      <div
-        aria-hidden
-        className="pointer-events-none fixed inset-0 -z-10"
-        style={{
-          background:
-            'radial-gradient(circle at 76% 2%, rgba(117,233,242,.13), transparent 33%), radial-gradient(circle at 14% 86%, rgba(192,158,255,.11), transparent 35%)',
-        }}
-      />
+      <div aria-hidden className="pg-glow" />
 
       <header className="mx-auto flex w-full max-w-4xl items-center justify-between gap-4 px-5 py-5 lg:px-8">
         <Link href={`/curso/${module.id}`} className="pg-navlink inline-flex items-center gap-2">

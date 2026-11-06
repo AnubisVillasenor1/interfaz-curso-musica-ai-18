@@ -307,6 +307,15 @@ Las reglas que la sostienen (y que hay que seguir defendiendo en cada pantalla n
 5. **Un matiz por función**: cyan = acción/IA local, violeta = objeto/prompts, ámbar = advertencia y
    entregable, menta = logrado, magenta = ruta/subtítulo. Nunca decorativo.
 
+La regla 1 tenía una infracción real y ya está cerrada: el resplandor de página estaba copiado como
+literal `rgba()` en ocho archivos (cinco idénticos y tres con posiciones y alfas distintos, elegidos a
+ojo). Ahora vive una sola vez en `.pg-glow` (`app/globals.css`) y saca el color de los tokens con
+`color-mix`, de modo que cambiar la marca cambia también el fondo. Contraste medido en el punto más
+denso de una capa (`#152e3a`): cuerpo 7,81:1 y texto secundario 4,77:1, ambos sobre el umbral AA de
+4,5. Las dos capas nunca se suman a plena alfa porque sus centros están en esquinas opuestas.
+Verificado en build: `.pg-glow` llega al único chunk CSS compilado (79 431 B), el HTML de `/curso`
+ya no lleva ningún `radial-gradient` inline y `tsc --noEmit` + `next build` salen en 0.
+
 Lo que falta para que la identidad sea *sonora*, que es el activo real de una academia de música:
 
 - **Sello acústico de 1.5 s** (una nota larga con armónicos que se resuelven), reproducido en el

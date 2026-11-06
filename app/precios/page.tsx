@@ -22,14 +22,7 @@ export default function PreciosPage() {
       className="pg-shell relative min-h-screen overflow-x-clip"
       style={{ background: 'var(--pg-bg)' }}
     >
-      <div
-        aria-hidden
-        className="pointer-events-none fixed inset-0 -z-10"
-        style={{
-          background:
-            'radial-gradient(circle at 78% 4%, rgba(117,233,242,.13), transparent 34%), radial-gradient(circle at 12% 84%, rgba(192,158,255,.11), transparent 36%)',
-        }}
-      />
+      <div aria-hidden className="pg-glow" />
 
       <div className="pg-container py-14 sm:py-20">
         <header>

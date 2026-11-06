@@ -47,14 +47,7 @@ export default async function CursoModuloPage({ params }: Props) {
       className="pg-shell relative min-h-screen overflow-x-clip"
       style={{ background: 'var(--pg-bg)' }}
     >
-      <div
-        aria-hidden
-        className="pointer-events-none fixed inset-0 -z-10"
-        style={{
-          background:
-            'radial-gradient(circle at 76% 2%, rgba(117,233,242,.13), transparent 33%), radial-gradient(circle at 14% 86%, rgba(192,158,255,.11), transparent 35%)',
-        }}
-      />
+      <div aria-hidden className="pg-glow" />
 
       <header className="pg-container flex items-center justify-between gap-4 py-5">
         <Link href="/curso" className="pg-navlink inline-flex items-center gap-2">

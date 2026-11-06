@@ -15,7 +15,7 @@ const pillars = [
 
 export default function InformacionPage() {
   return <main className="pg-shell relative min-h-screen overflow-x-clip" style={{ background: 'var(--pg-bg)' }}>
-    <div aria-hidden className="pointer-events-none fixed inset-0 -z-10" style={{ background: 'radial-gradient(circle at 8% 12%, rgba(117,233,242,.15), transparent 40%), radial-gradient(circle at 96% 42%, rgba(192,158,255,.15), transparent 42%)' }} />
+    <div aria-hidden className="pg-glow" />
     <div className="pg-container relative z-10 py-8 lg:py-12">
       <header className="flex items-center justify-between"><Link href="/" className="pg-navlink">← Volver al inicio</Link><Link href="/precios" className="pg-btn pg-btn-primary pg-btn-sm">Ver membresías</Link></header>
       <section className="pt-20 lg:pt-28"><p className="pg-eyebrow">TAMV ONLINE · visión</p><h1 className="pg-title pg-title-display mt-5 max-w-4xl">La música del futuro necesita <span className="pg-accent-cyan">mejores decisiones.</span></h1><p className="pg-lede mt-8 max-w-2xl">Play and Go une una academia de criterio musical con un estudio de creación asistida. No es un generador aislado: es un sistema para imaginar, dirigir, iterar y publicar.</p><div className="pg-rule mt-12" /></section>

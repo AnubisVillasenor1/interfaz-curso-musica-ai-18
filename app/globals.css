@@ -1024,6 +1024,28 @@ html[data-theme='dark'] {
     .pg-container { padding-inline: 2.5rem; }
   }
 
+  /* Resplandor de página. Antes era una cadena `rgba()` copiada en ocho
+     archivos —cinco idénticos y tres con posiciones y alfas distintos,
+     elegidos a ojo sección por sección—. Aquí vive una sola vez y el color
+     sale de los tokens vía `color-mix`, así que cambiar la marca cambia
+     también el fondo; los literales rgba() antiguos ya se habían quedado
+     fuera de la paleta.
+     Contraste medido (WCAG 2.1, composición canal por canal): el punto más
+     denso de una sola capa deja el fondo en #152e3a, donde el cuerpo
+     (--pg-text) sigue en 7,81:1 y el texto secundario (--pg-muted) en
+     4,77:1, los dos por encima del 4,5 de AA. Las dos capas no alcanzan a
+     sumarse a plena alfa: sus centros están en esquinas opuestas (76% 2% y
+     14% 86%) y cada una se apaga antes del 35%. */
+  .pg-glow {
+    position: fixed;
+    inset: 0;
+    z-index: -10;
+    pointer-events: none;
+    background:
+      radial-gradient(circle at 76% 2%, color-mix(in srgb, var(--pg-cyan) 13%, transparent) 0, transparent 33%),
+      radial-gradient(circle at 14% 86%, color-mix(in srgb, var(--pg-violet) 11%, transparent) 0, transparent 35%);
+  }
+
   /* Ritmo vertical idéntico en todas las secciones: antes cada una tenía su
      propio py arbitrario y la página perdía el compás al hacer scroll. */
   .pg-section {

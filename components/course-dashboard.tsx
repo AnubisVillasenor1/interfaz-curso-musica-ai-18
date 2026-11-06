@@ -222,16 +222,11 @@ export function CourseDashboard() {
   ] as const
 
   return <main className="pg-shell relative min-h-screen overflow-x-clip" style={{ background: 'var(--pg-bg)' }}>
-    {/* Capa ambiental dentro del sistema: cambiar la paleta cambia también el
-        fondo. Antes usaba `-z-0`, que ni siquiera es una clase válida. */}
-    <div
-      aria-hidden="true"
-      className="pointer-events-none fixed inset-0 -z-10"
-      style={{
-        background:
-          'radial-gradient(circle at 76% 4%, rgba(117,233,242,.17), transparent 31%), radial-gradient(circle at 14% 82%, rgba(192,158,255,.15), transparent 33%)',
-      }}
-    />
+    {/* Capa ambiental del sistema editorial: la define una vez `.pg-glow` en
+        `app/globals.css`, así que cambiar la paleta cambia también el fondo.
+        Antes estaba copiada aquí con sus propios rgba() y usaba `-z-0`, que ni
+        siquiera es una clase válida. */}
+    <div aria-hidden="true" className="pg-glow" />
 
     <header className="sticky top-0 z-30 backdrop-blur-xl" style={{ borderBottom: '1px solid var(--pg-hairline)', background: 'rgba(7,18,31,.78)' }}>
       <div className="pg-container flex items-center justify-between py-4">
