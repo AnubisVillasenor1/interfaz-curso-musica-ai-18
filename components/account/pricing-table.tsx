@@ -1,9 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { Check, Sparkles } from 'lucide-react'
+import { ArrowRight, Check, Sparkles } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
+import { Reveal } from '@/components/reveal'
 import {
   FREE_TIER,
   PRODUCTS,
@@ -21,7 +21,117 @@ import { createClient } from '@/lib/supabase/client'
  * número escrito a mano aquí: antes la landing decía $490, el chat $500 y la
  * pasarela cobraba 50000 centavos. Aquí lo que se anuncia es literalmente lo
  * que `/api/checkout` va a cobrar, porque ambos leen el mismo objeto.
+ *
+ * Las tarjetas van acompañadas de una comparativa en tabla real. Cuatro
+ * columnas paralelas obligan a memorizar la anterior para poder comparar, y
+ * comparar es justo lo que alguien hace cuando decide un precio. La tabla no
+ * inventa cifras: reconstruye las mismas columnas desde el catálogo, así que un
+ * cambio de precio se ve en los dos sitios o en ninguno.
  */
+
+type Column = {
+  id: string
+  name: string
+  price: string
+  charge: string
+  paid: number
+  local: number
+  duration: string
+}
+
+/**
+ * Nombre corto para el encabezado de la comparativa. Se deriva de
+ * `product.name` en lugar de escribir otro literal suelto: si el catálogo
+ * renombra un plan, la tabla se renombra con él.
+ */
+function shortName(name: string): string {
+  return name.replace(/^Play and Go — /, '').replace(/ \(mensual\)$/, '')
+}
+const COLUMNS: Column[] = [
+  {
+    id: 'free',
+    name: 'Gratuito',
+    price: formatPrice(0),
+    charge: 'Sin cobro',
+    paid: FREE_TIER.dailyLimit,
+    local: FREE_TIER.localDailyLimit,
+    duration: 'Permanente',
+  },
+  ...PRODUCT_IDS.map((id) => {
+    const product = PRODUCTS[id]
+    const isSub = product.mode === 'subscription'
+    return {
+      id,
+      name: shortName(product.name),
+      price: priceLabel(product),
+      charge: isSub ? 'Mensual' : 'Pago único',
+      paid: product.grant.dailyLimit,
+      local: product.grant.localDailyLimit,
+      duration:
+        product.grant.accessDays === null
+          ? isSub
+            ? 'Mientras pague'
+            : 'Sin vencimiento'
+          : `${product.grant.accessDays} días`,
+    }
+  }),
+]
+
+const NOTES = [
+  {
+    title: 'Dónde se cobra',
+    body: 'Stripe procesa el pago en pesos mexicanos. Play and Go no ve ni guarda tu tarjeta.',
+  },
+  {
+    title: 'Qué se entrega',
+    body: 'Al confirmarse el pago, el webhook escribe tu plan y tus cupos. Si la cuenta todavía no existe, el pago queda en cola y se activa al crearla con ese correo.',
+  },
+  {
+    title: 'Qué no puede pasar',
+    body: 'Una compra nueva nunca baja un plan ni un cupo ya pagado: se conserva el mayor de los dos, y el acceso permanente no se acorta por comprar una extensión.',
+  },
+]
+
+/** Las dos cifras que deciden un plan, en formato ficha técnica. */
+function QuotaStats({ paid, local }: { paid: number; local: number }) {
+  return (
+    <div className="mt-5 grid grid-cols-2 gap-4">
+      <div className="pg-metric">
+        <b>{paid}</b>
+        <span>canciones con voces al día</span>
+      </div>
+      <div className="pg-metric">
+        <b>{local}</b>
+        <span>motor local al día</span>
+      </div>
+    </div>
+  )
+}
+
+function FeatureList({ items }: { items: readonly string[] }) {
+  return (
+    <ul className="pg-list mt-5">
+      {items.map((feature) => (
+        <li key={feature}>
+          <Check size={14} aria-hidden style={{ color: 'var(--pg-cyan)' }} />
+          {feature}
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+function ComparisonRow({ label, values }: { label: string; values: string[] }) {
+  return (
+    <tr>
+      <th scope="row">{label}</th>
+      {values.map((value, index) => (
+        <td key={`${label}-${index}`}>{value}</td>
+      ))}
+    </tr>
+  )
+}
+
 export function PricingTable() {
   const [busyId, setBusyId] = useState<ProductId | null>(null)
   const [message, setMessage] = useState<string | null>(null)
@@ -74,96 +184,152 @@ export function PricingTable() {
   }
 
   return (
-    <section className="mx-auto w-full max-w-6xl">
-      <div className="grid gap-5 lg:grid-cols-4">
+    <div className="flex flex-col gap-12">
+      <div className="grid items-stretch gap-5 lg:grid-cols-4">
         {/* Plan gratuito: coincide con los defaults de la tabla entitlements. */}
-        <article className="flex flex-col rounded-3xl border border-white/10 bg-white/[.035] p-6">
-          <p className="text-[10px] uppercase tracking-[.2em] text-[#8cecf3]">Explora gratis</p>
-          <h2 className="mt-2 text-lg font-semibold">{FREE_TIER.plan === 'free' ? 'Plan gratuito' : FREE_TIER.plan}</h2>
-          <p className="mt-3 text-3xl font-semibold">{formatPrice(0)}</p>
-          <p className="mt-2 text-xs leading-5 text-[#8fa9b5]">
-            Conoce el motor local sin pagar. Sin composiciones con el proveedor de pago.
-          </p>
-          <ul className="mt-5 flex flex-col gap-2 text-xs text-[#b5cbd4]">
-            <li className="flex items-center gap-2">
-              <Check className="text-[#75e9f2]" size={15} />
-              {FREE_TIER.localDailyLimit} canciones locales al día
-            </li>
-            <li className="flex items-center gap-2">
-              <Check className="text-[#75e9f2]" size={15} />
-              {FREE_TIER.dailyLimit} canciones con proveedor de pago
-            </li>
-          </ul>
+        <Reveal as="article" className="pg-card pg-card-hover flex flex-col p-6">
+          <p className="pg-eyebrow">Explora gratis</p>
+          <h2 className="pg-title" style={{ fontSize: 'var(--pg-step-1)' }}>
+            Plan gratuito
+          </h2>
+          <p className="pg-price mt-4">{formatPrice(0)}</p>
+          <p className="pg-note mt-1">Sin cobro y sin tarjeta</p>
+          <QuotaStats paid={FREE_TIER.dailyLimit} local={FREE_TIER.localDailyLimit} />
+          <FeatureList items={FREE_TIER.features} />
           <div className="mt-auto pt-6">
-            <a
-              href="/studio"
-              className="flex h-11 items-center justify-center rounded-full border border-white/15 text-sm text-[#c4d8df] transition hover:bg-white/5 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-[#75e9f2]/50"
-            >
+            <a href="/studio" className="pg-btn pg-btn-ghost w-full">
               Probar el motor local
+              <ArrowRight size={15} aria-hidden />
             </a>
           </div>
-        </article>
+        </Reveal>
 
-        {PRODUCT_IDS.map((id) => {
+        {PRODUCT_IDS.map((id, index) => {
           const product = PRODUCTS[id]
           const isSub = product.mode === 'subscription'
+          const featured = id === 'play-and-go-course'
           return (
-            <article
+            <Reveal
               key={product.id}
-              className={`relative flex flex-col rounded-3xl border p-6 ${
-                id === 'play-and-go-course'
-                  ? 'border-[#75e9f2]/40 bg-[#75e9f2]/[.06]'
-                  : 'border-white/10 bg-white/[.035]'
-              }`}
+              as="article"
+              delay={90 * (index + 1)}
+              className={`pg-card pg-card-hover flex flex-col p-6${featured ? ' pg-card-featured' : ''}`}
             >
-              {id === 'play-and-go-course' && (
-                <span className="absolute -top-3 left-6 inline-flex items-center gap-1 rounded-full bg-[#75e9f2] px-3 py-1 text-[10px] font-semibold uppercase tracking-[.16em] text-[#06131e]">
-                  <Sparkles size={12} /> Recomendado
-                </span>
-              )}
-              <p className="text-[10px] uppercase tracking-[.2em] text-[#ff9eea]">
-                {isSub ? 'Mensual' : 'Pago único'}
+              <div className="flex items-start justify-between gap-3">
+                <p className="pg-eyebrow">{isSub ? 'Mensual' : 'Pago único'}</p>
+                {featured && (
+                  <span className="pg-chip whitespace-nowrap">
+                    <Sparkles size={11} aria-hidden />
+                    Recomendado
+                  </span>
+                )}
+              </div>
+              <h2 className="pg-title" style={{ fontSize: 'var(--pg-step-1)' }}>
+                {product.name}
+              </h2>
+              <p className="pg-price mt-4">{priceLabel(product)}</p>
+              <p className="pg-note mt-1">
+                {isSub ? 'Se cobra cada mes' : 'Se cobra una sola vez'} · pesos mexicanos
               </p>
-              <h2 className="mt-2 text-base font-semibold leading-tight">{product.name}</h2>
-              <p className="mt-3 text-3xl font-semibold tracking-tight">{priceLabel(product)}</p>
-              <p className="mt-2 min-h-10 text-xs leading-5 text-[#8fa9b5]">{product.description}</p>
-              <ul className="mt-5 flex flex-col gap-2 text-xs text-[#b5cbd4]">
-                <li className="flex items-center gap-2">
-                  <Check className="text-[#75e9f2]" size={15} />
-                  {product.grant.dailyLimit} canciones/día con proveedor de pago
-                </li>
-                <li className="flex items-center gap-2">
-                  <Check className="text-[#c09eff]" size={15} />
-                  {product.grant.localDailyLimit} canciones/día en motor local
-                </li>
-                <li className="flex items-center gap-2">
-                  <Check className="text-[#ffcf72]" size={15} />
-                  {product.grant.accessDays === null
-                    ? 'Acceso permanente mientras la suscripción aguante'
-                    : `Acceso por ${product.grant.accessDays} días`}
-                </li>
-              </ul>
+              <p className="pg-note mt-4">{product.description}</p>
+              <QuotaStats paid={product.grant.dailyLimit} local={product.grant.localDailyLimit} />
+              <FeatureList items={product.features} />
               <div className="mt-auto pt-6">
-                <Button
+                <button
+                  type="button"
                   onClick={() => checkout(product.id)}
                   disabled={busyId !== null}
                   aria-label={`Elegir ${product.name}`}
-                  className="h-11 w-full rounded-full bg-[#75e9f2] font-semibold text-[#06131e] hover:bg-[#a0f4f9] disabled:opacity-60"
+                  className="pg-btn pg-btn-primary w-full"
                 >
                   {busyId === product.id ? 'Preparando pago…' : isSub ? 'Suscribirme' : 'Inscribirme'}
-                </Button>
+                </button>
               </div>
-            </article>
+            </Reveal>
           )
         })}
       </div>
 
-      <p aria-live="polite" className="mt-6 text-center text-xs text-[#ffcf72]">
+      <p aria-live="polite" className="pg-note text-center" style={{ color: 'var(--pg-amber)' }}>
         {message}
       </p>
-      <p className="mt-4 text-center text-[10px] text-[#6f8995]">
-        Pagos procesados de forma segura por Stripe. Los precios están en pesos mexicanos.
-      </p>
-    </section>
+
+      <section aria-labelledby="comparativa-title">
+        <Reveal>
+          <h2 id="comparativa-title" className="pg-title" style={{ fontSize: 'var(--pg-step-2)' }}>
+            Los cuatro planes, línea por línea
+          </h2>
+          <p className="pg-lede">
+            Lo mismo que está arriba, puesto en filas para comparar sin memorizar la columna
+            anterior.
+          </p>
+          <div className="pg-card mt-6">
+            <div className="pg-scroll p-4 sm:p-6">
+              <table className="pg-table">
+                <caption className="sr-only">
+                  Comparación de planes: precio, modalidad de cobro, cupo diario con voces, cupo
+                  diario del motor local y duración del acceso.
+                </caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Plan</th>
+                    {COLUMNS.map((column) => (
+                      <th key={column.id} scope="col">
+                        {column.name}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  <ComparisonRow label="Precio" values={COLUMNS.map((column) => column.price)} />
+                  <ComparisonRow label="Cobro" values={COLUMNS.map((column) => column.charge)} />
+                  <ComparisonRow
+                    label="Canciones con voces / día"
+                    values={COLUMNS.map((column) => String(column.paid))}
+                  />
+                  <ComparisonRow
+                    label="Canciones en motor local / día"
+                    values={COLUMNS.map((column) => String(column.local))}
+                  />
+                  <ComparisonRow
+                    label="Duración del acceso"
+                    values={COLUMNS.map((column) => column.duration)}
+                  />
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <p className="pg-note mt-3 lg:hidden">
+            Desliza la tabla en horizontal para ver los cuatro planes.
+          </p>
+        </Reveal>
+      </section>
+
+      <section aria-labelledby="letra-chica-title">
+        <Reveal className="pg-card p-6 sm:p-7">
+          <p className="pg-eyebrow">Letra chica, en claro</p>
+          <h2 id="letra-chica-title" className="pg-title" style={{ fontSize: 'var(--pg-step-1)' }}>
+            Qué pasa después de darle al botón
+          </h2>
+          <div className="mt-6 grid gap-6 sm:grid-cols-3">
+            {NOTES.map((note) => (
+              <div key={note.title} className="flex flex-col gap-2">
+                <h3
+                  className="font-mono uppercase"
+                  style={{
+                    fontSize: 'var(--pg-step--2)',
+                    letterSpacing: '0.2em',
+                    color: 'var(--pg-cyan-soft)',
+                  }}
+                >
+                  {note.title}
+                </h3>
+                <p className="pg-note">{note.body}</p>
+              </div>
+            ))}
+          </div>
+        </Reveal>
+      </section>
+    </div>
   )
 }

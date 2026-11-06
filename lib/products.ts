@@ -40,6 +40,16 @@ export interface Product {
     /** Días de validez del acceso desde la entrega; null = mientras la suscripción aguante. */
     accessDays: number | null
   }
+  /**
+   * Lo que la tabla de precios anuncia como detalle.
+   *
+   * Es sólo texto: `/api/checkout` y el webhook miran `priceInCents`, `mode` y
+   * `grant`, nunca `features`. Vive aquí y no en el componente por la misma
+   * razón que el precio: si la lista de bondades estuviera en la UI, alguien
+   * podría prometer en pantalla algo que la entrega no concede. Cada línea está
+   * escrita contra `lib/fulfilment.ts` y `read_entitlement()`.
+   */
+  features: readonly string[]
 }
 
 export const PRODUCTS: Record<ProductId, Product> = {
@@ -50,6 +60,12 @@ export const PRODUCTS: Record<ProductId, Product> = {
     priceInCents: 50000,
     mode: 'payment',
     grant: { plan: 'enrolled', dailyLimit: 2, localDailyLimit: 20, accessDays: null },
+    features: [
+      'Curso completo: 5 módulos y 16 sesiones prácticas',
+      'Biblioteca de plantillas que abren directo en el estudio',
+      'Ejercicios de escucha, audio de referencia e insignias',
+      'Pagas una vez: el acceso no tiene fecha de vencimiento',
+    ],
   },
   'play-and-go-extension': {
     id: 'play-and-go-extension',
@@ -58,6 +74,12 @@ export const PRODUCTS: Record<ProductId, Product> = {
     priceInCents: 22900,
     mode: 'payment',
     grant: { plan: 'extension', dailyLimit: 10, localDailyLimit: 40, accessDays: 30 },
+    features: [
+      'Más canciones por día, sin volver a comprar el curso',
+      'Sólo suma: nunca baja un plan ni un cupo ya pagado',
+      'Dura 30 días contados desde la confirmación del pago',
+      'Pensado para el ciclo en que realmente compones seguido',
+    ],
   },
   'play-and-go-pro': {
     id: 'play-and-go-pro',
@@ -67,6 +89,12 @@ export const PRODUCTS: Record<ProductId, Product> = {
     mode: 'subscription',
     interval: 'month',
     grant: { plan: 'pro', dailyLimit: 20, localDailyLimit: 100, accessDays: null },
+    features: [
+      'El cupo diario más alto de la plataforma',
+      'Incluye el curso y la biblioteca completa de prompts',
+      'Se cobra cada mes hasta que lo des suscripciones',
+      'Al dejar de pagar, la cuenta vuelve al plan gratuito',
+    ],
   },
 }
 
@@ -121,4 +149,11 @@ export const FREE_TIER = {
   active: false,
   dailyLimit: 0,
   localDailyLimit: 10,
+  /** Mismo criterio que en `Product.features`: describe lo que el sistema hace hoy. */
+  features: [
+    'Motor local en el navegador: 10 canciones al día sin pagar',
+    'Composición con voces del proveedor: todavía no',
+    'Escuchas y descargas el WAV que genera tu máquina',
+    'Basta crear una cuenta: nunca pedimos tarjeta',
+  ],
 }

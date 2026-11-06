@@ -71,7 +71,7 @@ export async function grantProduct(
 ): Promise<DeliveryResult> {
   const { data: current, error: readError } = await admin
     .from('entitlements')
-    .select('plan, daily_limit, local_daily_limit, active, stripe_customer_id')
+    .select('plan, daily_limit, local_daily_limit, active, stripe_customer_id, access_expires_at')
     .eq('user_id', userId)
     .maybeSingle()
 
@@ -80,6 +80,22 @@ export async function grantProduct(
   const grant = product.grant
   const keepPlan =
     PLAN_RANK[current?.plan ?? 'free'] > PLAN_RANK[grant.plan] ? (current?.plan ?? 'enrolled') : grant.plan
+
+  /**
+   * Vencimiento: el acceso pagado nunca se acorta.
+   *
+   * Plan y cupo ya se protegían con `PLAN_RANK` y `Math.max`, pero
+   * `access_expires_at` se sobrescribía a ciegas: quien tiene el curso —acceso
+   * permanente, columna en `null`— y compra la extensión de 30 días terminaba
+   * con una fecha de caducidad en la fila de un acceso que no caduca. Hoy nada
+   * lee esa columna, así que el daño era latente; el día que algo la lea, le
+   * cerraría la cuenta a quien pagó primero. Un `null` entrante (permanente) o
+   * una cuenta ya permanente mantienen el acceso abierto.
+   */
+  const hadPermanentAccess =
+    Boolean(current?.active) &&
+    (current?.access_expires_at ?? null) === null &&
+    PLAN_RANK[current?.plan ?? 'free'] > PLAN_RANK.free
 
   const payload = {
     user_id: userId,
@@ -91,9 +107,10 @@ export async function grantProduct(
     // Se guarda el cliente: es la única forma de revocar el acceso cuando la
     // suscripción deja de pagar, porque ese evento no lleva userId.
     stripe_customer_id: customerId ?? current?.stripe_customer_id ?? null,
-    access_expires_at: grant.accessDays
-      ? new Date(Date.now() + grant.accessDays * 86_400_000).toISOString()
-      : null,
+    access_expires_at:
+      grant.accessDays === null || hadPermanentAccess
+        ? null
+        : new Date(Date.now() + grant.accessDays * 86_400_000).toISOString(),
   }
 
   const { error } = await admin.from('entitlements').upsert(payload, { onConflict: 'user_id' })
