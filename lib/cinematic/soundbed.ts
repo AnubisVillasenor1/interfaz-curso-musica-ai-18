@@ -120,12 +120,42 @@ export class SoundBed {
     this.element = element
   }
 
+  /**
+   * ¿Se puede arrancar la reproducción sin esperar un gesto?
+   *
+   * Dos señales fiables: `navigator.userActivation.hasBeenActive` (hubo un
+   * clic/tecla, o sea que el retry del `pointerdown` ya puede descargar) y el
+   * permiso `autoplay` en `granted` (engagement alto: el navegador deja sonar
+   * solo). Si ninguna se cumple, el autoplay está bloqueado y conviene NO bajar
+   * la pista todavía.
+   */
+  private async autoplayAllowed(): Promise<boolean> {
+    if (typeof navigator === 'undefined') return false
+    const nav = navigator as Navigator & { userActivation?: { hasBeenActive?: boolean } }
+    if (nav.userActivation?.hasBeenActive) return true
+    try {
+      const status = await navigator.permissions.query({ name: 'autoplay' as PermissionName })
+      return status.state === 'granted'
+    } catch {
+      return false
+    }
+  }
+
   /** Requiere un gesto del usuario: los navegadores bloquean el autoplay con sonido. */
   async enable(): Promise<BedState> {
     if (typeof window === 'undefined') return this.state
     this.prime()
     const element = this.element
     if (!element) return this.state
+
+    // La pista son 1.4 MB: no se descargan hasta que el navegador realmente
+    // permita reproducir (autoplay concedido) o hasta que haya un gesto real.
+    // Sin esta guarda el montaje forzaba `preload='auto'` y el download incluso
+    // cuando el autoplay estaba bloqueado y el sonido no iba a sonar.
+    if (!(await this.autoplayAllowed())) {
+      this.setState('blocked')
+      return this.state
+    }
 
     const Ctor = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
     if (!Ctor) {

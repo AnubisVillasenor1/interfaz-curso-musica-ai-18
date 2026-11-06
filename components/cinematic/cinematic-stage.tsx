@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import { AdaptiveDpr, PerformanceMonitor } from '@react-three/drei'
 import { Bloom, EffectComposer, Vignette } from '@react-three/postprocessing'
@@ -258,13 +258,20 @@ function Nebula({ actIndex, reducedMotion, env }: Pick<StageProps, 'actIndex' | 
     uEmber: { value: colorOf(actAt(0), 'ember') },
   }), [])
 
+  // `args` reconstruye el ShaderMaterial si cambia por identidad: memoizado, el
+  // material (y su compilación GLSL) sobrevive intacto al corte entre actos.
+  const materialArgs = useMemo(
+    () => [{ ...NEBULA_SHADER, uniforms, side: THREE.BackSide, depthWrite: false }] as [THREE.ShaderMaterialParameters],
+    [uniforms],
+  )
+
   useFrame((_, delta) => {
     const step = Math.min(delta, 1 / 30)
     const act = actAt(actIndex)
     if (!reducedMotion) uniforms.uTime.value += step
-    ;(uniforms.uFog.value as THREE.Color).lerp(colorOf(act, 'fog'), step * 1.2)
-    ;(uniforms.uKey.value as THREE.Color).lerp(colorOf(act, 'key'), step * 1.2)
-    ;(uniforms.uEmber.value as THREE.Color).lerp(colorOf(act, 'ember'), step * 1.2)
+    ;(uniforms.uFog.value as THREE.Color).lerp(linear(act.palette.fog), step * 1.2)
+    ;(uniforms.uKey.value as THREE.Color).lerp(linear(act.palette.key), step * 1.2)
+    ;(uniforms.uEmber.value as THREE.Color).lerp(linear(act.palette.ember), step * 1.2)
     uniforms.uWarp.value = THREE.MathUtils.damp(uniforms.uWarp.value as number, env.current.warp, 4, step)
     uniforms.uLevel.value = THREE.MathUtils.damp(uniforms.uLevel.value as number, env.current.level, 6, step)
     if (mesh.current && !reducedMotion) {
@@ -278,7 +285,7 @@ function Nebula({ actIndex, reducedMotion, env }: Pick<StageProps, 'actIndex' | 
   return (
     <mesh ref={mesh} renderOrder={-10} frustumCulled={false}>
       <sphereGeometry args={[40, 40, 24]} />
-      <shaderMaterial args={[{ ...NEBULA_SHADER, uniforms, side: THREE.BackSide, depthWrite: false }]} />
+      <shaderMaterial args={materialArgs} />
     </mesh>
   )
 }
@@ -302,13 +309,18 @@ function HolographicCore({ actIndex, quality, reducedMotion, env }: SceneNodePro
     uWarm: { value: colorOf(actAt(0), 'ember') },
   }), [])
 
+  const materialArgs = useMemo(
+    () => [{ ...CORE_SHADER, uniforms, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }] as [THREE.ShaderMaterialParameters],
+    [uniforms],
+  )
+
   useFrame((_, delta) => {
     const step = Math.min(delta, 1 / 30)
     const act = actAt(actIndex)
     if (!reducedMotion) uniforms.uTime.value += step
-    ;(uniforms.uKey.value as THREE.Color).lerp(colorOf(act, 'key'), step * 1.2)
-    ;(uniforms.uCore.value as THREE.Color).lerp(colorOf(act, 'core'), step * 1.2)
-    ;(uniforms.uWarm.value as THREE.Color).lerp(colorOf(act, 'ember'), step * 1.2)
+    ;(uniforms.uKey.value as THREE.Color).lerp(linear(act.palette.key), step * 1.2)
+    ;(uniforms.uCore.value as THREE.Color).lerp(linear(act.palette.core), step * 1.2)
+    ;(uniforms.uWarm.value as THREE.Color).lerp(linear(act.palette.ember), step * 1.2)
     uniforms.uLevel.value = THREE.MathUtils.damp(uniforms.uLevel.value as number, env.current.level, 7, step)
     uniforms.uBass.value = THREE.MathUtils.damp(uniforms.uBass.value as number, env.current.bass, 14, step)
     uniforms.uWarp.value = THREE.MathUtils.damp(uniforms.uWarp.value as number, env.current.warp, 5, step)
@@ -332,7 +344,7 @@ function HolographicCore({ actIndex, quality, reducedMotion, env }: SceneNodePro
       wire.current.scale.setScalar(THREE.MathUtils.damp(wire.current.scale.x, wanted, 6, step))
       wire.current.rotation.y -= step * 0.28
       const material = wire.current.material as THREE.MeshBasicMaterial
-      material.color.lerp(colorOf(act, 'key'), step * 1.2)
+      material.color.lerp(linear(act.palette.key), step * 1.2)
       material.opacity = 0.03 + focus.current * 0.07
     }
   })
@@ -341,9 +353,7 @@ function HolographicCore({ actIndex, quality, reducedMotion, env }: SceneNodePro
     <group ref={group}>
       <mesh>
         <icosahedronGeometry args={[1.74, detail]} />
-        <shaderMaterial
-          args={[{ ...CORE_SHADER, uniforms, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }]}
-        />
+        <shaderMaterial args={materialArgs} />
       </mesh>
       <mesh ref={wire}>
         <icosahedronGeometry args={[1.82, Math.max(1, detail - 2)]} />
@@ -374,6 +384,40 @@ function ArmillaryArcs({ actIndex, quality, reducedMotion, env }: SceneNodeProps
   const groups = useRef<(THREE.Group | null)[]>([])
   const focus = useRef(1)
 
+  // Args y callbacks de ref memoizados: el material no se recompila al cambiar
+  // de acto y el callback de ref ya no se desmonta/monta en cada render.
+  const arcArgs = useMemo(
+    () =>
+      arcs.map((arc, i): [THREE.ShaderMaterialParameters] => [
+        {
+          ...ARC_SHADER,
+          uniforms: {
+            uTime: { value: i * 5 },
+            uLevel: { value: 0 },
+            uWarp: { value: 0 },
+            uSpeed: { value: arc.speed * 2.4 },
+            uPhase: { value: arc.phase },
+            uKey: { value: colorOf(actAt(0), 'key') },
+            uWarm: { value: colorOf(actAt(0), 'ember') },
+          },
+          transparent: true,
+          depthWrite: false,
+          blending: THREE.AdditiveBlending,
+          side: THREE.DoubleSide,
+        },
+      ]),
+    [arcs],
+  )
+
+  const groupRefs = useMemo(
+    () => arcs.map((_, i) => (node: THREE.Group | null) => { groups.current[i] = node }),
+    [arcs],
+  )
+  const materialRefs = useMemo(
+    () => arcs.map((_, i) => (node: THREE.ShaderMaterial | null) => { if (node) materials.current[i] = node }),
+    [arcs],
+  )
+
   useFrame((_, delta) => {
     const step = Math.min(delta, 1 / 30)
     const act = actAt(actIndex)
@@ -384,8 +428,8 @@ function ArmillaryArcs({ actIndex, quality, reducedMotion, env }: SceneNodeProps
       if (!reducedMotion) u.uTime.value += step
       u.uLevel.value = THREE.MathUtils.damp(u.uLevel.value as number, env.current.level, 8, step)
       u.uWarp.value = THREE.MathUtils.damp(u.uWarp.value as number, env.current.warp, 5, step)
-      ;(u.uKey.value as THREE.Color).lerp(colorOf(act, 'key'), step * 1.3)
-      ;(u.uWarm.value as THREE.Color).lerp(colorOf(act, 'ember'), step * 1.3)
+      ;(u.uKey.value as THREE.Color).lerp(linear(act.palette.key), step * 1.3)
+      ;(u.uWarm.value as THREE.Color).lerp(linear(act.palette.ember), step * 1.3)
     })
     groups.current.forEach((node, i) => {
       if (!node) return
@@ -403,28 +447,10 @@ function ArmillaryArcs({ actIndex, quality, reducedMotion, env }: SceneNodeProps
   return (
     <group>
       {arcs.map((arc, i) => (
-        <group key={arc.radius} ref={(node) => { groups.current[i] = node }} rotation={arc.tilt}>
+        <group key={arc.radius} ref={groupRefs[i]} rotation={arc.tilt}>
           <mesh>
             <torusGeometry args={[arc.radius, 0.0075, 6, radial]} />
-            <shaderMaterial
-              ref={(node) => { if (node) materials.current[i] = node }}
-              args={[{
-                ...ARC_SHADER,
-                uniforms: {
-                  uTime: { value: i * 5 },
-                  uLevel: { value: 0 },
-                  uWarp: { value: 0 },
-                  uSpeed: { value: arc.speed * 2.4 },
-                  uPhase: { value: arc.phase },
-                  uKey: { value: colorOf(actAt(0), 'key') },
-                  uWarm: { value: colorOf(actAt(0), 'ember') },
-                },
-                transparent: true,
-                depthWrite: false,
-                blending: THREE.AdditiveBlending,
-                side: THREE.DoubleSide,
-              }]}
-            />
+            <shaderMaterial ref={materialRefs[i]} args={arcArgs[i]} />
           </mesh>
         </group>
       ))}
@@ -448,12 +474,17 @@ function AnamorphicStreak({ actIndex, reducedMotion, env }: Pick<StageProps, 'ac
     uWarm: { value: colorOf(actAt(0), 'ember') },
   }), [])
 
+  const materialArgs = useMemo(
+    () => [{ ...STREAK_SHADER, uniforms, transparent: true, depthWrite: false, depthTest: false, blending: THREE.AdditiveBlending }] as [THREE.ShaderMaterialParameters],
+    [uniforms],
+  )
+
   useFrame((state, delta) => {
     const step = Math.min(delta, 1 / 30)
     const act = actAt(actIndex)
     if (!reducedMotion) uniforms.uTime.value += step
-    ;(uniforms.uKey.value as THREE.Color).lerp(colorOf(act, 'key'), step * 1.4)
-    ;(uniforms.uWarm.value as THREE.Color).lerp(colorOf(act, 'ember'), step * 1.4)
+    ;(uniforms.uKey.value as THREE.Color).lerp(linear(act.palette.key), step * 1.4)
+    ;(uniforms.uWarm.value as THREE.Color).lerp(linear(act.palette.ember), step * 1.4)
     focus.current = focusValue(focus.current, act.focus.streak, step)
     uniforms.uLevel.value = THREE.MathUtils.damp(uniforms.uLevel.value as number, env.current.level, 9, step)
     uniforms.uBass.value = THREE.MathUtils.damp(uniforms.uBass.value as number, env.current.bass, 18, step)
@@ -476,16 +507,7 @@ function AnamorphicStreak({ actIndex, reducedMotion, env }: Pick<StageProps, 'ac
   return (
     <mesh ref={mesh} position={[0, 0, 0]} renderOrder={4}>
       <planeGeometry args={[26, 1.1, 1, 1]} />
-      <shaderMaterial
-        args={[{
-          ...STREAK_SHADER,
-          uniforms,
-          transparent: true,
-          depthWrite: false,
-          depthTest: false,
-          blending: THREE.AdditiveBlending,
-        }]}
-      />
+      <shaderMaterial args={materialArgs} />
     </mesh>
   )
 }
@@ -505,6 +527,33 @@ function EnergyRings({ actIndex, quality, reducedMotion, env }: SceneNodeProps) 
   const materials = useRef<THREE.ShaderMaterial[]>([])
   const focus = useRef(1)
   const clock = useRef(0)
+
+  const ringArgs = useMemo(
+    () =>
+      specs.map((spec, i): [THREE.ShaderMaterialParameters] => [
+        {
+          ...RING_SHADER,
+          uniforms: {
+            uTime: { value: i * 3 },
+            uLevel: { value: 0 },
+            uBass: { value: 0 },
+            uWarp: { value: 0 },
+            uSpeed: { value: spec.speed },
+            uKey: { value: colorOf(actAt(0), 'key') },
+            uEmber: { value: colorOf(actAt(0), 'ember') },
+          },
+          transparent: true,
+          depthWrite: false,
+          blending: THREE.AdditiveBlending,
+          side: THREE.DoubleSide,
+        },
+      ]),
+    [specs],
+  )
+  const materialRefs = useMemo(
+    () => specs.map((_, i) => (node: THREE.ShaderMaterial | null) => { if (node) materials.current[i] = node }),
+    [specs],
+  )
 
   useFrame((_, delta) => {
     const step = Math.min(delta, 1 / 30)
@@ -528,8 +577,8 @@ function EnergyRings({ actIndex, quality, reducedMotion, env }: SceneNodeProps) 
       u.uLevel.value = THREE.MathUtils.damp(u.uLevel.value, env.current.level, 8, step)
       u.uBass.value = THREE.MathUtils.damp(u.uBass.value, env.current.bass, 15, step)
       u.uWarp.value = THREE.MathUtils.damp(u.uWarp.value, env.current.warp, 5, step)
-      ;(u.uKey.value as THREE.Color).lerp(colorOf(act, 'key'), step * 1.2)
-      ;(u.uEmber.value as THREE.Color).lerp(colorOf(act, 'ember'), step * 1.2)
+      ;(u.uKey.value as THREE.Color).lerp(linear(act.palette.key), step * 1.2)
+      ;(u.uEmber.value as THREE.Color).lerp(linear(act.palette.ember), step * 1.2)
     })
   })
 
@@ -540,25 +589,7 @@ function EnergyRings({ actIndex, quality, reducedMotion, env }: SceneNodeProps) 
       {specs.map((spec, i) => (
         <mesh key={spec.radius} rotation={spec.tilt}>
           <torusGeometry args={[spec.radius, spec.tube, quality === 'low' ? 8 : 12, radial]} />
-          <shaderMaterial
-            ref={(node) => { if (node) materials.current[i] = node }}
-            args={[{
-              ...RING_SHADER,
-              uniforms: {
-                uTime: { value: i * 3 },
-                uLevel: { value: 0 },
-                uBass: { value: 0 },
-                uWarp: { value: 0 },
-                uSpeed: { value: spec.speed },
-                uKey: { value: colorOf(actAt(0), 'key') },
-                uEmber: { value: colorOf(actAt(0), 'ember') },
-              },
-              transparent: true,
-              depthWrite: false,
-              blending: THREE.AdditiveBlending,
-              side: THREE.DoubleSide,
-            }]}
-          />
+          <shaderMaterial ref={materialRefs[i]} args={ringArgs[i]} />
         </mesh>
       ))}
     </group>
@@ -618,13 +649,23 @@ function ParticleField({ actIndex, quality, reducedMotion, env }: SceneNodeProps
     uEmber: { value: colorOf(actAt(0), 'ember') },
   }), [])
 
+  const materialArgs = useMemo(
+    () => [{ ...FIELD_SHADER, uniforms, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }] as [THREE.ShaderMaterialParameters],
+    [uniforms],
+  )
+
+  // La geometría se construye fuera del reconciliador (useMemo), así que R3F no
+  // la libera: al desmontar o cambiar de tier hay que hacer dispose a mano o
+  // quedan ~600 KB de buffers huérfanos en GPU.
+  useEffect(() => () => geometry.dispose(), [geometry])
+
   useFrame((_, delta) => {
     const step = Math.min(delta, 1 / 30)
     const act = actAt(actIndex)
     focus.current = focusValue(focus.current, act.focus.field, step)
     if (!reducedMotion) uniforms.uTime.value += step
-    ;(uniforms.uKey.value as THREE.Color).lerp(colorOf(act, 'key'), step * 1.4)
-    ;(uniforms.uEmber.value as THREE.Color).lerp(colorOf(act, 'ember'), step * 1.4)
+    ;(uniforms.uKey.value as THREE.Color).lerp(linear(act.palette.key), step * 1.4)
+    ;(uniforms.uEmber.value as THREE.Color).lerp(linear(act.palette.ember), step * 1.4)
     uniforms.uLevel.value = THREE.MathUtils.damp(uniforms.uLevel.value as number, env.current.level, 6, step)
     uniforms.uTreble.value = THREE.MathUtils.damp(uniforms.uTreble.value as number, env.current.treble, 16, step)
     uniforms.uWarp.value = THREE.MathUtils.damp(uniforms.uWarp.value as number, env.current.warp, 5, step)
@@ -649,15 +690,7 @@ function ParticleField({ actIndex, quality, reducedMotion, env }: SceneNodeProps
 
   return (
     <points ref={points} geometry={geometry} frustumCulled={false}>
-      <shaderMaterial
-        args={[{
-          ...FIELD_SHADER,
-          uniforms,
-          transparent: true,
-          depthWrite: false,
-          blending: THREE.AdditiveBlending,
-        }]}
-      />
+      <shaderMaterial args={materialArgs} />
     </points>
   )
 }
@@ -675,12 +708,17 @@ function Portal({ actIndex, reducedMotion, env }: Pick<StageProps, 'actIndex' | 
     uEmber: { value: colorOf(actAt(0), 'ember') },
   }), [])
 
+  const materialArgs = useMemo(
+    () => [{ ...PORTAL_SHADER, uniforms, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }] as [THREE.ShaderMaterialParameters],
+    [uniforms],
+  )
+
   useFrame((state, delta) => {
     const step = Math.min(delta, 1 / 30)
     const act = actAt(actIndex)
     if (!reducedMotion) uniforms.uTime.value += step
-    ;(uniforms.uKey.value as THREE.Color).lerp(colorOf(act, 'key'), step * 1.6)
-    ;(uniforms.uEmber.value as THREE.Color).lerp(colorOf(act, 'ember'), step * 1.6)
+    ;(uniforms.uKey.value as THREE.Color).lerp(linear(act.palette.key), step * 1.6)
+    ;(uniforms.uEmber.value as THREE.Color).lerp(linear(act.palette.ember), step * 1.6)
     uniforms.uWarp.value = THREE.MathUtils.damp(uniforms.uWarp.value as number, env.current.warp, 5, step)
     if (mesh.current) {
       mesh.current.quaternion.copy(state.camera.quaternion)
@@ -691,9 +729,7 @@ function Portal({ actIndex, reducedMotion, env }: Pick<StageProps, 'actIndex' | 
   return (
     <mesh ref={mesh} position={[0, 0, -3]} renderOrder={5}>
       <circleGeometry args={[1, 96]} />
-      <shaderMaterial
-        args={[{ ...PORTAL_SHADER, uniforms, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }]}
-      />
+      <shaderMaterial args={materialArgs} />
     </mesh>
   )
 }
@@ -752,6 +788,21 @@ function Grade({ actIndex, quality, env }: Pick<StageProps, 'actIndex' | 'qualit
 
 export default function CinematicStage({ actIndex, quality, reducedMotion, env, onQualityDecline }: StageProps) {
   const invalidate = useThree((state) => state.invalidate)
+  const performance = useThree((state) => state.performance)
+
+  /* `AdaptiveDpr` sólo reacciona a `performance.current`, y `current` sólo baja
+     si alguien llama a `performance.regress()`. Sin esto el pixel ratio era un
+     no-op: se pedía el tier abajo pero la resolución nunca se ajustaba. Se pide
+     el regress (baja el DPR ~50% durante ~200 ms) al caer de tier y en cada
+     frame del warp, que es cuando la GPU está más cargada. */
+  const handleDecline = useCallback(() => {
+    performance.regress()
+    onQualityDecline()
+  }, [performance, onQualityDecline])
+
+  useFrame(() => {
+    if (env.current.warp > 0.05) performance.regress()
+  })
 
   /* Con `frameloop="demand"` nadie pide frames, y casi todo el estado visual se
      mueve por amortiguación dentro de useFrame. En modo de movimiento reducido
@@ -772,7 +823,7 @@ export default function CinematicStage({ actIndex, quality, reducedMotion, env, 
 
   return (
     <>
-      <PerformanceMonitor onDecline={onQualityDecline} flipflops={3} />
+      <PerformanceMonitor onDecline={handleDecline} flipflops={3} />
       <AdaptiveDpr />
       <EnvSync env={env} />
       <CameraRig actIndex={actIndex} reducedMotion={reducedMotion} env={env} />

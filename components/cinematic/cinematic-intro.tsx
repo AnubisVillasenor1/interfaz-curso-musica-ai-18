@@ -43,6 +43,8 @@ export default function CinematicIntro({ onComplete, onSkip, autoAdvance = true 
   const shellRef = useRef<HTMLDivElement>(null)
   const restoreFocus = useRef<Element | null>(null)
   const bedRef = useRef<SoundBed | null>(null)
+  /** Ids de los setTimeout de la transición entre actos, para cancelarlos. */
+  const transitionTimers = useRef<number[]>([])
 
   /* --- capacidades: se miden después del montaje, nunca durante el render --- */
   useEffect(() => {
@@ -133,15 +135,28 @@ export default function CinematicIntro({ onComplete, onSkip, autoAdvance = true 
   /* --- transición entre actos: warp en GPU, no opacity+setTimeout hack ----- */
   const goTo = useCallback((index: number) => {
     if (index === act || warping) return
+    // Cancela la transición en curso antes de arrancar una nueva: sin esto dos
+    // cortes seguidos dejaban setTimeout huérfanos disparando setAct después.
+    transitionTimers.current.forEach((id) => window.clearTimeout(id))
+    transitionTimers.current = []
     setWarping(true)
     env.current.warp = 1
-    window.setTimeout(() => {
-      setAct(index)
-      setProgressKey((key) => key + 1)
-      env.current.warp = 0.12
-      window.setTimeout(() => setWarping(false), 260)
-    }, 520)
+    transitionTimers.current.push(
+      window.setTimeout(() => {
+        setAct(index)
+        setProgressKey((key) => key + 1)
+        env.current.warp = 0.12
+        transitionTimers.current.push(window.setTimeout(() => setWarping(false), 260))
+      }, 520),
+    )
   }, [act, warping])
+
+  // Al desmontar (salto durante el warp) no deben quedar timers que escriban
+  // estado sobre un componente ya fuera del árbol.
+  useEffect(() => () => {
+    transitionTimers.current.forEach((id) => window.clearTimeout(id))
+    transitionTimers.current = []
+  }, [])
 
   const advance = useCallback(() => {
     if (act < CINEMATIC_ACTS.length - 1) goTo(act + 1)
