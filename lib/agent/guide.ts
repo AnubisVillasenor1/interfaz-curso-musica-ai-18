@@ -16,7 +16,7 @@
  * Ninguna de las dos ramas inventa precios, URL ni datos de terceros.
  */
 
-import { COURSE_LESSONS, COURSE_MODULES } from '@/lib/course'
+import { COURSE_LESSONS, COURSE_MODULES, COURSE_FRAMEWORK, COURSE_UNITS, FINAL_PROJECT } from '@/lib/course'
 import { PRODUCTS, priceLabel } from '@/lib/products'
 
 export type GuideSource = 'llm' | 'fallback'
@@ -62,7 +62,12 @@ const LESSON_LINES = COURSE_LESSONS.map(
  * ajenos —solo puede responder con lo que hay aquí.
  */
 export function buildSystemPrompt(): string {
+  const units = COURSE_UNITS.map((u) => `Unidad ${u.unit}: ${u.title} (${u.lessonIds.join(', ')})`).join('\n')
   return `Eres el guía de "Play and Go by TAMV ONLINE", un curso y estudio para crear música con inteligencia artificial. Respondes en español neutro, con ejemplos concretos y sin prometer lo que la plataforma no hace.
+
+FILOSOFÍA TAMV: ${COURSE_FRAMEWORK.philosophy}
+PROYECTO FINAL: «${FINAL_PROJECT.title}» — ${FINAL_PROJECT.description} Entregables: ${FINAL_PROJECT.deliverables.join(', ')}.
+EVALUACIÓN: examen de ${COURSE_FRAMEWORK.exam.questions} preguntas, ${COURSE_FRAMEWORK.exam.minutes} minutos, mínimo ${COURSE_FRAMEWORK.exam.passPercent}%; certificado con código verificable en 7 idiomas (${COURSE_FRAMEWORK.exam.languages.join(', ')}).
 
 CÓMO FUNCIONA LA PLATAFORMA
 - Hay dos motores. "local": composición instrumental generada en el navegador con el motor propio, sin costo; sirve para practicar estructura, groove y comparación de prompts. "provider": generación con voces a través del servicio de pago; requiere una inscripción activa.
@@ -73,8 +78,10 @@ CATÁLOGO Y PRECIOS (única fuente de verdad; no inventes otros)
 ${CATALOG_LINES.join('\n')}
 El motor local está disponible sin pago, con cupo diario limitado. No inventes descuentos, reembolsos ni planes que no estén aquí.
 
-PROGRAMA DEL CURSO (5 módulos, ${COURSE_LESSONS.length} sesiones)
+PROGRAMA DEL CURSO (5 módulos, ${COURSE_LESSONS.length} sesiones, organizados en ${COURSE_UNITS.length} unidades)
 ${MODULE_LINES.join('\n')}
+Unidades:
+${units}
 Lecciones:
 ${LESSON_LINES.join('\n')}
 

@@ -1,3 +1,4 @@
+import { TamvQuote } from '@/components/tamv-quote'
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
 import { PRODUCTS } from '@/lib/products'
@@ -45,12 +46,15 @@ export const metadata: Metadata = {
     siteName: 'Play and Go by TAMV ONLINE',
     title: 'Play and Go by TAMV ONLINE — Música con IA',
     description,
+    images: [`${metadataUrl}/opengraph-image`],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Play and Go by TAMV ONLINE — Música con IA',
     description,
+    images: [`${metadataUrl}/opengraph-image`],
   },
+  alternates: { canonical: metadataUrl },
   robots: {
     index: true,
     follow: true,
@@ -128,6 +132,11 @@ export default function RootLayout({
     <html lang="es">
       <body className="antialiased">
         {children}
+        {/* Pie institucional visible en TODAS las páginas (frase estratégica §1) */}
+        <footer className="pg-container pb-12 pt-4">
+          <TamvQuote variant="footer" />
+          <p className="pg-note mt-4 text-center">Play &amp; Go · Crea. Aprende. Hazlo tuyo. Una plataforma de TAMV Online Network.</p>
+        </footer>
         {schema && (
           <script
             type="application/ld+json"

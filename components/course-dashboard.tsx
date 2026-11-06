@@ -25,6 +25,7 @@ import {
 
 import { Dialog } from '@/components/ui/dialog'
 import { Reveal } from '@/components/reveal'
+import { TamvQuote } from '@/components/tamv-quote'
 import { COURSE_PRODUCT } from '@/lib/products'
 
 /**
@@ -214,18 +215,14 @@ export function CourseDashboard() {
   }
 
   const navLinks = [
-    ['Curso', '/curso'],
-    ['Crear música', '/studio'],
+    ['Academia', '/curso'],
+    ['Estudio', '/studio'],
     ['Biblioteca', '/biblioteca'],
     ['Membresías', '/precios'],
     ['Información', '/informacion'],
   ] as const
 
   return <main className="pg-shell relative min-h-screen overflow-x-clip" style={{ background: 'var(--pg-bg)' }}>
-    {/* Capa ambiental del sistema editorial: la define una vez `.pg-glow` en
-        `app/globals.css`, así que cambiar la paleta cambia también el fondo.
-        Antes estaba copiada aquí con sus propios rgba() y usaba `-z-0`, que ni
-        siquiera es una clase válida. */}
     <div aria-hidden="true" className="pg-glow" />
 
     <header className="sticky top-0 z-30 backdrop-blur-xl" style={{ borderBottom: '1px solid var(--pg-hairline)', background: 'color-mix(in srgb, var(--pg-bg) 78%, transparent)' }}>
@@ -234,7 +231,7 @@ export function CourseDashboard() {
           <img src={logoMark} alt="" width={40} height={40} className="size-10 rounded-xl" />
           <span className="block">
             <span className="block text-sm font-semibold tracking-[0.14em]">PLAY <span style={{ color: 'var(--pg-cyan)' }}>AND GO</span></span>
-            <span className="pg-eyebrow" style={{ letterSpacing: '.24em' }}>by TAMV ONLINE</span>
+            <span className="pg-eyebrow" style={{ letterSpacing: '.24em' }}>por TAMV ONLINE NETWORK</span>
           </span>
         </a>
         <nav aria-label="Navegación principal" className="hidden items-center gap-6 md:flex">
@@ -267,19 +264,18 @@ export function CourseDashboard() {
     <section className="pg-section">
       <div className="pg-container grid items-center gap-12 lg:grid-cols-[1.05fr_.95fr]">
         <div>
-          <span className="pg-chip"><Sparkles size={12} /> Música aumentada por IA</span>
+          <span className="pg-chip"><Sparkles size={12} /> Música aumentada por IA · Academia + Estudio + Portafolio + Comunidad</span>
           <h1 className="pg-title pg-title-display" style={{ marginTop: '1.25rem' }}>
-            Convierte tus ideas en{' '}
+            Tu próxima idea merece{' '}
             <span
               className="bg-clip-text text-transparent"
-              style={{ backgroundImage: 'linear-gradient(96deg, var(--pg-cyan-soft), var(--pg-violet) 52%, var(--pg-magenta))' }}
+              style={{ backgroundImage: 'linear-gradient(96deg, var(--color-champagne), var(--color-circuit) 52%, var(--color-ice))' }}
             >
-              canciones.
+              convertirse en música.
             </span>
           </h1>
           <p className="pg-lede" style={{ maxWidth: '52ch' }}>
-            Aprende desde cero a crear música con inteligencia artificial y desarrolla un criterio profesional
-            para dirigir voces, géneros, tempos e instrumentaciones.
+            Aprende, compón y desarrolla tu sonido con herramientas de inteligencia artificial y decisiones propias. De la primera idea a una obra propia: crear con inteligencia artificial, decidir con criterio humano.
           </p>
           <div className="mt-9 flex flex-wrap items-center gap-3">
             <button type="button" className="pg-btn pg-btn-primary" onClick={() => setShowRegister(true)}>
@@ -343,6 +339,10 @@ export function CourseDashboard() {
             </div>
           </div>
         </Reveal>
+      </div>
+
+      <div className="pg-container mt-16">
+        <TamvQuote variant="hero" />
       </div>
 
       <div className="pg-container mt-16 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -538,7 +538,8 @@ export function CourseDashboard() {
 
     <footer className="pg-section" style={{ paddingTop: '3.5rem' }}>
       <div className="pg-container">
-        <span className="pg-rule mb-8 block" />
+        <TamvQuote variant="footer" />
+        <span className="pg-rule mb-8 mt-10 block" />
         <div className="flex flex-wrap items-center justify-between gap-6">
           <div className="flex items-center gap-4">
             <img src={logoMark} alt="" width={44} height={44} className="size-11 rounded-xl" />

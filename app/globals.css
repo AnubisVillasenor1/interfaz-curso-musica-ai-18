@@ -2,6 +2,26 @@
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
 
+/* Accesibilidad gratuita: foco visible, movimiento reducido y selección de marca.
+   Sin dependencias, sin costo de bundle. */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-aqua);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+::selection {
+  background: var(--color-aqua);
+  color: var(--color-ink-950);
+}
+
 @custom-variant dark (&:is(.dark *));
 
 /* ==========================================================================
@@ -25,6 +45,24 @@
   --color-magenta-glow: oklch(0.731 0.181 331);
   --color-amber-glow: oklch(0.845 0.143 84);
   --color-mint-glow: oklch(0.842 0.139 160);
+
+  /* TAMV Crystal Sound — tokens propuestos (§8): estudio nocturno, cristal ahumado,
+     oro champán, circuitos azules y luz musical. La base permanece oscura y estable;
+     azul y oro orientan la interacción, los acentos aparecen donde hay contenido. */
+  --color-mineral: #080B0E;
+  --color-carbon: #10151A;
+  --color-graphite: #171E25;
+  --color-steel: #202A34;
+  --color-champagne: #D7C49A;
+  --color-ivory: #F2E6C7;
+  --color-circuit: #61B5ED;
+  --color-petrol: #254F70;
+  --color-ice: #8CE8F1;
+  --color-silver: #A4AFB8;
+  --color-coral: #FF846F;
+  --color-magenta-soft: #E88BC4;
+  --color-violet-soft: #A99AEF;
+  --color-lime-soft: #D2E69A;
 
   /* Tipografía */
   --font-display: 'Space Grotesk', 'Inter var', Inter, system-ui, -apple-system, 'Segoe UI', sans-serif;
@@ -163,9 +201,9 @@
   --sidebar-border: oklch(0.886 0.014 245);
   --sidebar-ring: oklch(0.646 0.13 225);
 
-  /* Superficies de marca para el shell */
-  --shell-bg: oklch(0.985 0.006 240);
-  --shell-glass: oklch(1 0 0 / 0.7);
+  /* Superficies de marca para el shell — base mineral TAMV (#080B0E) */
+  --shell-bg: #080B0E;
+  --shell-glass: oklch(0.212 0.033 262 / 0.72);
   --shell-glass-border: oklch(0.6 0.03 250 / 0.16);
   --shell-glow-a: oklch(0.72 0.14 205 / 0.3);
   --shell-glow-b: oklch(0.66 0.16 292 / 0.26);

@@ -3,6 +3,9 @@ import { NextResponse } from 'next/server'
 import { getAppUrl } from '@/lib/app-url'
 import { signCallbackUrl } from '@/lib/callback-signature'
 import { COURSE_LESSONS } from '@/lib/course'
+import { createTask, setTaskStatus } from '@/lib/music/task-store'
+import { getMusicProvider } from '@/lib/music/providers'
+import { isNotConfigured } from '@/lib/music/providers/errors'
 import { SUPABASE_NOT_CONFIGURED } from '@/lib/supabase/config'
 import { createClient } from '@/lib/supabase/server'
 
@@ -41,9 +44,10 @@ async function refundQuota(supabase: NonNullable<Awaited<ReturnType<typeof creat
  *   motor propio (Tone.js). No cuesta dinero, así que el plan gratuito puede
  *   crear música de verdad desde el primer minuto. El audio sube después a
  *   Storage por `/api/songs/complete`.
- * - `provider`: API de pago con voces. Requiere `API_KEY`; sin ella la ruta
- *   responde 503 con una alternativa explícita en vez de dejar al usuario con
- *   un botón roto.
+ * - `provider`: delega en el proveedor activo (`MUSIC_PROVIDER`, ver
+ *   `lib/music/providers/`): `suno` (histórico), `huggingface`, `replicate`,
+ *   `fal` o `local` (Ace-Step/YuE en servidor propio). Sin claves la ruta
+ *   responde 503 con alternativa local en vez de un botón roto.
  *
  * Antes la cuota se leía y se escribía en dos peticiones separadas: dos clics
  * concurrentes leían el mismo contador y ambos pasaban. Ahora la reserva la
@@ -144,29 +148,12 @@ export async function POST(request: Request) {
     })
   }
 
-  const apiKey = process.env.API_KEY
-  if (!apiKey) {
-    // Se devuelve la reserva: si el proveedor no está configurado, nadie debe
-    // pagar cupo por un intento que no podía funcionar.
-    await refundQuota(supabase, user.id, engine)
-    await supabase.from('songs').update({ status: 'error', error: 'Proveedor musical no configurado.' }).eq('id', song.id)
-    return NextResponse.json(
-      {
-        song,
-        error: 'El estudio con voces no está disponible ahora. Puedes crear con el motor local gratis.',
-        code: 'not_configured',
-        fallback: 'local',
-      },
-      { status: 503 },
-    )
-  }
-
+  // El callback es la única vía de vuelta: sin URL canónica o sin secreto de
+  // firma ningún proveedor puede devolver el audio. No se cobra cupo por un
+  // intento que no podría completarse.
   const base = getAppUrl(request)
   if (!base) {
     await refundQuota(supabase, user.id, engine)
-    // La columna songs.error se muestra en la biblioteca, y esta respuesta le
-    // llega al cliente: ninguna de las dos puede llevar el nombre de una variable
-    // de entorno. El detalle operativo va al log.
     console.error('[generate] NEXT_PUBLIC_APP_URL sin definir: no hay retorno para el proveedor')
     await supabase.from('songs').update({ status: 'error', error: 'El retorno del proveedor no está configurado.' }).eq('id', song.id)
     return NextResponse.json(
@@ -186,47 +173,107 @@ export async function POST(request: Request) {
     )
   }
 
+  let provider
   try {
-    const response = await fetch(process.env.SUNO_API_URL || 'https://api.sunoapi.org/api/v1/generate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
-      signal: AbortSignal.timeout(30_000),
-      body: JSON.stringify({
-        prompt,
-        customMode: true,
-        instrumental: body?.instrumental === true,
-        model: 'V4',
-        title,
-        tags: genre ?? undefined,
-        mv: 1,
-        callBackUrl: `${base}/api/generate/callback?songId=${encodeURIComponent(String(song.id))}&sig=${signature}`,
-      }),
+    provider = getMusicProvider()
+  } catch (error) {
+    if (isNotConfigured(error)) {
+      await refundQuota(supabase, user.id, engine)
+      console.error('[generate] proveedor no configurado', error instanceof Error ? error.message : String(error))
+      await supabase.from('songs').update({ status: 'error', error: 'Proveedor musical no configurado.' }).eq('id', song.id)
+      return NextResponse.json(
+        {
+          song,
+          error: 'El estudio con voces no está disponible ahora. Puedes crear con el motor local gratis.',
+          code: 'not_configured',
+          fallback: 'local',
+        },
+        { status: 503 },
+      )
+    }
+    throw error
+  }
+
+  // `suno` habla el contrato histórico (songId+sig en query → /api/generate/callback);
+  // el resto POSTea JSON firmada por cuerpo a `/api/callback`.
+  const callbackUrl =
+    provider.id === 'suno'
+      ? `${base}/api/generate/callback?songId=${encodeURIComponent(String(song.id))}&sig=${signature}`
+      : `${base}/api/callback`
+
+  const failSong = async (message: string) => {
+    await supabase.from('songs').update({ status: 'error', error: message }).eq('id', song.id)
+  }
+
+  try {
+    const result = await provider.generate({
+      prompt,
+      lyrics: lyrics ?? undefined,
+      customMode: true,
+      instrumental: body?.instrumental === true,
+      duration: clamp(body?.duration, 5, 120, 30),
+      callbackUrl,
+      title,
+      genre: genre ?? undefined,
     })
 
-    const result = (await response.json().catch(() => null)) as { code?: number; data?: { taskId?: string } } | null
+    createTask({
+      taskId: result.taskId,
+      provider: result.provider,
+      model: result.model,
+      request: { prompt, lyrics: lyrics ?? undefined, instrumental: body?.instrumental === true, duration: clamp(body?.duration, 5, 120, 30), callbackUrl, title, genre: genre ?? undefined },
+    })
 
-    if (!response.ok || !result?.data?.taskId) {
-      throw new Error(`provider ${response.status}`)
+    // Proveedor síncrono (Hugging Face): el audio ya existe, la fila queda lista.
+    if (result.audioUrl) {
+      await supabase.from('songs').update({ status: 'ready', audio_url: result.audioUrl, provider_task_id: result.taskId }).eq('id', song.id)
+      setTaskStatus(result.taskId, 'completed', { audioUrl: result.audioUrl, model: result.model })
+      return NextResponse.json({
+        song,
+        taskId: result.taskId,
+        data: { taskId: result.taskId },
+        provider: result.provider,
+        model: result.model,
+        status: 'completed',
+        quota: { limit: granted?.limit_total ?? 0, used: granted?.limit_used ?? 0 },
+      })
     }
 
     // Se guarda la tarea: sin esto, si el callback no llega, la canción queda
     // en 'generating' para siempre y nadie puede recuperarla.
     await supabase
       .from('songs')
-      .update({ status: 'generating', provider_task_id: String(result.data.taskId).slice(0, 120) })
+      .update({ status: 'generating', provider_task_id: result.taskId.slice(0, 120) })
       .eq('id', song.id)
 
     return NextResponse.json({
       song,
-      taskId: result.data.taskId,
+      taskId: result.taskId,
+      data: { taskId: result.taskId },
+      provider: result.provider,
+      model: result.model,
       quota: { limit: granted?.limit_total ?? 0, used: granted?.limit_used ?? 0 },
     })
   } catch (error) {
+    if (isNotConfigured(error)) {
+      await refundQuota(supabase, user.id, engine)
+      await failSong('Proveedor musical no configurado.')
+      return NextResponse.json(
+        {
+          song,
+          error: 'El estudio con voces no está disponible ahora. Puedes crear con el motor local gratis.',
+          code: 'not_configured',
+          fallback: 'local',
+        },
+        { status: 503 },
+      )
+    }
     console.error('[generate] el proveedor rechazó la petición', {
       message: error instanceof Error ? error.message : String(error),
+      provider: provider.id,
     })
     await refundQuota(supabase, user.id, engine)
-    await supabase.from('songs').update({ status: 'error', error: 'El proveedor musical no respondió.' }).eq('id', song.id)
+    await failSong('El proveedor musical no respondió.')
     return NextResponse.json(
       { song, error: 'El proveedor musical no respondió. Tu proyecto quedó guardado para reintentar.', code: 'provider_unreachable' },
       { status: 502 },

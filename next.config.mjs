@@ -15,6 +15,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   poweredByHeader: false,
+  reactStrictMode: true,
+  compress: true,
   images: {
     unoptimized: true,
   },
@@ -46,6 +48,11 @@ const nextConfig = {
         // Audio envejecido a propósito: el `<audio>` del hero y las muestras
         // se piden muchas veces por visita y cambian rara vez.
         source: '/audio/:path*',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=86400, stale-while-revalidate=604800' }],
+      },
+      {
+        // Marca local (logo/hero SVG): inmutable entre deploys, sin costo de banda extra.
+        source: '/brand/:path*',
         headers: [{ key: 'Cache-Control', value: 'public, max-age=86400, stale-while-revalidate=604800' }],
       },
     ]

@@ -1353,6 +1353,130 @@ export const COURSE_LESSONS: Lesson[] = [
 
 export const COURSE_TOTAL_LESSONS = 16 // debe coincidir con COURSE_LESSONS.length; el SQL tiene 16 en course_total_lessons()
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Marco TAMV — la evolución del programa.
+//
+// El curso vive en dos niveles a propósito: las 16 sesiones detalladas de
+// arriba (única fuente con bloques, ejercicios y progreso persistido) y este
+// marco fundacional de 14 unidades, creado para que el programa tenga una
+// narrativa de identidad (filosofía, metodología, proyecto final, examen)
+// sin reescribir ni romper IDs, insignias o la fila de progreso.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface CourseUnit {
+  unit: number // 1..14
+  title: string
+  durationH: number
+  /** Sesiones del programa de 16 a las que corresponde esta unidad. */
+  lessonIds: LessonId[]
+}
+
+export const COURSE_FRAMEWORK = {
+  title: 'Creación Musical con IA',
+  subtitle: 'Composición híbrida, producción y lanzamiento',
+  brand: 'TAMV Online Network · Play & Go',
+  philosophy: 'La IA no reemplaza al creador: amplifica su criterio, acelera sus ideas y le devuelve el control sobre su obra.',
+  manifesto: [
+    'TAMV Online Network — Donde la ciencia abierta no pide permiso.',
+    'Play & Go — Donde la música se convierte en conocimiento, identidad y oportunidad.',
+  ],
+  audiences: [
+    'Personas sin experiencia musical previa',
+    'Cantantes, compositores y poetas',
+    'Productores independientes y diseñadores sonoros',
+    'Creadores de contenido y proyectos audiovisuales',
+    'Desarrolladores interesados en IA generativa',
+    'Estudiantes y jóvenes creadores',
+    'Quien quiere crear sin invertir en equipos costosos',
+  ],
+  objectives: [
+    'Comprender los fundamentos de la creación musical con IA.',
+    'Diferenciar generación, composición, producción y postproducción.',
+    'Escribir prompts musicales efectivos y precisos.',
+    'Crear y reciclar progresiones armónicas con criterio.',
+    'Diseñar letras con narrativa, emoción y estructura.',
+    'Controlar género, tempo, tonalidad, instrumentación, atmósfera y energía.',
+    'Crear canciones completas con voz, letra e instrumentación.',
+    'Generar pistas instrumentales para video, juegos, podcasts y audiovisual.',
+    'Editar secciones específicas sin destruir la producción completa.',
+    'Remezclar, combinar y transformar ideas musicales.',
+    'Exportar MIDI, stems y archivos finales.',
+    'Comprender derechos de autor, licencias, atribución y uso comercial.',
+    'Preparar una obra para portafolio, redes o distribución.',
+    'Construir un proyecto final original y presentable.',
+  ],
+  methodology: [
+    { step: 'Concepto', description: 'Explicación clara y accesible del tema.' },
+    { step: 'Demostración', description: 'Ejemplo práctico realizado paso a paso.' },
+    { step: 'Práctica guiada', description: 'Ejercicio dirigido con plantillas y prompts.' },
+    { step: 'Creación libre', description: 'Aplicación personal del conocimiento.' },
+  ],
+  resources: [
+    'Plantillas de prompts musicales',
+    'Biblioteca de estructuras de canciones',
+    'Guía de estilos y géneros',
+    'Diccionario de términos musicales',
+    'Checklist de producción',
+    'Plantilla de letras',
+    'Guía de licencias y derechos',
+    'Plantilla de ficha de lanzamiento',
+    'Banco de ideas creativas',
+    'Rúbrica de evaluación del proyecto final',
+  ],
+  exam: {
+    questions: 20,
+    minutes: 30,
+    passPercent: 70,
+    certificate: 'Certificado digital de participación con código único de verificación y descarga en PDF.',
+    languages: ['español', 'inglés', 'francés', 'alemán', 'turco', 'ruso', 'árabe'],
+  },
+  hybridNote:
+    'El hilo conductor es la composición híbrida: generar progresiones, reciclar motivos, explorar intercambio modal, crear secciones nuevas, exportar MIDI y stems, y refinar en un DAW hasta lograr una pieza coherente y personal. La IA propone; el criterio decide.',
+} as const
+
+export const FINAL_PROJECT = {
+  title: 'Mi Nodo Cero',
+  description: 'Una obra que representa tu historia, emoción, idea o visión personal, conectada con tu identidad, tu origen o tu futuro.',
+  requirements: [
+    'Duración entre 1 y 3 minutos.',
+    'Estructura completa: intro, desarrollo, clímax y cierre.',
+    'Letra original o instrumental justificada.',
+    'Uso consciente de IA, documentado.',
+    'Exportación en formato de audio.',
+    'Portada conceptual y descripción para portafolio.',
+  ],
+  deliverables: [
+    'cancion-final.mp3',
+    'version-instrumental.mp3',
+    'prompt-maestro.txt',
+    'letra.txt',
+    'estructura.md',
+    'creditos.md',
+    'portada.png',
+    'descripcion.md',
+  ],
+} as const
+
+/** Las 14 unidades del marco, mapearlas a las sesiones reales del programa. */
+export const COURSE_UNITS: CourseUnit[] = [
+  { unit: 1, title: 'Primeros pasos con la creación musical con IA', durationH: 1, lessonIds: ['m01-l01'] },
+  { unit: 2, title: 'Estilos, géneros e identidad sonora', durationH: 1, lessonIds: ['m04-l11'] },
+  { unit: 3, title: 'Fundamentos de armonía y progresiones', durationH: 1, lessonIds: ['m01-l02'] },
+  { unit: 4, title: 'Inspiración armónica con IA', durationH: 1, lessonIds: ['m01-l03'] },
+  { unit: 5, title: 'Escritura de letras efectivas', durationH: 1, lessonIds: ['m03-l09'] },
+  { unit: 6, title: 'Control de voces y estilos vocales', durationH: 1, lessonIds: ['m03-l08', 'm03-l10'] },
+  { unit: 7, title: 'Estructura de la canción', durationH: 1, lessonIds: ['m04-l12'] },
+  { unit: 8, title: 'Prompts avanzados y control creativo', durationH: 1, lessonIds: ['m02-l04'] },
+  { unit: 9, title: 'Creación de pistas instrumentales', durationH: 1, lessonIds: ['m02-l05'] },
+  { unit: 10, title: 'Edición, refinamiento y regeneración', durationH: 1, lessonIds: ['m02-l06', 'm05-l14'] },
+  { unit: 11, title: 'Remezcla, capas y transformación', durationH: 1, lessonIds: ['m04-l13', 'm02-l07'] },
+  { unit: 12, title: 'Derechos de autor, licencias y ética', durationH: 1, lessonIds: ['m05-l15'] },
+  { unit: 13, title: 'Exportación, portafolio y distribución', durationH: 1, lessonIds: ['m05-l14', 'm05-l15'] },
+  { unit: 14, title: 'Proyecto final: creación de una obra completa', durationH: 1, lessonIds: ['m05-l16'] },
+]
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 export function lessonById(id: string): Lesson | undefined {
   return COURSE_LESSONS.find((lesson) => lesson.id === id)
 }
