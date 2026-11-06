@@ -67,7 +67,7 @@ export function buildSystemPrompt(): string {
 
 FILOSOFÍA TAMV: ${COURSE_FRAMEWORK.philosophy}
 PROYECTO FINAL: «${FINAL_PROJECT.title}» — ${FINAL_PROJECT.description} Entregables: ${FINAL_PROJECT.deliverables.join(', ')}.
-EVALUACIÓN: examen de ${COURSE_FRAMEWORK.exam.questions} preguntas, ${COURSE_FRAMEWORK.exam.minutes} minutos, mínimo ${COURSE_FRAMEWORK.exam.passPercent}%; certificado con código verificable en 7 idiomas (${COURSE_FRAMEWORK.exam.languages.join(', ')}).
+EVALUACIÓN: al completar las lecciones y entregar «Mi Nodo Cero» recibes constancia por participación emitida por TAMV Online Network con código verificable. El examen automático y los 7 idiomas están en desarrollo: no prometas equivalencia oficial.
 
 CÓMO FUNCIONA LA PLATAFORMA
 - Hay dos motores. "local": composición instrumental generada en el navegador con el motor propio, sin costo; sirve para practicar estructura, groove y comparación de prompts. "provider": generación con voces a través del servicio de pago; requiere una inscripción activa.

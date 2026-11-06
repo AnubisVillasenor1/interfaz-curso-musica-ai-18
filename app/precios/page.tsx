@@ -3,7 +3,7 @@ import type { Metadata } from 'next'
 import { PricingTable } from '@/components/account/pricing-table'
 
 export const metadata: Metadata = {
-  title: 'Precios · Play and Go by TAMV ONLINE',
+  title: 'Precios',
   description: 'Planes del curso de música con IA y del estudio de generación.',
 }
 

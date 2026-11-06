@@ -3,7 +3,8 @@ import type { Metadata } from 'next'
 import { ProfilePanel } from '@/components/account/profile-panel'
 
 export const metadata: Metadata = {
-  title: 'Mi cuenta · Play and Go by TAMV ONLINE',
+  robots: { index: false, follow: false },
+  title: 'Mi cuenta',
   description: 'Tu plan, tu cupo diario y tu progreso en el curso de música con IA.',
 }
 

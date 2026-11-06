@@ -3,7 +3,8 @@ import type { Metadata } from 'next'
 import { LibraryPanel } from '@/components/account/library-panel'
 
 export const metadata: Metadata = {
-  title: 'Mi biblioteca · Play and Go by TAMV ONLINE',
+  robots: { index: false, follow: false },
+  title: 'Mi biblioteca',
   description: 'Escucha, descarga y administra las canciones que has generado.',
 }
 

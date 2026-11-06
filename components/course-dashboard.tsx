@@ -26,6 +26,7 @@ import {
 import { Dialog } from '@/components/ui/dialog'
 import { Reveal } from '@/components/reveal'
 import { TamvQuote } from '@/components/tamv-quote'
+import { COURSE_MODULES, COURSE_BADGES, COURSE_TOTAL_LESSONS, lessonsByModule } from '@/lib/course'
 import { COURSE_PRODUCT } from '@/lib/products'
 
 /**
@@ -50,13 +51,29 @@ const sampleAudio = '/audio/pista2.mp3'
  */
 const coursePrice = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', maximumFractionDigits: 0 }).format(COURSE_PRODUCT.priceInCents / 100)
 
-const modules = [
-  { number: '01', title: 'Fundamentos de música con IA', meta: '3 lecciones · 42 min', state: 'done' },
-  { number: '02', title: 'Tu primer prompt musical', meta: '4 lecciones · 1 h 15 min', state: 'current' },
-  { number: '03', title: 'Voces, letras y emoción', meta: '3 lecciones · 58 min', state: 'locked' },
-  { number: '04', title: 'Géneros, instrumentación y tempo', meta: '3 lecciones · 1 h 08 min', state: 'locked' },
-  { number: '05', title: 'Producción: de idea a canción', meta: '3 lecciones · 1 h 20 min', state: 'locked' },
-]
+function minutesLabel(minutes: number): string {
+  if (minutes < 60) return `${minutes} min`
+  const h = Math.floor(minutes / 60)
+  const m = minutes % 60
+  return m ? `${h} h ${String(m).padStart(2, '0')} min` : `${h} h`
+}
+
+const totalMinutes = COURSE_MODULES.reduce(
+  (sum, module) => sum + lessonsByModule(module.index).reduce((acc, lesson) => acc + lesson.minutes, 0),
+  0,
+)
+
+const modules = COURSE_MODULES.map((module, index) => {
+  const lessons = lessonsByModule(module.index)
+  const minutes = lessons.reduce((sum, lesson) => sum + lesson.minutes, 0)
+  const state = index === 0 ? 'done' as const : index === 1 ? 'current' as const : 'locked' as const
+  return {
+    number: String(module.index).padStart(2, '0'),
+    title: module.title,
+    meta: `${lessons.length} lecciones · ${minutesLabel(minutes)}`,
+    state,
+  }
+})
 
 const prompts = [
   { name: 'Pop cinematográfico', meta: '96 BPM · voz femenina íntima · piano felt', copy: 'Pop alternativo cinematográfico, 96 BPM, voz femenina íntima y aireada, versos minimalistas con piano felt, pre-coro ascendente, coro amplio con cuerdas y batería orgánica, mezcla cálida y dinámica.' },
@@ -64,27 +81,34 @@ const prompts = [
   { name: 'Lo-fi para estudiar', meta: '78 BPM · instrumental · Rhodes · swing', copy: 'Lo-fi hip hop instrumental, 78 BPM, acordes de jazz en Rhodes, batería con swing humano, textura de vinilo, bajo redondo, ambiente de cafetería y dinámica relajada.' },
 ]
 
-const curriculum = [
-  { module: 'Módulo 01', title: 'El mapa sonoro', duration: '42 min', objective: 'Entender el lenguaje mínimo para dirigir una generación musical con intención.', lessons: ['Sesión 01 · Qué es la música generativa y cómo pensar como director', 'Sesión 02 · BPM, tonalidad, energía y estructura sin tecnicismos', 'Sesión 03 · Ejercicio: describe una escena en cinco decisiones musicales'], deliverable: 'Brief de una canción con emoción, referencia, energía y estructura.' },
-  { module: 'Módulo 02', title: 'Prompting musical', duration: '1 h 15 min', objective: 'Construir instrucciones reproducibles que puedas comparar, iterar y mejorar.', lessons: ['Sesión 04 · La anatomía de un prompt reproducible', 'Sesión 05 · Voz, género, instrumentación, tempo y mezcla en una sola dirección', 'Sesión 06 · Cómo iterar: una variable a la vez y escucha crítica', 'Sesión 07 · Ejercicio: tres versiones del mismo hook y checklist de calidad'], deliverable: 'Tres generaciones documentadas y una versión seleccionada con justificación.' },
-  { module: 'Módulo 03', title: 'Voz, letra y emoción', duration: '58 min', objective: 'Dirigir una interpretación vocal coherente con el mensaje y la audiencia.', lessons: ['Sesión 08 · Registro, textura, articulación y acento de voz', 'Sesión 09 · Escribir versos, pre-coro, coro y puente con métrica funcional', 'Sesión 10 · Ejercicio: dirección vocal para una interpretación real'], deliverable: 'Letra completa con anotaciones de interpretación y dinámica.' },
-  { module: 'Módulo 04', title: 'Género y producción', duration: '1 h 08 min', objective: 'Elegir capas sonoras que sostengan el groove sin saturar la producción.', lessons: ['Sesión 11 · Instrumentación por género y función de cada capa', 'Sesión 12 · Tempo, groove, dinámica, tonalidad y referencias', 'Sesión 13 · Ejercicio: transformar una idea pop en tres géneros'], deliverable: 'Matriz comparativa con tres arreglos y el prompt final de producción.' },
-  { module: 'Módulo 05', title: 'De idea a release', duration: '1 h 20 min', objective: 'Pasar de una generación prometedora a una entrega presentable y trazable.', lessons: ['Sesión 14 · Selección, edición y control de versiones', 'Sesión 15 · Brief profesional para colaborar y publicar', 'Sesión 16 · Proyecto final: produce dos canciones y presenta tu portafolio'], deliverable: 'Portafolio final con dos canciones, prompts, decisiones y reflexión de aprendizaje.' },
-]
+const curriculum = COURSE_MODULES.map((module) => {
+  const lessons = lessonsByModule(module.index)
+  const minutes = lessons.reduce((sum, lesson) => sum + lesson.minutes, 0)
+  return {
+    module: `Módulo ${String(module.index).padStart(2, '0')}`,
+    title: module.title,
+    duration: minutesLabel(minutes),
+    objective: module.summary,
+    lessons: lessons.map((lesson) => `Sesión ${String(lesson.lessonNumber).padStart(2, '0')} · ${lesson.title}`),
+    deliverable: module.outcome,
+  }
+})
 
 /** Cifras antes que adjetivos: el visitante entiende el tamaño del curso de un vistazo. */
 const metrics = [
-  { value: '5', label: 'módulos' },
-  { value: '16', label: 'sesiones prácticas' },
-  { value: '5 h 23', label: 'de material' },
+  { value: String(COURSE_MODULES.length), label: 'módulos' },
+  { value: String(COURSE_TOTAL_LESSONS), label: 'sesiones prácticas' },
+  { value: minutesLabel(totalMinutes), label: 'de material' },
   { value: '2', label: 'canciones en tu portafolio' },
 ]
 
-const badges: { label: string; icon: LucideIcon; state: string; tone: 'amber' | 'mint' | 'violet' }[] = [
-  { label: 'Primer beat', icon: Zap, state: 'Completado', tone: 'mint' },
-  { label: 'Oído crítico', icon: Award, state: 'Desbloqueada', tone: 'violet' },
-  { label: 'Productor IA', icon: Trophy, state: '24% del camino', tone: 'amber' },
-]
+const BADGE_ICONS: LucideIcon[] = [Zap, Award, Trophy, Music2]
+const badges = COURSE_BADGES.map((badge, index) => ({
+  label: badge.name,
+  requirement: badge.requirement,
+  icon: BADGE_ICONS[index % BADGE_ICONS.length],
+  tone: (['mint', 'violet', 'amber', 'mint'] as const)[index % 4],
+}))
 
 type ChatMessage = { from: 'user' | 'bot'; text: string; source: 'user' | 'model' | 'guide' }
 
@@ -264,7 +288,7 @@ export function CourseDashboard() {
     <section className="pg-section">
       <div className="pg-container grid items-center gap-12 lg:grid-cols-[1.05fr_.95fr]">
         <div>
-          <span className="pg-chip"><Sparkles size={12} /> Música aumentada por IA · Academia + Estudio + Portafolio + Comunidad</span>
+          <span className="pg-chip"><Sparkles size={12} /> Música aumentada por IA · Academia + Estudio + Portafolio</span>
           <h1 className="pg-title pg-title-display" style={{ marginTop: '1.25rem' }}>
             Tu próxima idea merece{' '}
             <span
@@ -285,8 +309,8 @@ export function CourseDashboard() {
             <a href="#ruta" className="pg-navlink" style={{ color: 'var(--pg-text)' }}>Explorar el programa</a>
           </div>
           <div className="mt-10 flex flex-wrap items-center gap-6" style={{ fontSize: 'var(--pg-step--1)', color: 'var(--pg-muted)' }}>
-            <span className="flex items-center gap-2"><BadgeCheck size={15} style={{ color: 'var(--pg-cyan)' }} /> Certificado final</span>
-            <span className="flex items-center gap-2"><Headphones size={15} style={{ color: 'var(--pg-violet)' }} /> Audio + video</span>
+            <span className="flex items-center gap-2"><BadgeCheck size={15} style={{ color: 'var(--pg-cyan)' }} /> Constancia por participación (emitida por TAMV)</span>
+            <span className="flex items-center gap-2"><Headphones size={15} style={{ color: 'var(--pg-violet)' }} /> Audio + guías</span>
             <span className="flex items-center gap-2 font-mono">{coursePrice} · pago único</span>
           </div>
         </div>
@@ -365,7 +389,7 @@ export function CourseDashboard() {
             <p className="pg-eyebrow">Tu recorrido</p>
             <h2 className="pg-title">De la primera idea al release</h2>
           </div>
-          <span className="pg-chip" data-tone="mint">24% completado · nivel 1</span>
+          <span className="pg-chip" data-tone="mint">{COURSE_MODULES.length} módulos · {COURSE_TOTAL_LESSONS} sesiones</span>
         </div>
         <div className="mt-9 grid gap-3">
           {modules.map((item, index) => (
@@ -527,7 +551,7 @@ export function CourseDashboard() {
                     <badge.icon size={20} />
                   </span>
                   <p className="mt-4" style={{ fontSize: 'var(--pg-step-0)', fontWeight: 500, color: 'var(--pg-ink)' }}>{badge.label}</p>
-                  <p className="mt-2"><span className="pg-chip" data-tone={badge.tone}>{badge.state}</span></p>
+                  <p className="mt-2"><span className="pg-chip" data-tone={badge.tone}>{badge.requirement}</span></p>
                 </div>
               </Reveal>
             ))}

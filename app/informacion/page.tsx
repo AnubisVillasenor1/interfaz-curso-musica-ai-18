@@ -3,8 +3,8 @@ import Link from 'next/link'
 import { ArrowRight, Headphones, Layers3, WandSparkles } from 'lucide-react'
 
 export const metadata: Metadata = {
-  title: 'Información · Play and Go',
-  description: 'Conoce la propuesta de Play and Go: academia y estudio creativo de música con IA de TAMV ONLINE.',
+  title: 'Información',
+  description: 'Conoce la propuesta de Play and Go: academia y estudio creativo de música con IA de TAMV Online Network.',
 }
 
 const pillars = [

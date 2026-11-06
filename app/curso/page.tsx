@@ -7,7 +7,7 @@ import { TamvQuote } from '@/components/tamv-quote'
 import { COURSE_FRAMEWORK, COURSE_MODULES, COURSE_TOTAL_LESSONS, COURSE_UNITS, FINAL_PROJECT, lessonsByModule } from '@/lib/course'
 
 export const metadata: Metadata = {
-  title: 'Programa del curso · Play and Go by TAMV ONLINE',
+  title: 'Programa del curso',
   description: `Índice del curso: ${COURSE_MODULES.length} módulos y ${COURSE_TOTAL_LESSONS} lecciones con prompts, ejercicios, escucha guiada e insignias.`,
 }
 
@@ -36,7 +36,7 @@ export default function CursoPage() {
         <Link href="/" className="pg-navlink inline-flex items-center gap-2">
           <ArrowLeft size={14} aria-hidden="true" /> Inicio
         </Link>
-        <p className="pg-eyebrow hidden sm:inline-flex">Play and Go · TAMV ONLINE</p>
+        <p className="pg-eyebrow hidden sm:inline-flex">por TAMV Online Network</p>
         <Link href="/studio" className="pg-navlink inline-flex items-center gap-2">
           <Music2 size={14} aria-hidden="true" /> Estudio
         </Link>

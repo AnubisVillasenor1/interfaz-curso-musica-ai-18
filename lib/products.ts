@@ -84,7 +84,7 @@ export const PRODUCTS: Record<ProductId, Product> = {
   'play-and-go-pro': {
     id: 'play-and-go-pro',
     name: 'Play and Go — Estudio abierto (mensual)',
-    description: 'Todo desbloqueado cada mes: cupo ampliado, agente de IA sin límite de contexto y biblioteca completa.',
+    description: 'Todo desbloqueado cada mes: cupo ampliado, asistente con historial ampliado y biblioteca completa.',
     priceInCents: 29900,
     mode: 'subscription',
     interval: 'month',

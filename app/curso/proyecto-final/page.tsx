@@ -6,7 +6,7 @@ import { COURSE_FRAMEWORK, FINAL_PROJECT } from '@/lib/course'
 import { TamvQuote } from '@/components/tamv-quote'
 
 export const metadata: Metadata = {
-  title: 'Proyecto final «Mi Nodo Cero» · Play and Go by TAMV ONLINE',
+  title: 'Proyecto final «Mi Nodo Cero»',
   description: `Proyecto final del curso ${COURSE_FRAMEWORK.title}: ${FINAL_PROJECT.description}`,
 }
 
@@ -18,7 +18,7 @@ export default function ProyectoFinalPage() {
         <Link href="/curso" className="pg-navlink inline-flex items-center gap-2">
           <ArrowLeft size={14} aria-hidden="true" /> Programa
         </Link>
-        <p className="pg-eyebrow hidden sm:inline-flex">Play and Go · TAMV ONLINE</p>
+        <p className="pg-eyebrow hidden sm:inline-flex">por TAMV Online Network</p>
         <Link href="/studio" className="pg-navlink">Estudio</Link>
       </header>
 
@@ -52,12 +52,12 @@ export default function ProyectoFinalPage() {
         </section>
 
         <section className="mt-14">
-          <h2 className="pg-section-title">Evaluación y certificado</h2>
+          <h2 className="pg-section-title">Evaluación y constancia</h2>
           <p className="pg-lede mt-3">
-            Examen de {COURSE_FRAMEWORK.exam.questions} preguntas en {COURSE_FRAMEWORK.exam.minutes} minutos,
-            mínimo {COURSE_FRAMEWORK.exam.passPercent}%. {COURSE_FRAMEWORK.exam.certificate}
+            La evaluación del curso es tu proyecto final y tus entregas por lección (progreso e insignias).
+            Al completarlo recibes constancia por participación emitida por TAMV Online Network con código verificable.
+            El examen automático de {COURSE_FRAMEWORK.exam.questions} preguntas en {COURSE_FRAMEWORK.exam.minutes} minutos está en desarrollo: no se promete equivalencia con un título oficial ni idiomas aún no disponibles.
           </p>
-          <p className="pg-note mt-3">Idiomas: {COURSE_FRAMEWORK.exam.languages.join(', ')}.</p>
         </section>
 
         <section className="mt-14">
