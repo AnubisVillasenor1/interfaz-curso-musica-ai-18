@@ -49,9 +49,9 @@ export async function GET(request: Request) {
   const take = positiveInt(url.searchParams.get('limit'), 20, PAGE_SIZE_MAX)
   const page = positiveInt(url.searchParams.get('page'), 1, 1000)
 
-  const { data: songs, error } = await supabase
+  const { data: songs, error, count } = await supabase
     .from('songs')
-    .select('id, title, prompt, genre, tempo, engine, status, audio_url, storage_path, duration_seconds, error, lesson_id, created_at')
+    .select('id, title, prompt, genre, tempo, engine, status, audio_url, storage_path, duration_seconds, error, lesson_id, created_at', { count: 'exact' })
     .order('created_at', { ascending: false })
     .range((page - 1) * take, page * take - 1)
 
@@ -81,6 +81,11 @@ export async function GET(request: Request) {
       })),
       page,
       perPage: take,
+      // `count` llega del propio PostgREST (`count: 'exact'`), así que el total
+      // no cuesta un viaje extra. Si algún día viniera nulo, mejor decirlo con
+      // `null` que inventar el tamaño de la biblioteca del usuario.
+      total: count ?? null,
+      totalPages: count === null || count === undefined ? null : Math.max(1, Math.ceil(count / take)),
       signedUrlsExpireIn: SIGNED_URL_TTL_SECONDS,
     },
     { headers: PRIVATE_HEADERS },

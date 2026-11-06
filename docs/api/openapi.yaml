@@ -6,8 +6,14 @@
 # ADVERTENCIA DE DERIVA: los "(línea NN)" de los comentarios entre # apuntan a
 # la revisión en la que se hizo la lectura. Tras aplicar los códigos de error y
 # las cabeceras Cache-Control el desplazamiento es real, así que la referencia
-# fiable es el nombre de la ruta, no el número. La versión 0.2.0 documenta el
-# estado ya corregido; lo que sigue sin verificarse sigue marcando x-no-verificado.
+# fiable es el nombre de la ruta, no el número. Cambios por versión:
+#   0.2.0 — estado ya corregido: códigos de máquina en las 11 rutas, Retry-After
+#           y X-RateLimit-* en el 429 del chat, Cache-Control en las rutas por
+#           usuario y quota en los éxitos de /api/generate.
+#   0.3.0 — paginación honesta: /api/songs añade total + totalPages (COUNT del
+#           propio PostgREST) y /api/music/search acepta limit/page y devuelve
+#           total por catálogo, con null donde el proveedor no informa recuento.
+# Lo que sigue sin verificarse sigue marcando x-no-verificado.
 #
 # EXCLUCION deliberada: app/api/stripe/webhook/route.ts (POST /api/stripe/webhook)
 # no se documenta como superficie pública porque solo debe recibir a Stripe:
@@ -21,7 +27,7 @@
 openapi: 3.1.0
 info:
   title: Play and Go — API interna del curso de música con IA
-  version: 0.2.0
+  version: 0.3.0
   description: |
     Capa HTTP interna de la app Next.js (App Router, runtime nodejs) que da
     servicio al curso "Play and Go by TAMV ONLINE": generación musical con dos
@@ -144,6 +150,12 @@ paths:
         Si un catálogo cae, se degrada en silencio y se informa por flags en
         providers. Solo 502 cuando ambos fallan. Jamendo devuelve 0 resultados
         si JAMENDO_CLIENT_ID no está configurado (se ignora, sin error).
+        Paginación: `limit` se reparte a medias entre los dos catálogos
+        (cada uno pide ceil(limit/2)) y `page` se traduce a `page` en Internet
+        Archive y a `offset` en Jamendo.
+        `total` por catálogo: Internet Archive informa numFound; Jamendo no
+        expone un recuento en v3.0/tracks, así que su `total` es null. Un null
+        significa "ese catálogo no lo dice", no "cero resultados".
         (evidencia: app/api/music/search/route.ts)
       security: []
       parameters:
@@ -153,6 +165,16 @@ paths:
           description: Consulta de búsqueda, 2-100 caracteres tras trim.
           schema: { type: string, minLength: 2, maxLength: 100 }
           examples: { example_basic: { value: 'piano ambiental' } }
+        - name: limit
+          in: query
+          required: false
+          description: Resultados pedidos en total (1-48, tope 48). Default 24.
+          schema: { type: integer, minimum: 1, maximum: 48, default: 24 }
+        - name: page
+          in: query
+          required: false
+          description: Página, empezando en 1 (1-50, tope 50). Default 1.
+          schema: { type: integer, minimum: 1, maximum: 50, default: 1 }
       responses:
         '200':
           description: Resultados agregados y bandera de disponibilidad por proveedor.
@@ -172,12 +194,15 @@ paths:
                         source: Internet Archive
                         license: https://creativecommons.org/publicdomain/mark/1.0/
                         url: https://archive.org/details/1234
+                    page: 1
+                    limit: 24
+                    total: { internetArchive: 117917, jamendo: null }
                     providers: { internetArchive: true, jamendo: false }
                     notice: Verifica los términos y la licencia de cada obra antes de usarla en proyectos públicos o comerciales.
         '400':
-          $ref: '#/components/responses/ErrorText' # 'La búsqueda debe tener al menos 2 caracteres.' / '...no puede superar 100 caracteres.' (líneas 43-44)
+          $ref: '#/components/responses/ErrorText' # query_too_short / query_too_long
         '502':
-          $ref: '#/components/responses/ErrorText' # { error: 'Los catálogos no están disponibles en este momento.' } solo si ambos catálogos fallan (línea 52)
+          $ref: '#/components/responses/ErrorText' # upstream_unavailable: solo si ambos catálogos fallan
 
   /api/checkout:
     post:
@@ -493,8 +518,10 @@ paths:
       summary: Lista paginada de canciones propias con URLs de audio firmadas
       description: |
         Requiere sesión. Paginación page/limit (máx 50 por página, page máx
-        1000). Cada listing renueva las firmas de Storage (TTL 1h, confirmado
-        también en el cuerpo como signedUrlsExpireIn).
+        1000) con recuento: `total` viene de COUNT exact del propio PostgREST
+        y `totalPages` es ceil(total/perPage), así que un agente sabe si hay
+        más páginas sin adivinar. Cada listing renueva las firmas de Storage
+        (TTL 1h, confirmado también en el cuerpo como signedUrlsExpireIn).
         playableUrl = firma de storage_path si existe, si no audio_url del
         proveedor, si no null. Emite Cache-Control: private, no-store porque
         son URLs firmadas de una sola cuenta; intermediario que las cachee
@@ -514,12 +541,19 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [songs, page, perPage, signedUrlsExpireIn]
-                x-no-verificado: true # No hay total ni cursor: sin COUNT, un agente no sabe si hay más página que la que devuelve.
+                required: [songs, page, perPage, total, signedUrlsExpireIn]
                 properties:
                   songs: { type: array, items: { $ref: '#/components/schemas/SongListItem' } }
                   page: { type: integer }
                   perPage: { type: integer }
+                  total:
+                    type: ['integer', 'null']
+                    minimum: 0
+                    description: 'Canciones totales de la cuenta. null solo si el servidor no devolvió COUNT; nunca es un 0 inventado.'
+                  totalPages:
+                    type: ['integer', 'null']
+                    minimum: 1
+                    description: 'ceil(total/perPage); null junto con total.'
                   signedUrlsExpireIn:
                     type: integer
                     description: Segundos de validez de las playableUrl de esta página (3600).
@@ -543,13 +577,15 @@ paths:
                         playableUrl: 'https://xyz.supabase.co/storage/v1/object/sign/song-audio/...?token=...'
                     page: 1
                     perPage: 20
+                    total: 47
+                    totalPages: 3
                     signedUrlsExpireIn: 3600
         '401':
-          $ref: '#/components/responses/ErrorText' # (línea 38)
+          $ref: '#/components/responses/ErrorText' # unauthorized
         '500':
-          $ref: '#/components/responses/ErrorText' # 'No pudimos cargar tu biblioteca.' (línea 52)
+          $ref: '#/components/responses/ErrorText' # read_failed: 'No pudimos cargar tu biblioteca.'
         '503':
-          $ref: '#/components/responses/ErrorText' # SUPABASE_NOT_CONFIGURED (línea 33)
+          $ref: '#/components/responses/ErrorText' # not_configured: Supabase sin configurar
     delete:
       operationId: delete_song
       tags: [library]
@@ -1021,11 +1057,11 @@ components:
 
     SearchResults:
       type: object
-      required: [results, providers, notice]
+      required: [results, page, limit, total, providers, notice]
       properties:
         results:
           type: array
-          maxItems: 24
+          maxItems: 48
           items:
             type: object
             required: [id, title, creator, source, url]
@@ -1036,6 +1072,15 @@ components:
               source: { type: string, enum: [Internet Archive, Jamendo] }
               license: { type: string, description: 'URL o frase advirtiendo de consultar la licencia.' }
               url: { type: string, format: uri }
+        page: { type: integer, minimum: 1, maximum: 50, description: 'Página efectivamente servida (eco del parámetro, con el tope aplicado).' }
+        limit: { type: integer, minimum: 1, maximum: 48, description: 'Tamaño de página efectivamente servido; ceil(limit/2) por catálogo.' }
+        total:
+          type: object
+          description: 'Coincidencias totales del catálogo, no de esta página. null cuando el proveedor no informa un recuento: es un desconocido, no un cero.'
+          required: [internetArchive, jamendo]
+          properties:
+            internetArchive: { type: ['integer', 'null'], minimum: 0, description: 'numFound de advancedsearch (medido: 117917 para "piano").' }
+            jamendo: { type: ['integer', 'null'], description: 'Siempre null: v3.0/tracks no expone recuento. El consumidor deduce "hay más" cuando un catálogo devuelve exactamente su mitad del limit.' }
         providers:
           type: object
           description: 'Disponibilidad real de cada catálogo en ESTA llamada; false ⇒ se degradó en silencio (solo 502 si ambos fallan).'
