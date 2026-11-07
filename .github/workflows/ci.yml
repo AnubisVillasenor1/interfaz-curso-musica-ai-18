@@ -5,18 +5,79 @@ on:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   check:
+    name: Typecheck, production build and functional smoke checks
     runs-on: ubuntu-latest
+    timeout-minutes: 25
+    # No production secrets are passed to CI. The smoke suite verifies safe
+    # no-credential behavior and local deterministic fallbacks.
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ""
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ""
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ""
+      SUPABASE_SERVICE_ROLE_KEY: ""
+      STRIPE_SECRET_KEY: ""
+      STRIPE_WEBHOOK_SECRET: ""
+      GENERATOR_CALLBACK_SECRET: ""
+      AI_AGENT_API_KEY: ""
+      FREEAI_API_KEY: ""
+      BAZAARLINK_API_KEY: ""
+      OLLAMA_BASE_URL: ""
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
         with:
           version: 12.3.4
-      - uses: actions/setup-node@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm typecheck
-      - run: pnpm build
+
+      - name: Install from frozen lockfile
+        run: pnpm install --frozen-lockfile
+
+      - name: TypeScript validation
+        run: pnpm typecheck
+
+      - name: Production build
+        run: pnpm build
+
+      - name: Start production server
+        shell: bash
+        run: |
+          pnpm start > /tmp/play-go-next.log 2>&1 &
+          echo $! > /tmp/play-go-next.pid
+          for attempt in $(seq 1 40); do
+            if curl --silent --fail http://127.0.0.1:3000/ > /dev/null; then
+              echo "Next.js production server is ready."
+              exit 0
+            fi
+            sleep 2
+          done
+          cat /tmp/play-go-next.log
+          echo "Next.js production server did not become ready." >&2
+          exit 1
+
+      - name: Route and API smoke tests
+        run: node scripts/smoke-preview.mjs
+
+      - name: Upload server log if a step fails
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: next-production-server-log
+          path: /tmp/play-go-next.log
+          if-no-files-found: ignore
