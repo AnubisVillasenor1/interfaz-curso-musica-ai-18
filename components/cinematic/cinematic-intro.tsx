@@ -17,7 +17,7 @@ import CinematicStage from './cinematic-stage'
 import { actAt, CINEMATIC_ACTS, gradeFilter, withAlpha } from '@/lib/cinematic/scenes'
 import { markIntroSeen } from '@/lib/cinematic/gate'
 import { INTRO_TRACK, SoundBed, type BedState } from '@/lib/cinematic/soundbed'
-const TAMV_LOGO_URL = 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/tamvlogo1-4wSYHNlhlHSVNIwFL7gOVmGkBaCeqA.jpg'
+const TAMV_LOGO_URL = '/brand/logo.svg'
 
 import {
   createEnv,
