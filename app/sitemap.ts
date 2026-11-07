@@ -17,7 +17,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const siteUrl = getSeoOrigin()
 
   const now = new Date()
-  const entry = (path: string, priority: number, changeFrequency: 'weekly' | 'monthly' = 'weekly') => ({
+  const entry = (
+    path: string,
+    priority: number,
+    changeFrequency: 'weekly' | 'monthly' | 'yearly' = 'weekly',
+  ) => ({
     url: `${siteUrl}${path}`,
     lastModified: now,
     changeFrequency,
@@ -39,6 +43,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     entry('/comunidad', 0.7),
     entry('/curso/proyecto-final', 0.85, 'monthly'),
     entry('/informacion', 0.5, 'monthly'),
+    entry('/terminos', 0.3, 'yearly'),
     ...coursePages,
   ]
 }

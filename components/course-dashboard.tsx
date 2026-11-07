@@ -22,6 +22,7 @@ import {
   Zap,
   type LucideIcon,
 } from 'lucide-react'
+import Link from 'next/link'
 
 import { Dialog } from '@/components/ui/dialog'
 import { Reveal } from '@/components/reveal'
@@ -573,9 +574,14 @@ export function CourseDashboard() {
               <span className="pg-eyebrow" style={{ letterSpacing: '.2em' }}>Tecnología · música · futuro</span>
             </span>
           </div>
-          <p style={{ fontSize: 'var(--pg-step--1)', color: 'var(--pg-muted)' }}>
-            Play and Go by TAMV ONLINE · Orgullosamente Realmontenses
-          </p>
+          <div className="flex flex-col items-start gap-2 sm:items-end">
+            <p style={{ fontSize: 'var(--pg-step--1)', color: 'var(--pg-muted)' }}>
+              Play and Go by TAMV ONLINE · Orgullosamente Realmontenses
+            </p>
+            <Link href="/terminos" className="pg-minilink">
+              Términos y Condiciones
+            </Link>
+          </div>
         </div>
       </div>
     </footer>
