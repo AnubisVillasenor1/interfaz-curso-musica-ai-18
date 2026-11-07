@@ -674,6 +674,13 @@ html[data-theme='dark'] {
     text-transform: uppercase;
     color: rgba(226, 244, 250, 0.72);
   }
+  .intro-monogram small {
+    display: block;
+    margin-top: 0.2rem;
+    font-size: 7px;
+    letter-spacing: 0.18em;
+    color: rgba(214, 241, 248, 0.62);
+  }
   .intro-monogram i {
     width: 26px;
     height: 26px;
@@ -1168,9 +1175,21 @@ html[data-theme='dark'] {
   }
 
   .pg-rule {
-    height: 1px;
-    background: linear-gradient(90deg, transparent, var(--pg-keyline), transparent);
+    position: relative;
+    height: 2px;
+    overflow: hidden;
+    background: linear-gradient(90deg, transparent 0%, #101217 15%, #eef4f7 36%, #4e8db9 58%, #d7a94b 78%, transparent 100%);
+    background-size: 220% 100%;
+    box-shadow: 0 0 18px rgba(111, 214, 239, .28), 0 0 8px rgba(215, 169, 75, .2);
+    animation: pg-metallic-flow 7s linear infinite;
   }
+  .pg-section { position: relative; isolation: isolate; }
+  .pg-section::before { content: '♪   ♫'; position: absolute; right: 5%; top: 15%; z-index: -1; color: rgba(117, 233, 242, .08); font-size: clamp(2rem, 6vw, 5rem); letter-spacing: .8em; pointer-events: none; animation: pg-note-drift 14s ease-in-out infinite; }
+  .pg-hero-frame { box-shadow: 0 30px 100px -45px rgba(0, 0, 0, .95), 0 0 0 1px rgba(217, 224, 230, .25), 0 0 44px rgba(117, 233, 242, .18); }
+  .pg-brand-lockup { border: 1px solid rgba(236, 244, 247, .3); background: linear-gradient(135deg, rgba(10, 19, 31, .8), rgba(40, 77, 106, .35)); box-shadow: inset 0 1px rgba(255, 255, 255, .35), 0 10px 30px rgba(0, 0, 0, .25); }
+  .pg-banner-frame { border: 1px solid rgba(216, 201, 157, .42); box-shadow: 0 0 26px rgba(215, 169, 75, .16), inset 0 1px rgba(255, 255, 255, .55); }
+  @keyframes pg-metallic-flow { to { background-position: 220% 0; } }
+  @keyframes pg-note-drift { 0%, 100% { transform: translate3d(0, 0, 0); opacity: .35; } 50% { transform: translate3d(-16px, 18px, 0); opacity: .8; } }
 
   /* Superficie: hairline exterior + brillo de 1 px arriba, que es lo que hace
      que un panel de vidrio parezca sólido y no una mancha borrosa. */

@@ -40,8 +40,10 @@ import { COURSE_PRODUCT } from '@/lib/products'
  * los mismos colores que el resto de la interfaz. El lockup de TAMV vuelve a
  * ser tipografía real, no una JPG con el fondo recortado.
  */
-const logoMark = '/brand/logo.svg'
-const heroImage = '/brand/hero-studio.svg'
+const logoMark = 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/tamvlogo1-4wSYHNlhlHSVNIwFL7gOVmGkBaCeqA.jpg'
+const playAndGoLogo = 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logoplayandgo-EAG8du0GfFdQZUWxVmQQa5plKJDFSr.jpg'
+const heroImage = 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-ggBlgonDJDNHatg1hRwzx1TFsT0h7C.png'
+const heroBanner = 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-rwD1QPRMTzXqdzENNOyDxWuHJms4aw.png'
 const sampleAudio = '/audio/pista2.mp3'
 
 /**
@@ -317,14 +319,21 @@ export function CourseDashboard() {
         </div>
 
         <Reveal>
-          <div className="pg-frame">
+          <div className="pg-frame pg-hero-frame">
+            <div className="pg-brand-lockup absolute left-5 top-5 z-10 flex items-center gap-3 rounded-2xl px-3 py-2 backdrop-blur-xl">
+              <img src={playAndGoLogo} alt="Play and Go by TAMV ONLINE" width={44} height={44} className="size-11 rounded-xl object-cover" />
+              <span className="hidden text-[10px] font-semibold uppercase tracking-[0.18em] text-white sm:block">Play and Go<br /><span className="font-normal text-cyan-100/80">by TAMV Online Network</span></span>
+            </div>
             <img
               src={heroImage}
-              alt="Productor dirigiendo una generación musical con inteligencia artificial"
-              width={1600}
-              height={1200}
-              className="aspect-[4/3] w-full object-cover"
+              alt="Play and Go by TAMV Online Network: creación musical con inteligencia artificial"
+              width={1024}
+              height={576}
+              className="aspect-[16/9] w-full object-cover"
             />
+            <div className="pg-banner-frame mx-4 -mt-10 relative z-10 overflow-hidden rounded-2xl">
+              <img src={heroBanner} alt="Banner musical de Play and Go con ondas, notas y circuitos" width={1024} height={320} className="h-24 w-full object-cover sm:h-32" />
+            </div>
             <audio ref={audioRef} src={sampleAudio} loop preload="none" onEnded={() => setPlaying(false)} />
             <div
               className="absolute inset-x-5 bottom-5 flex items-center justify-between gap-4 rounded-2xl p-4 backdrop-blur-xl"
@@ -567,7 +576,7 @@ export function CourseDashboard() {
         <span className="pg-rule mb-8 mt-10 block" />
         <div className="flex flex-wrap items-center justify-between gap-6">
           <div className="flex items-center gap-4">
-            <img src={logoMark} alt="" width={44} height={44} className="size-11 rounded-xl" />
+            <img src={logoMark} alt="TAMV ONLINE Network" width={44} height={44} className="size-11 rounded-xl object-cover ring-1 ring-[#d8c99d]/40" />
             <span className="block">
               <strong className="pg-item-title block tracking-[0.18em]">TAMV ONLINE</strong>
               <span className="pg-eyebrow" style={{ letterSpacing: '.2em' }}>Tecnología · música · futuro</span>
