@@ -54,9 +54,9 @@ export default function ProyectoFinalPage() {
         <section className="mt-14">
           <h2 className="pg-section-title">Evaluación y constancia</h2>
           <p className="pg-lede mt-3">
-            La evaluación del curso es tu proyecto final y tus entregas por lección (progreso e insignias).
-            Al completarlo recibes constancia por participación emitida por TAMV Online Network con código verificable.
-            El examen automático de {COURSE_FRAMEWORK.exam.questions} preguntas en {COURSE_FRAMEWORK.exam.minutes} minutos está en desarrollo: no se promete equivalencia con un título oficial ni idiomas aún no disponibles.
+            La evaluación del curso combina el proyecto final y tus entregas por lección (progreso e insignias).
+            La plataforma dispone de un endpoint de examen de {COURSE_FRAMEWORK.exam.questions} preguntas con registro sujeto a Supabase y sus migraciones. Si se emite una constancia interna, no equivale a un título oficial ni a una acreditación externa.
+            No prometemos un PDF descargable ni una experiencia completa en siete idiomas hasta verificar esos flujos de extremo a extremo.
           </p>
         </section>
 

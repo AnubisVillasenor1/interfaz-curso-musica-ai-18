@@ -110,3 +110,14 @@ Si Preview falla, corregir en la rama del PR; no se requiere tocar producción. 
 ### Entitlements migration gate
 
 The migration 20261107190000_entitlement_lifecycle.sql changes schema and quota semantics. Apply it in staging first, and reconcile rows marked entitlement_reconciliation_required using verified Stripe session/subscription evidence before production rollout. See docs/ENTITLEMENT_LIFECYCLE.md for the exact query and acceptance matrix. Do not infer lifetime course access from a standalone extension.
+
+
+## 8. Aceptación académica del laboratorio técnico
+
+- Rutas que deben devolver HTTP 200 en CI: /curso/laboratorio-audio, /curso/laboratorio-audio/modulo-1, /curso/laboratorio-audio/modulo-2 y /curso/laboratorio-audio/evaluacion.
+- GET /api/advanced-audio/exam?module=dsp y ?module=mastering debe devolver 20 preguntas y opciones, sin exponer correctIndex ni claves correctas.
+- Las pruebas Python se ejecutan en el trabajo paralelo de CI desde laboratorio-audio-ia/: instalar requirements.txt, compileall y unittest discover. Son pruebas de contrato con audio sintético, no una aprobación artística ni una verificación de licencias de una entrega real.
+- El examen técnico debe mostrar retroalimentación después del envío, distinguir aprobación teórica (80/100) de dominio teórico sólido (85/100) y no emitir certificados de grado.
+- La evaluación con IA requiere Supabase configurado, sesión autenticada y AI_AGENT_API_KEY. Si falta cualquiera, debe fallar con mensaje explícito; nunca debe devolver una nota simulada.
+- La evaluación con IA recibe solo un resumen textual. Para una calificación válida, una persona revisa los archivos, código ejecutado, audio, gráfica, procedencia y límites descritos por el estudiante.
+- El camino técnico es complementario; la cuenta central del curso sigue teniendo 16 sesiones. No renumerar lecciones ni cambiar el contrato de badges/progreso como parte de esta ampliación.

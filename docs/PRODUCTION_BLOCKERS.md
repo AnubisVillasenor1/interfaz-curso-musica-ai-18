@@ -81,3 +81,12 @@ Required order:
 4. Apply to production only after the reconciliation query returns no unresolved rows, or document an explicit, reviewed exception for every remaining row.
 
 The GitHub workflow includes source-contract checks, but those checks do not replace execution against staging Postgres and Stripe test mode.
+
+
+### P1 — Evaluación técnica asistida por IA y evidencia académica
+
+El nuevo trayecto de laboratorio dispone de dos exámenes de 20 reactivos corregidos en servidor y una ruta opcional de retroalimentación con IA. La evaluación asistida exige una sesión autenticada, SUPABASE configurado y AI_AGENT_API_KEY; limita el cuerpo textual y el número de intentos por usuario en cada instancia. El limitador en memoria no es global ni un control de gasto distribuido, así que deben configurarse límites de gasto en el proveedor.
+
+La ruta de IA recibe únicamente un resumen de texto. No escucha archivos, no ejecuta código y no verifica licencias. La respuesta tiene una puntuación ponderada provisional; el frontend y la documentación advierten que el dictamen final exige revisión humana. Si el proveedor devuelve una estructura no válida, la ruta no crea una calificación y responde con error.
+
+Los exámenes técnicos guardan intentos en la tabla existente solo cuando la sesión y la base están disponibles. La ausencia de registro se informa al usuario; el examen complementario no emite certificados ni grado académico. Para validación real en staging, prueba auth, intentos duplicados y aislamiento de usuario con datos de prueba; no uses credenciales de producción para verificar entregas.

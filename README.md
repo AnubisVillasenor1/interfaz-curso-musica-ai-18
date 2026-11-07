@@ -1,8 +1,7 @@
 # Play and Go by TAMV ONLINE
 
-Curso y estudio de producción musical con IA: 16 sesiones en 5 módulos, motor de
-audio local en el navegador, análisis espectral en tiempo real, un asistente que
-responde con el contenido real del programa y cobro por producto con Stripe.
+Curso y estudio de producción musical con IA: 16 sesiones originales en 5 módulos, motor de audio local en el navegador, asistente basado en el currículo y un trayecto técnico complementario con análisis DSP, mezcla y masterización reproducibles.
+El autor del curso es Edwin Oswaldo Castillo Trejo; el diseño y la documentación del trayecto técnico declaran apoyo de IA, sin atribuirle autoría humana ni acreditación académica.
 
 Hecho en Mineral del Monte, Hidalgo. `by TAMV ONLINE` — la marca visible en el
 sitio es **Play and Go**, no `Sonora IA` (nombre que dejó v0 y que seguía en
@@ -23,6 +22,8 @@ documento mide, no supone: cada afirmación trae la prueba y el comando.
 | Motor de audio local (síntesis con Tone.js) | `lib/music/engine.ts`, `components/music-studio.tsx` | funciona sin backend ni pago |
 | Voz y canción pagada (proveedor externo) | `app/api/music/` | requiere claves; sin ellas responde 503 |
 | Asistente con IA | `app/api/agent/` | con `AI_AGENT_API_KEY` usa un LLM real; sin ella responde con el temario y lo dice |
+| Laboratorio técnico de audio e IA musical | `app/curso/laboratorio-audio/`, `lib/advanced-audio-curriculum.ts` | dos módulos complementarios con ocho lecciones, código, rúbricas y fuentes técnicas |
+| Exámenes y revisión formativa | `app/api/advanced-audio/`, `lib/advanced-audio-exam.ts` | 20 preguntas por módulo; claves solo en servidor; IA revisa texto aportado y requiere login/proveedor |
 | Pagos | `app/api/checkout/`, `app/api/stripe/` | flujo escrito, pendiente de claves y de montar el webhook |
 | Base de datos | `supabase/migrations/` | cuatro migraciones escritas, **todavía no aplicadas** |
 
@@ -41,6 +42,29 @@ public/                 # marca local (logo.svg, hero-studio.svg) y audio/
 docs/                   # DEPLOY_FAILURES.md y el análisis del proyecto
 proxy.ts                # refresco de sesión (reemplaza a middleware.ts en Next 16)
 ```
+
+## Laboratorio técnico complementario
+
+El núcleo didáctico conserva sus **16 sesiones en 5 módulos** y sus identificadores de progreso. El laboratorio técnico se encuentra en la ruta [/curso/laboratorio-audio](./app/curso/laboratorio-audio/page.tsx) y añade dos módulos: fundamentos acústicos/DSP/extracción espectral y diagnóstico de mezcla/masterización. Su evaluación no renumera las lecciones originales ni emite un grado académico oficial.
+
+Código, instrucciones y pruebas Python viven en `laboratorio-audio-ia/`. Desde esa carpeta, en Python 3.11 o 3.12:
+
+```bash
+python -m venv .venv
+# Windows PowerShell:
+.venv\Scripts\Activate.ps1
+# macOS/Linux:
+source .venv/bin/activate
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+python -m unittest discover -s tests -v
+python -m compileall -q src tests
+python -m src.analisis_musical audio/cancion.wav --output output --source-license "Permiso declarado"
+```
+
+La suite Python usa señales sintéticas; no descarga pesos de modelos ni requiere audio comercial. La separación con Demucs es opcional y está sujeta a los permisos del audio, los términos del modelo y los recursos del equipo. El indicador true peak del laboratorio se etiqueta como estimación y no reemplaza una medición conforme. Los exámenes teóricos guardan intentos solo cuando hay sesión y base configurada; la revisión por IA es provisional, basada en un resumen textual y no en una escucha automática del archivo.
+
+**Atribución:** Autor del curso: Edwin Oswaldo Castillo Trejo. Marca institucional: TAMV Online Network · Play & Go. Apoyo técnico/editorial de IA declarado; evaluación académica final y validez de evidencias requieren verificación humana.
 
 ## Arrancar en local
 

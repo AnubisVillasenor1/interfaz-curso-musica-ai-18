@@ -18,7 +18,7 @@ import './globals.css'
  */
 const metadataUrl = getSeoOrigin()
 const description =
-  'Play and Go de TAMV ONLINE: curso de música con inteligencia artificial, de cero a flujo profesional. 5 módulos, 16 sesiones, estudio de producción, biblioteca de prompts e insignias.'
+  'Play and Go de TAMV Online Network: creación musical con IA, 16 sesiones originales y un laboratorio técnico complementario de DSP, análisis espectral, mezcla y masterización con apoyo de IA declarado.'
 
 export const metadata: Metadata = {
   metadataBase: new URL(metadataUrl),
@@ -29,7 +29,7 @@ export const metadata: Metadata = {
   description,
   applicationName: 'Play and Go by TAMV ONLINE',
   generator: 'Play and Go by TAMV ONLINE',
-  authors: [{ name: 'TAMV ONLINE' }],
+  authors: [{ name: 'Edwin Oswaldo Castillo Trejo', url: metadataUrl }, { name: 'TAMV Online Network', url: metadataUrl }],
   creator: 'TAMV ONLINE',
   publisher: 'TAMV ONLINE',
   keywords: [
