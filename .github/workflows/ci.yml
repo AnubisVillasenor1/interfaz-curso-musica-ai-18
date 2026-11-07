@@ -74,6 +74,9 @@ jobs:
       - name: Route and API smoke tests
         run: node scripts/smoke-preview.mjs
 
+      - name: Verify entitlement lifecycle contracts
+        run: node scripts/verify-entitlement-lifecycle.mjs
+
       - name: Upload server log if a step fails
         if: failure()
         uses: actions/upload-artifact@v4

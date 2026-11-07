@@ -66,3 +66,18 @@ Do not merge or promote to production until:
 - [ ] Stripe test checkout/webhook checks pass.
 - [ ] UI, accessibility, mobile and API checks pass on the latest commit.
 - [ ] A reviewer approves the evidence attached to the PR.
+
+
+### P0 — Entitlement lifecycle and historical billing reconciliation
+
+The additional migration 20261107190000_entitlement_lifecycle.sql separates course ownership, timed extensions, and Pro subscriptions. It adds expiration-aware quotas and subscription-update handling; it does not read or mutate the live database by itself.
+
+The older fulfillment code could overwrite a permanent course plan with Pro or an extension, and the older quota function did not enforce extension expiry. Rows whose original rights cannot be derived from the current row are marked entitlement_reconciliation_required. Extension rows with no recoverable expiry receive a provisional 30-day window. Historical Pro rows and ambiguous extension rows must be compared to Stripe purchase/subscription records before this migration is applied to production.
+
+Required order:
+1. Apply in staging and inspect the marked rows.
+2. Reconcile each row using verified Stripe evidence. An extension alone is not evidence of a permanent course purchase.
+3. Run the scenarios in docs/ENTITLEMENT_LIFECYCLE.md, including an old subscription deletion arriving after a newer subscription is active.
+4. Apply to production only after the reconciliation query returns no unresolved rows, or document an explicit, reviewed exception for every remaining row.
+
+The GitHub workflow includes source-contract checks, but those checks do not replace execution against staging Postgres and Stripe test mode.

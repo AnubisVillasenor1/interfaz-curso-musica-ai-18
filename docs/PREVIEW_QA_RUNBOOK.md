@@ -105,3 +105,8 @@ El smoke test demuestra que las rutas responden HTTP 200 en el build de CI. **No
 ## 6. Rollback y protección
 
 Si Preview falla, corregir en la rama del PR; no se requiere tocar producción. Si el despliegue de producción se actualiza accidentalmente, usar la opción de rollback de Vercel al último deployment conocido como bueno y revisar qué commit disparó el cambio. No aplicar migraciones destructivas ni cambios de DNS como parte de este flujo de pruebas.
+
+
+### Entitlements migration gate
+
+The migration 20261107190000_entitlement_lifecycle.sql changes schema and quota semantics. Apply it in staging first, and reconcile rows marked entitlement_reconciliation_required using verified Stripe session/subscription evidence before production rollout. See docs/ENTITLEMENT_LIFECYCLE.md for the exact query and acceptance matrix. Do not infer lifetime course access from a standalone extension.
