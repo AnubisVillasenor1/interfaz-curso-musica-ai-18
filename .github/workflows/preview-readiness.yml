@@ -20,11 +20,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      # Public placeholders only. They let the app exercise its documented
-      # no-credentials fallback; they are not real Supabase credentials.
+      # Deliberately unconfigured: CI verifies the safe public fallback and
+      # must never need or receive production credentials.
       NEXT_PUBLIC_APP_URL: https://example.invalid
-      NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MDAwMDAwMDAsImV4cCI6MjAwMDAwMDAwMH0.placeholder
+      NEXT_PUBLIC_SUPABASE_URL: ""
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ""
       NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ""
       SUPABASE_SERVICE_ROLE_KEY: ""
       STRIPE_SECRET_KEY: ""
