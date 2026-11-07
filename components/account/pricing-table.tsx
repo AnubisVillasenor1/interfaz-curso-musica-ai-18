@@ -197,8 +197,8 @@ export function PricingTable() {
           <QuotaStats paid={FREE_TIER.dailyLimit} local={FREE_TIER.localDailyLimit} />
           <FeatureList items={FREE_TIER.features} />
           <div className="mt-auto pt-6">
-            <a href="/studio" className="pg-btn pg-btn-ghost w-full">
-              Probar el motor local
+            <a href="/auth?mode=signup&next=/studio" className="pg-btn pg-btn-ghost w-full">
+              Crear cuenta gratis
               <ArrowRight size={15} aria-hidden />
             </a>
           </div>

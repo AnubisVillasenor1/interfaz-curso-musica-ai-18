@@ -49,10 +49,8 @@ export function MusicStudio() {
     } catch (error) { setCatalogMessage(error instanceof Error ? error.message : 'Error de red.') }
   }
 
-  return <div className="pg-shell min-h-screen px-5 py-10 sm:px-8" style={{ background: 'var(--pg-bg)' }}>
-    <div className="pg-container max-w-5xl">
-      <a href="/" className="pg-navlink">← Volver a Play and Go</a>
-      <header className="my-8"><p className="pg-eyebrow">Taller musical libre</p><h1 className="pg-title">Agente de composición</h1><p className="pg-lede">Convierte una idea en un plan de arreglo y exporta un boceto MIDI descargable. Funciona sin API de pago; Ollama local mejora el análisis cuando está configurado.</p></header>
+  return <div className="pg-container max-w-5xl py-10">
+    <header className="mb-6"><p className="pg-eyebrow">Taller adicional</p><h3 className="pg-section-title mt-2">Agente de composición</h3><p className="pg-lede">Convierte una idea en un plan de arreglo y exporta un boceto MIDI descargable. Funciona sin API de pago; Ollama local mejora el análisis cuando está configurado.</p></header>
       <div className="grid gap-6 lg:grid-cols-[1.1fr_.9fr]">
         <section className="pg-card p-6">
           <h2 className="pg-section-title">1. Diseña tu composición</h2>
@@ -72,6 +70,5 @@ export function MusicStudio() {
         </section>
       </div>
       <aside className="pg-callout mt-6"><strong>Alcance:</strong> el exportador crea MIDI procedural con melodía y acordes, no audio renderizado ni stems. Usa un DAW/sintetizador propio para producir audio. El planificador sin Ollama es determinista y no utiliza un modelo de IA.</aside>
-    </div>
   </div>
 }

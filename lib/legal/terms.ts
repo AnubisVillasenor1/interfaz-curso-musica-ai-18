@@ -1,5 +1,5 @@
 /**
- * Términos y Condiciones de TAMMV Online Network.
+ * Términos y Condiciones de TAMV Online Network.
  *
  * El texto se guarda como datos, no como JSX: son veinte artículos que van a
  * cambiar (revisión legal, nuevos planes, nuevas funciones de IA) y reescribir
@@ -7,8 +7,19 @@
  * página. La vista sólo decide *cómo* se pinta cada bloque.
  */
 
+import { FREE_TIER, PRODUCTS, formatPrice } from '@/lib/products'
+
 export const TERMS_VERSION = '1.0'
 export const TERMS_EFFECTIVE_DATE = '1 de noviembre de 2026'
+
+/** Contacto único: la tabla del artículo 17 y el pie de la página leen de aquí. */
+export const TERMS_CONTACT = {
+  institutional: 'contacto@tamv.org',
+  support: 'soporte@tamv.org',
+  legal: 'legal@tamv.org',
+  privacy: 'privacidad@tamv.org',
+  location: 'Calpulalpan, Tlaxcala, México',
+} as const
 
 export type LegalBlock =
   | { kind: 'p'; text: string }
@@ -28,7 +39,7 @@ const CATEGORIES_FORUM: LegalBlock = {
   kind: 'table',
   head: ['Categoría', 'Propósito'],
   rows: [
-    ['Anuncios TAMMV', 'Comunicados, convocatorias, novedades, alianzas y decisiones institucionales'],
+    ['Anuncios TAMV', 'Comunicados, convocatorias, novedades, alianzas y decisiones institucionales'],
     ['Presentaciones', 'Presentación de miembros, áreas de interés y búsqueda de colaboración'],
     ['Investigación y método', 'Diseño de investigación, metodología, estadística, ética y publicación'],
     ['Ciencia abierta y datos', 'ORCID, DOI, datos FAIR, repositorios, licencias y acceso abierto'],
@@ -43,17 +54,44 @@ const CATEGORIES_FORUM: LegalBlock = {
   ],
 }
 
+/**
+ * La tabla de planes se deriva del catálogo que cobra Stripe, no de una lista
+ * escrita a mano. La versión anterior de este documento anunciaba rangos
+ * (199–399/mes, 15,000–60,000 institucional) que no correspondían a ningún
+ * producto: un término que promete un precio distinto al del checkout es, en
+ * la práctica, publicidad engañosa. Si mañana cambia `lib/products.ts`, esta
+ * tabla cambia sola.
+ */
+const course = PRODUCTS['play-and-go-course']
+const extension = PRODUCTS['play-and-go-extension']
+const pro = PRODUCTS['play-and-go-pro']
+
+const once = (cents: number) => `${formatPrice(cents)} · pago único`
+
 const PLANS: LegalBlock = {
   kind: 'table',
-  head: ['Plan', 'Precio', 'Beneficios principales'],
+  head: ['Plan', 'Precio', 'Qué incluye'],
   rows: [
-    ['Público', 'Gratuito', 'Acceso al portal, noticias, agenda pública, resúmenes y contacto'],
-    ['Miembro TAMMV', 'Gratuito', 'Perfil, foro, boletín, directorio básico y eventos gratuitos'],
-    ['Miembro Verificado', 'Gratuito o cuota simbólica anual', 'ORCID vinculado, TAMMV Member ID, mayor visibilidad y grupos temáticos'],
-    ['Profesional', 'MXN 199–399 mensuales o MXN 1,900–3,500 anuales', 'Cursos, mentoría, recursos premium, certificados y estadísticas de perfil'],
-    ['Institucional', 'MXN 15,000–60,000 anuales', 'Cuentas para equipo, repositorio institucional, informes, convenios y accesos múltiples'],
-    ['Patrocinador / Aliado', 'MXN 25,000–150,000 anuales', 'Presencia de marca, eventos, proyectos conjuntos, informes y reconocimiento'],
-    ['Autor / Ponente', 'Pago por evento o publicación', 'Certificado, difusión, depósito con DOI, grabación y materiales del evento'],
+    [
+      'Gratuito',
+      'Sin costo',
+      `${FREE_TIER.localDailyLimit} canciones al día con el motor local del navegador; sin voces del proveedor; sólo requiere crear una cuenta y nunca pide tarjeta`,
+    ],
+    [
+      'Curso Pro',
+      once(course.priceInCents),
+      `Curso completo, biblioteca de prompts e insignias; ${course.grant.dailyLimit} canciones diarias con voces del proveedor y ${course.grant.localDailyLimit} locales; el acceso no vence`,
+    ],
+    [
+      'Extensión de canciones',
+      `${formatPrice(extension.priceInCents)} · ${extension.grant.accessDays} días`,
+      `Suma ${extension.grant.dailyLimit} canciones diarias con voces y ${extension.grant.localDailyLimit} locales durante el periodo; nunca reduce un cupo ya pagado`,
+    ],
+    [
+      'Estudio abierto',
+      `${formatPrice(pro.priceInCents)}/mes`,
+      `${pro.grant.dailyLimit} canciones diarias con voces, ${pro.grant.localDailyLimit} locales, curso y biblioteca completa; se renueva cada mes hasta que se cancele`,
+    ],
   ],
 }
 
@@ -64,7 +102,7 @@ export const TERMS_SECTIONS: LegalSection[] = [
     blocks: [
       {
         kind: 'p',
-        text: 'Al crear una cuenta, utilizar la plataforma, participar en el foro, adquirir una membresía, inscribirse a un evento o utilizar cualquier servicio de TAMMV Online Network (“TAMMV”, “la Plataforma” o “la Red”), usted acepta estos Términos y Condiciones.',
+        text: 'Al crear una cuenta, utilizar la plataforma, participar en el foro, adquirir una membresía, inscribirse a un evento o utilizar cualquier servicio de TAMV Online Network (“TAMV”, “la Plataforma” o “la Red”), usted acepta estos Términos y Condiciones.',
       },
       { kind: 'p', text: 'Usted declara que:' },
       {
@@ -72,12 +110,12 @@ export const TERMS_SECTIONS: LegalSection[] = [
         items: [
           'Tiene al menos 18 años; o',
           'Tiene entre 13 y 17 años y cuenta con el consentimiento válido de su madre, padre, tutor o representante legal.',
-          'Si utiliza TAMMV en nombre de una institución, empresa, asociación, universidad, hospital u otra organización, declara contar con la autoridad para vincular a dicha organización a estos Términos.',
+          'Si utiliza TAMV en nombre de una institución, empresa, asociación, universidad, hospital u otra organización, declara contar con la autoridad para vincular a dicha organización a estos Términos.',
         ],
       },
       {
         kind: 'p',
-        text: 'TAMMV podrá solicitar documentación o verificación adicional para confirmar la identidad, afiliación, edad, representación legal o elegibilidad de un usuario.',
+        text: 'TAMV podrá solicitar documentación o verificación adicional para confirmar la identidad, afiliación, edad, representación legal o elegibilidad de un usuario.',
       },
     ],
   },
@@ -87,7 +125,7 @@ export const TERMS_SECTIONS: LegalSection[] = [
     blocks: [
       {
         kind: 'p',
-        text: 'TAMMV Online Network es una plataforma digital institucional orientada a la colaboración académica, científica, profesional, educativa y comunitaria.',
+        text: 'TAMV Online Network es una plataforma digital institucional orientada a la colaboración académica, científica, profesional, educativa y comunitaria.',
       },
       { kind: 'p', text: 'La Plataforma podrá incluir, según su disponibilidad:' },
       {
@@ -107,7 +145,7 @@ export const TERMS_SECTIONS: LegalSection[] = [
       },
       {
         kind: 'p',
-        text: 'TAMMV puede modificar, suspender, limitar o retirar funcionalidades, contenidos, servicios o integraciones cuando sea necesario por razones técnicas, legales, de seguridad, de calidad o de sostenibilidad del servicio.',
+        text: 'TAMV puede modificar, suspender, limitar o retirar funcionalidades, contenidos, servicios o integraciones cuando sea necesario por razones técnicas, legales, de seguridad, de calidad o de sostenibilidad del servicio.',
       },
     ],
   },
@@ -122,25 +160,25 @@ export const TERMS_SECTIONS: LegalSection[] = [
           'Mantener la confidencialidad de su contraseña, códigos de verificación y credenciales de acceso.',
           'No compartir su cuenta con terceros.',
           'Proporcionar información veraz, completa y actualizada.',
-          'Notificar de inmediato a TAMMV cualquier acceso no autorizado, suplantación de identidad o incidente de seguridad.',
+          'Notificar de inmediato a TAMV cualquier acceso no autorizado, suplantación de identidad o incidente de seguridad.',
           'Cumplir con estos Términos y con las políticas aplicables de la Plataforma.',
         ],
       },
       {
         kind: 'p',
-        text: 'TAMMV podrá emitir un TAMMV Member ID único para identificar la membresía, los permisos y la participación del usuario dentro de la Red.',
+        text: 'TAMV podrá emitir un TAMV Member ID único para identificar la membresía, los permisos y la participación del usuario dentro de la Red.',
       },
       {
         kind: 'p',
-        text: 'El TAMMV Member ID no sustituye al ORCID iD. El ORCID identifica de forma persistente a una persona investigadora a nivel internacional; el TAMMV Member ID identifica su relación, rol, membresía y accesos dentro de TAMMV Online Network.',
+        text: 'El TAMV Member ID no sustituye al ORCID iD. El ORCID identifica de forma persistente a una persona investigadora a nivel internacional; el TAMV Member ID identifica su relación, rol, membresía y accesos dentro de TAMV Online Network.',
       },
       { kind: 'p', text: 'Ejemplo de formato:' },
-      { kind: 'code', text: 'TAMMV-MX-2026-000123-R' },
+      { kind: 'code', text: 'TAMV-MX-2026-000123-R' },
       { kind: 'p', text: 'Donde:' },
       {
         kind: 'list',
         items: [
-          'TAMMV: identificador de la Red.',
+          'TAMV: identificador de la Red.',
           'MX: país o región.',
           '2026: año de alta.',
           '000123: consecutivo único.',
@@ -149,7 +187,7 @@ export const TERMS_SECTIONS: LegalSection[] = [
       },
       {
         kind: 'p',
-        text: 'TAMMV podrá suspender, desactivar o eliminar un Member ID en caso de fraude, suplantación, incumplimiento de estas condiciones, uso indebido de la plataforma o requerimiento legal.',
+        text: 'TAMV podrá suspender, desactivar o eliminar un Member ID en caso de fraude, suplantación, incumplimiento de estas condiciones, uso indebido de la plataforma o requerimiento legal.',
       },
     ],
   },
@@ -159,11 +197,11 @@ export const TERMS_SECTIONS: LegalSection[] = [
     blocks: [
       {
         kind: 'p',
-        text: 'TAMMV podrá ofrecer la vinculación opcional de la cuenta del usuario con su perfil de ORCID.',
+        text: 'TAMV podrá ofrecer la vinculación opcional de la cuenta del usuario con su perfil de ORCID.',
       },
       {
         kind: 'p',
-        text: 'Al conectar su cuenta de ORCID, el usuario autoriza a TAMMV a obtener, según los permisos que acepte:',
+        text: 'Al conectar su cuenta de ORCID, el usuario autoriza a TAMV a obtener, según los permisos que acepte:',
       },
       {
         kind: 'list',
@@ -171,16 +209,16 @@ export const TERMS_SECTIONS: LegalSection[] = [
           'Su ORCID iD autenticado.',
           'Información pública de su perfil ORCID.',
           'Afiliaciones, áreas de investigación, publicaciones, datasets y otros recursos públicos, cuando el usuario lo autorice.',
-          'Permisos de actualización, únicamente si el usuario los concede expresamente y TAMMV cuenta con la integración correspondiente.',
+          'Permisos de actualización, únicamente si el usuario los concede expresamente y TAMV cuenta con la integración correspondiente.',
         ],
       },
       {
         kind: 'p',
-        text: 'TAMMV no solicitará ni almacenará la contraseña de ORCID del usuario. La conexión se realizará mediante el flujo de autorización de ORCID, y el usuario podrá desconectar su cuenta o revocar los permisos desde su perfil o desde ORCID.',
+        text: 'TAMV no solicitará ni almacenará la contraseña de ORCID del usuario. La conexión se realizará mediante el flujo de autorización de ORCID, y el usuario podrá desconectar su cuenta o revocar los permisos desde su perfil o desde ORCID.',
       },
       {
         kind: 'p',
-        text: 'TAMMV podrá mostrar un distintivo de “Perfil verificado” cuando el usuario haya vinculado y autenticado correctamente su ORCID iD.',
+        text: 'TAMV podrá mostrar un distintivo de “Perfil verificado” cuando el usuario haya vinculado y autenticado correctamente su ORCID iD.',
       },
       {
         kind: 'p',
@@ -194,7 +232,7 @@ export const TERMS_SECTIONS: LegalSection[] = [
     blocks: [
       {
         kind: 'p',
-        text: 'Al utilizar TAMMV Online Network, usted acepta no utilizar la Plataforma para:',
+        text: 'Al utilizar TAMV Online Network, usted acepta no utilizar la Plataforma para:',
       },
       {
         kind: 'list',
@@ -205,17 +243,17 @@ export const TERMS_SECTIONS: LegalSection[] = [
           'Crear, solicitar o facilitar deepfakes, suplantación de identidad, manipulación facial, voz sintética engañosa o contenidos que representen a personas reales sin autorización.',
           'Infringir derechos de autor, marca, patente, secreto empresarial, imagen, privacidad, datos personales u otros derechos de terceros.',
           'Publicar información médica, psicológica, financiera o personal sensible propia o de terceros sin autorización válida.',
-          'Suplantar a otra persona, institución, investigador, autor, ponente o miembro de TAMMV.',
+          'Suplantar a otra persona, institución, investigador, autor, ponente o miembro de TAMV.',
           'Distribuir malware, realizar ataques de denegación de servicio, extraer datos de forma automatizada no autorizada o intentar vulnerar la seguridad de la Plataforma.',
           'Usar bots, scripts o herramientas automatizadas para manipular métricas, votos, reputación, registros, sorteos, certificados o accesos.',
-          'Revender, sublicenciar o redistribuir credenciales, accesos, membresías, claves API o servicios de TAMMV sin autorización previa por escrito.',
+          'Revender, sublicenciar o redistribuir credenciales, accesos, membresías, claves API o servicios de TAMV sin autorización previa por escrito.',
           'Utilizar la Plataforma para entrenar, validar o mejorar modelos de inteligencia artificial con datos de terceros sin contar con los derechos, consentimientos o autorizaciones necesarios.',
           'Eludir controles de seguridad, límites de uso, sistemas de moderación o restricciones de acceso.',
         ],
       },
       {
         kind: 'p',
-        text: 'TAMMV podrá aplicar filtros de seguridad, bloqueos automáticos, advertencias, límites de publicación, revisión manual, suspensión temporal o cancelación definitiva de cuentas ante contenidos o conductas que contravengan estos Términos.',
+        text: 'TAMV podrá aplicar filtros de seguridad, bloqueos automáticos, advertencias, límites de publicación, revisión manual, suspensión temporal o cancelación definitiva de cuentas ante contenidos o conductas que contravengan estos Términos.',
       },
     ],
   },
@@ -225,7 +263,7 @@ export const TERMS_SECTIONS: LegalSection[] = [
     blocks: [
       {
         kind: 'p',
-        text: 'Cuando TAMMV ofrezca herramientas de inteligencia artificial, el usuario reconoce que:',
+        text: 'Cuando TAMV ofrezca herramientas de inteligencia artificial, el usuario reconoce que:',
       },
       {
         kind: 'list',
@@ -239,11 +277,11 @@ export const TERMS_SECTIONS: LegalSection[] = [
       },
       {
         kind: 'p',
-        text: 'TAMMV podrá conservar registros técnicos necesarios para operación, seguridad, facturación, auditoría, prevención de abuso y cumplimiento legal, tales como fecha, identificador de solicitud, modelo utilizado, consumo, costo, estado de la solicitud y latencia.',
+        text: 'TAMV podrá conservar registros técnicos necesarios para operación, seguridad, facturación, auditoría, prevención de abuso y cumplimiento legal, tales como fecha, identificador de solicitud, modelo utilizado, consumo, costo, estado de la solicitud y latencia.',
       },
       {
         kind: 'p',
-        text: 'Cuando sea técnicamente posible, TAMMV podrá ofrecer un modo de retención de datos cero o configuraciones de privacidad reforzada para servicios de IA. La disponibilidad, alcance y condiciones de dichos modos serán informados en la documentación correspondiente.',
+        text: 'Cuando sea técnicamente posible, TAMV podrá ofrecer un modo de retención de datos cero o configuraciones de privacidad reforzada para servicios de IA. La disponibilidad, alcance y condiciones de dichos modos serán informados en la documentación correspondiente.',
       },
     ],
   },
@@ -253,7 +291,7 @@ export const TERMS_SECTIONS: LegalSection[] = [
     blocks: [
       {
         kind: 'p',
-        text: 'El foro de TAMMV es un espacio de colaboración, aprendizaje, debate y apoyo mutuo. La participación implica aceptar las reglas de convivencia y moderación.',
+        text: 'El foro de TAMV es un espacio de colaboración, aprendizaje, debate y apoyo mutuo. La participación implica aceptar las reglas de convivencia y moderación.',
       },
       { kind: 'subheading', text: 'Categorías propuestas' },
       CATEGORIES_FORUM,
@@ -268,12 +306,12 @@ export const TERMS_SECTIONS: LegalSection[] = [
           'No compartir datos personales, clínicos o confidenciales sin autorización.',
           'No publicar enlaces maliciosos, phishing, spam, publicidad no autorizada o contenido engañoso.',
           'Identificar claramente el contenido generado o asistido por IA cuando sea relevante.',
-          'Distinguir entre opinión personal, experiencia profesional y posición oficial de TAMMV.',
+          'Distinguir entre opinión personal, experiencia profesional y posición oficial de TAMV.',
         ],
       },
       {
         kind: 'p',
-        text: 'TAMMV podrá editar, ocultar, eliminar, mover o restringir publicaciones que incumplan estas reglas. Las decisiones de moderación podrán ser revisadas por el equipo correspondiente, sin que ello implique obligación de restaurar contenido eliminado.',
+        text: 'TAMV podrá editar, ocultar, eliminar, mover o restringir publicaciones que incumplan estas reglas. Las decisiones de moderación podrán ser revisadas por el equipo correspondiente, sin que ello implique obligación de restaurar contenido eliminado.',
       },
     ],
   },
@@ -283,11 +321,11 @@ export const TERMS_SECTIONS: LegalSection[] = [
     blocks: [
       {
         kind: 'p',
-        text: 'El usuario conserva la titularidad de los derechos sobre los contenidos originales que carga, publica o comparte en TAMMV, en la medida en que dichos derechos le correspondan.',
+        text: 'El usuario conserva la titularidad de los derechos sobre los contenidos originales que carga, publica o comparte en TAMV, en la medida en que dichos derechos le correspondan.',
       },
       {
         kind: 'p',
-        text: 'Al publicar contenido en TAMMV, el usuario otorga a la Red una licencia mundial, no exclusiva, gratuita y sublicenciable para almacenar, reproducir, distribuir, adaptar técnicamente, mostrar y promover dicho contenido dentro de la Plataforma y sus servicios.',
+        text: 'Al publicar contenido en TAMV, el usuario otorga a la Red una licencia mundial, no exclusiva, gratuita y sublicenciable para almacenar, reproducir, distribuir, adaptar técnicamente, mostrar y promover dicho contenido dentro de la Plataforma y sus servicios.',
       },
       { kind: 'p', text: 'El usuario declara que:' },
       {
@@ -301,7 +339,7 @@ export const TERMS_SECTIONS: LegalSection[] = [
       },
       {
         kind: 'p',
-        text: 'TAMMV podrá solicitar que el usuario seleccione una licencia para cada recurso publicado, tales como:',
+        text: 'TAMV podrá solicitar que el usuario seleccione una licencia para cada recurso publicado, tales como:',
       },
       {
         kind: 'list',
@@ -315,7 +353,7 @@ export const TERMS_SECTIONS: LegalSection[] = [
       },
       {
         kind: 'p',
-        text: 'TAMMV respeta los derechos de propiedad intelectual. Si considera que un contenido publicado en la Plataforma infringe sus derechos, podrá enviar una notificación a legal@tammv.org —o al correo institucional que TAMMV designe— incluyendo:',
+        text: 'TAMV respeta los derechos de propiedad intelectual. Si considera que un contenido publicado en la Plataforma infringe sus derechos, podrá enviar una notificación a legal@tamv.org —o al correo institucional que TAMV designe— incluyendo:',
       },
       {
         kind: 'list',
@@ -329,7 +367,7 @@ export const TERMS_SECTIONS: LegalSection[] = [
       },
       {
         kind: 'p',
-        text: 'TAMMV podrá retirar o restringir el acceso al contenido reportado mientras realiza la revisión correspondiente.',
+        text: 'TAMV podrá retirar o restringir el acceso al contenido reportado mientras realiza la revisión correspondiente.',
       },
     ],
   },
@@ -339,13 +377,17 @@ export const TERMS_SECTIONS: LegalSection[] = [
     blocks: [
       {
         kind: 'p',
-        text: 'TAMMV podrá ofrecer membresías gratuitas, de pago, institucionales, eventuales y de patrocinio.',
+        text: 'TAMV podrá ofrecer membresías gratuitas, de pago, institucionales, eventuales y de patrocinio.',
       },
-      { kind: 'subheading', text: 'Planes propuestos' },
+      { kind: 'subheading', text: 'Planes disponibles' },
       PLANS,
       {
         kind: 'p',
-        text: 'Los precios, beneficios, límites de uso y condiciones de cada plan serán publicados en la página de precios de TAMMV. TAMMV podrá modificar precios, beneficios o condiciones de los planes, notificando los cambios con anticipación razonable cuando sea posible.',
+        text: 'Los precios, beneficios, límites de uso y condiciones de cada plan se publican en la página de precios de TAMV y coinciden con el catálogo que procesa la pasarela de pago. TAMV podrá modificar precios, beneficios o condiciones de los planes, notificando los cambios con anticipación razonable cuando sea posible.',
+      },
+      {
+        kind: 'p',
+        text: 'Las membresías institucionales, de patrocinio y las participaciones como autor o ponente no se contratan en línea: se acuerdan por escrito con el equipo institucional de TAMV, que emite una propuesta con alcance, precio y condiciones antes de cualquier cobro.',
       },
       {
         kind: 'p',
@@ -353,12 +395,12 @@ export const TERMS_SECTIONS: LegalSection[] = [
       },
       {
         kind: 'p',
-        text: 'Los pagos podrán procesarse mediante pasarelas de pago autorizadas. TAMMV no almacena datos completos de tarjetas de crédito o débito, salvo la información mínima necesaria para gestionar la suscripción o cumplir obligaciones legales.',
+        text: 'Los pagos podrán procesarse mediante pasarelas de pago autorizadas. TAMV no almacena datos completos de tarjetas de crédito o débito, salvo la información mínima necesaria para gestionar la suscripción o cumplir obligaciones legales.',
       },
       { kind: 'subheading', text: 'Reembolsos' },
       {
         kind: 'p',
-        text: 'Los reembolsos estarán sujetos a la política publicada por TAMMV y a la legislación aplicable. En general:',
+        text: 'Los reembolsos estarán sujetos a la política publicada por TAMV y a la legislación aplicable. En general:',
       },
       {
         kind: 'list',
@@ -366,7 +408,7 @@ export const TERMS_SECTIONS: LegalSection[] = [
           'Los servicios ya consumidos, cursos iniciados, eventos realizados, certificados emitidos o contenidos digitales entregados no son reembolsables.',
           'Podrán solicitarse reembolsos por cargos duplicados, errores técnicos confirmados o transacciones no autorizadas, dentro del plazo que establezca la política de reembolsos.',
           'Las membresías institucionales, patrocinios y convenios podrán estar sujetos a condiciones contractuales específicas.',
-          'TAMMV podrá retener o suspender accesos ante saldos vencidos, fraude, contracargos indebidos o incumplimiento de estos Términos.',
+          'TAMV podrá retener o suspender accesos ante saldos vencidos, fraude, contracargos indebidos o incumplimiento de estos Términos.',
         ],
       },
     ],
@@ -377,15 +419,15 @@ export const TERMS_SECTIONS: LegalSection[] = [
     blocks: [
       {
         kind: 'p',
-        text: 'TAMMV se esfuerza por mantener una plataforma disponible, segura y estable. Sin embargo, no garantiza un servicio ininterrumpido ni libre de errores.',
+        text: 'TAMV se esfuerza por mantener una plataforma disponible, segura y estable. Sin embargo, no garantiza un servicio ininterrumpido ni libre de errores.',
       },
       {
         kind: 'p',
-        text: 'TAMMV podrá realizar mantenimiento programado o de emergencia, actualizar sistemas, cambiar proveedores tecnológicos o suspender temporalmente servicios por razones de seguridad, capacidad, cumplimiento legal o fallas de terceros.',
+        text: 'TAMV podrá realizar mantenimiento programado o de emergencia, actualizar sistemas, cambiar proveedores tecnológicos o suspender temporalmente servicios por razones de seguridad, capacidad, cumplimiento legal o fallas de terceros.',
       },
       {
         kind: 'p',
-        text: 'TAMMV no será responsable por pérdidas derivadas de interrupciones, demoras, pérdida de datos no respaldados por el usuario, fallas de internet, fallas de proveedores externos, ataques informáticos, desastres naturales, acciones gubernamentales u otras circunstancias fuera de su control razonable.',
+        text: 'TAMV no será responsable por pérdidas derivadas de interrupciones, demoras, pérdida de datos no respaldados por el usuario, fallas de internet, fallas de proveedores externos, ataques informáticos, desastres naturales, acciones gubernamentales u otras circunstancias fuera de su control razonable.',
       },
     ],
   },
@@ -395,9 +437,9 @@ export const TERMS_SECTIONS: LegalSection[] = [
     blocks: [
       {
         kind: 'p',
-        text: 'TAMMV tratará los datos personales conforme a la legislación mexicana aplicable, en particular la Ley General de Protección de Datos Personales en Posesión de Sujetos Obligados o la normativa privada aplicable, según corresponda.',
+        text: 'TAMV tratará los datos personales conforme a la legislación mexicana aplicable, en particular la Ley General de Protección de Datos Personales en Posesión de Sujetos Obligados o la normativa privada aplicable, según corresponda.',
       },
-      { kind: 'p', text: 'El usuario podrá consultar la Política de Privacidad para conocer:' },
+      { kind: 'p', text: 'El usuario podrá consultar la Política de Privacidad, disponible en /privacidad, para conocer:' },
       {
         kind: 'list',
         items: [
@@ -413,7 +455,7 @@ export const TERMS_SECTIONS: LegalSection[] = [
       },
       {
         kind: 'p',
-        text: 'TAMMV no venderá datos personales. No utilizará contenidos enviados por los usuarios para entrenar modelos de IA sin una base legal, consentimiento expreso o autorización válida, según corresponda.',
+        text: 'TAMV no venderá datos personales. No utilizará contenidos enviados por los usuarios para entrenar modelos de IA sin una base legal, consentimiento expreso o autorización válida, según corresponda.',
       },
     ],
   },
@@ -421,14 +463,14 @@ export const TERMS_SECTIONS: LegalSection[] = [
     id: 'menores',
     title: 'Protección de menores',
     blocks: [
-      { kind: 'p', text: 'TAMMV está dirigido principalmente a personas mayores de 18 años.' },
+      { kind: 'p', text: 'TAMV está dirigido principalmente a personas mayores de 18 años.' },
       {
         kind: 'p',
         text: 'Las personas de 13 a 17 años podrán utilizar la Plataforma únicamente con el consentimiento válido de su madre, padre, tutor o representante legal, conforme a la legislación aplicable.',
       },
       {
         kind: 'p',
-        text: 'TAMMV podrá solicitar verificación de edad o consentimiento parental. Si se detecta que un menor utiliza la Plataforma sin autorización válida, TAMMV podrá suspender o cancelar la cuenta de inmediato.',
+        text: 'TAMV podrá solicitar verificación de edad o consentimiento parental. Si se detecta que un menor utiliza la Plataforma sin autorización válida, TAMV podrá suspender o cancelar la cuenta de inmediato.',
       },
     ],
   },
@@ -440,7 +482,7 @@ export const TERMS_SECTIONS: LegalSection[] = [
         kind: 'p',
         text: 'La Plataforma se proporciona “tal cual” y “según disponibilidad”, en la máxima medida permitida por la ley.',
       },
-      { kind: 'p', text: 'TAMMV no garantiza que:' },
+      { kind: 'p', text: 'TAMV no garantiza que:' },
       {
         kind: 'list',
         items: [
@@ -452,11 +494,11 @@ export const TERMS_SECTIONS: LegalSection[] = [
       },
       {
         kind: 'p',
-        text: 'En la máxima medida permitida por la ley, la responsabilidad total de TAMMV frente a un usuario estará limitada al monto efectivamente pagado por dicho usuario a TAMMV durante los tres meses anteriores al evento que origine la reclamación.',
+        text: 'En la máxima medida permitida por la ley, la responsabilidad total de TAMV frente a un usuario estará limitada al monto efectivamente pagado por dicho usuario a TAMV durante los tres meses anteriores al evento que origine la reclamación.',
       },
       {
         kind: 'p',
-        text: 'TAMMV no será responsable por daños indirectos, incidentales, especiales, consecuentes o por lucro cesante, pérdida de datos, pérdida de oportunidades, daño reputacional o costos de reemplazo, salvo que la ley aplicable disponga otra cosa.',
+        text: 'TAMV no será responsable por daños indirectos, incidentales, especiales, consecuentes o por lucro cesante, pérdida de datos, pérdida de oportunidades, daño reputacional o costos de reemplazo, salvo que la ley aplicable disponga otra cosa.',
       },
     ],
   },
@@ -470,7 +512,7 @@ export const TERMS_SECTIONS: LegalSection[] = [
       },
       {
         kind: 'p',
-        text: 'TAMMV podrá suspender o cancelar una cuenta, de forma temporal o definitiva, cuando detecte:',
+        text: 'TAMV podrá suspender o cancelar una cuenta, de forma temporal o definitiva, cuando detecte:',
       },
       {
         kind: 'list',
@@ -486,7 +528,7 @@ export const TERMS_SECTIONS: LegalSection[] = [
       },
       {
         kind: 'p',
-        text: 'Tras la terminación, TAMMV podrá desactivar accesos, revocar credenciales y conservar o eliminar datos conforme a su Política de Privacidad, obligaciones legales y periodos de respaldo.',
+        text: 'Tras la terminación, TAMV podrá desactivar accesos, revocar credenciales y conservar o eliminar datos conforme a su Política de Privacidad, obligaciones legales y periodos de respaldo.',
       },
     ],
   },
@@ -507,7 +549,7 @@ export const TERMS_SECTIONS: LegalSection[] = [
     blocks: [
       {
         kind: 'p',
-        text: 'TAMMV podrá actualizar estos Términos para reflejar cambios legales, tecnológicos, operativos o de servicios.',
+        text: 'TAMV podrá actualizar estos Términos para reflejar cambios legales, tecnológicos, operativos o de servicios.',
       },
       {
         kind: 'p',
@@ -515,7 +557,7 @@ export const TERMS_SECTIONS: LegalSection[] = [
       },
       {
         kind: 'p',
-        text: 'El uso continuado de TAMMV después de la entrada en vigor de los cambios implica la aceptación de la versión actualizada.',
+        text: 'El uso continuado de TAMV después de la entrada en vigor de los cambios implica la aceptación de la versión actualizada.',
       },
     ],
   },
@@ -527,11 +569,11 @@ export const TERMS_SECTIONS: LegalSection[] = [
         kind: 'table',
         head: ['Canal', 'Contacto'],
         rows: [
-          ['Correo institucional', 'contacto@tammv.org'],
-          ['Soporte técnico', 'soporte@tammv.org'],
-          ['Asuntos legales y propiedad intelectual', 'legal@tammv.org'],
-          ['Protección de datos', 'privacidad@tammv.org'],
-          ['Ubicación', 'Calpulalpan, Tlaxcala, México'],
+          ['Correo institucional', TERMS_CONTACT.institutional],
+          ['Soporte técnico', TERMS_CONTACT.support],
+          ['Asuntos legales y propiedad intelectual', TERMS_CONTACT.legal],
+          ['Protección de datos', TERMS_CONTACT.privacy],
+          ['Ubicación', TERMS_CONTACT.location],
         ],
       },
     ],
@@ -542,7 +584,7 @@ export const TERMS_SECTIONS: LegalSection[] = [
     blocks: [
       {
         kind: 'p',
-        text: 'TAMMV mantiene controles técnicos, humanos y procedimentales para prevenir el uso indebido de la Plataforma.',
+        text: 'TAMV mantiene controles técnicos, humanos y procedimentales para prevenir el uso indebido de la Plataforma.',
       },
       { kind: 'subheading', text: 'Contenido prohibido' },
       { kind: 'p', text: 'No se permite generar, publicar, almacenar, distribuir o facilitar:' },
@@ -560,7 +602,7 @@ export const TERMS_SECTIONS: LegalSection[] = [
         ],
       },
       { kind: 'subheading', text: 'Salvaguardas' },
-      { kind: 'p', text: 'TAMMV podrá utilizar:' },
+      { kind: 'p', text: 'TAMV podrá utilizar:' },
       {
         kind: 'list',
         items: [
@@ -598,11 +640,11 @@ export const TERMS_SECTIONS: LegalSection[] = [
       },
       {
         kind: 'p',
-        text: 'La reventa, redistribución comercial, sublicenciamiento o uso de los servicios de TAMMV para beneficiar a terceros requerirá autorización previa por escrito de TAMMV.',
+        text: 'La reventa, redistribución comercial, sublicenciamiento o uso de los servicios de TAMV para beneficiar a terceros requerirá autorización previa por escrito de TAMV.',
       },
       {
         kind: 'p',
-        text: 'El usuario que redistribuya servicios de TAMMV deberá imponer a sus clientes finales condiciones no menos protectoras que estas y será responsable de sus actos como si fueran propios.',
+        text: 'El usuario que redistribuya servicios de TAMV deberá imponer a sus clientes finales condiciones no menos protectoras que estas y será responsable de sus actos como si fueran propios.',
       },
     ],
   },
@@ -612,7 +654,7 @@ export const TERMS_SECTIONS: LegalSection[] = [
     blocks: [
       {
         kind: 'p',
-        text: 'Si TAMMV implementa créditos prepagados para servicios de IA, almacenamiento, eventos o formación, aplicarán las siguientes reglas:',
+        text: 'Si TAMV implementa créditos prepagados para servicios de IA, almacenamiento, eventos o formación, aplicarán las siguientes reglas:',
       },
       {
         kind: 'list',
@@ -623,7 +665,7 @@ export const TERMS_SECTIONS: LegalSection[] = [
           'Los usuarios consumidores podrán solicitar reembolso de créditos no utilizados dentro de los primeros 7 días naturales posteriores a la compra, conforme a la legislación aplicable.',
           'Los créditos ya consumidos no serán reembolsables.',
           'Las cuentas empresariales, institucionales o de uso comercial no tendrán derecho al periodo de reflexión de consumidor, salvo que la ley aplicable disponga otra cosa.',
-          'TAMMV podrá revisar solicitudes posteriores caso por caso y aplicar una comisión administrativa de hasta 30% del monto reembolsable.',
+          'TAMV podrá revisar solicitudes posteriores caso por caso y aplicar una comisión administrativa de hasta 30% del monto reembolsable.',
           'Los reembolsos aprobados se realizarán dentro de 15 días hábiles mediante el método de pago o cuenta bancaria designada por el solicitante.',
           'No habrá reembolso cuando el saldo pendiente sea inferior a MXN 100, salvo obligación legal en contrario.',
         ],
@@ -635,11 +677,3 @@ export const TERMS_SECTIONS: LegalSection[] = [
     ],
   },
 ]
-
-export const TERMS_CONTACT = {
-  institutional: 'contacto@tammv.org',
-  support: 'soporte@tammv.org',
-  legal: 'legal@tammv.org',
-  privacy: 'privacidad@tammv.org',
-  location: 'Calpulalpan, Tlaxcala, México',
-} as const

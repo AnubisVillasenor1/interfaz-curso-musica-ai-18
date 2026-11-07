@@ -44,6 +44,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     entry('/curso/proyecto-final', 0.85, 'monthly'),
     entry('/informacion', 0.5, 'monthly'),
     entry('/terminos', 0.3, 'yearly'),
+    entry('/privacidad', 0.3, 'yearly'),
     ...coursePages,
   ]
 }

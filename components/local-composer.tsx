@@ -24,9 +24,48 @@ const PHASE_COPY: Record<Phase, string> = {
   composing: 'Escribiendo el arreglo…',
   rendering: 'Renderizando el audio en tu navegador…',
   uploading: 'Guardándolo en tu biblioteca…',
-  done: 'Canción lista. Suenen y descárgala.',
+  done: 'Canción lista. Escúchala y descárgala.',
   error: '',
 }
+
+/**
+ * Puntos de partida, no plantillas cerradas.
+ *
+ * El campo de descripción pedía «sé específico» sin decir específico sobre qué.
+ * Un ejemplo completo por estilo muestra las cinco decisiones de un golpe y
+ * deja el texto editable: quien no sabe qué escribir elige uno y cambia una
+ * palabra, que es exactamente el ejercicio del curso.
+ */
+const PRESETS = [
+  {
+    label: 'Lo-fi para estudiar',
+    genreId: 'lofi',
+    bpm: 78,
+    prompt:
+      'Lo-fi hip hop cálido y melancólico. Piano con textura de vinilo, batería suave y bajo redondo. 78 BPM, compás de 4/4. Estructura: intro, loop principal, puente y outro.',
+  },
+  {
+    label: 'Corrido tumbado',
+    genreId: 'corrido',
+    bpm: 92,
+    prompt:
+      'Corrido tumbado con guitarra acústica, requinto y bajo eléctrico. Tono narrativo y orgulloso. 92 BPM, compás de 3/4. Estructura: intro de requinto, verso, coro, verso y outro.',
+  },
+  {
+    label: 'Cine épico',
+    genreId: 'cinematic',
+    bpm: 70,
+    prompt:
+      'Pieza cinematográfica épica y esperanzadora. Cuerdas en capas, metales suaves, tambores graves y coro. 70 BPM. Estructura: introducción tensa, ascenso, clímax y resolución.',
+  },
+  {
+    label: 'House de festival',
+    genreId: 'house',
+    bpm: 124,
+    prompt:
+      'House de festival, enérgico y luminoso. Bombo four-on-the-floor, bajo con filtro, pads abiertos y plucks. 124 BPM. Estructura: intro, build, drop, breakdown y drop final.',
+  },
+] as const
 
 /**
  * Estudio con el motor local.
@@ -240,69 +279,111 @@ export function LocalComposer({ initialPrompt = '' }: { initialPrompt?: string }
     }
   }
 
-  return <form onSubmit={create} className="pg-card flex flex-col gap-4 p-5 sm:p-6" style={{ borderColor: 'color-mix(in srgb, var(--pg-cyan) 25%, transparent)' }}>
+  return <form onSubmit={create} className="pg-card flex flex-col gap-5 p-5 sm:p-7" style={{ borderColor: 'color-mix(in srgb, var(--pg-cyan) 25%, transparent)' }}>
     <div className="flex items-start justify-between gap-4">
       <div>
-        <p className="pg-eyebrow">Motor local · sin costo</p>
-        <h3 className="pg-block-title mt-1.5">Escribe tu primera dirección musical</h3>
+        <p className="pg-eyebrow">Paso 2 · Componer</p>
+        <h2 className="pg-block-title mt-1.5">Describe la canción</h2>
         <p className="pg-note mt-1.5 max-w-xl">
-          El arreglo se compone aquí y el audio se renderiza en tu navegador. No usa el servicio de pago, así que
-          puedes practicar cuantas veces te permita tu cupo gratuito.
+          Escribe la idea en una frase. El motor local la convierte en arreglo y renderiza el audio en tu navegador:
+          no usa el servicio de pago y no descuenta tu cupo con voces.
         </p>
       </div>
       <Music2 className="pg-accent-cyan hidden shrink-0 opacity-70 sm:block" size={22} />
     </div>
 
+    <div>
+      <p className="pg-label">Empieza con un ejemplo y cámbialo</p>
+      <div className="mt-2 flex flex-wrap gap-2">
+        {PRESETS.map((preset) => (
+          <button
+            key={preset.label}
+            type="button"
+            onClick={() => {
+              setPrompt(preset.prompt)
+              setGenreId(preset.genreId)
+              setBpm(preset.bpm)
+              if (!title.trim()) setTitle(preset.label)
+            }}
+            className="pg-chip transition-colors hover:text-[var(--pg-ink)]"
+            data-tone="violet"
+          >
+            {preset.label}
+          </button>
+        ))}
+      </div>
+    </div>
+
     <label className="pg-label flex flex-col gap-1.5">
-      Título
+      1. Título de la canción
       <input value={title} onChange={(event) => setTitle(event.target.value)} maxLength={80} required
         placeholder="Ej. Mapa sonoro nº1"
         className="pg-field h-11 text-sm" />
     </label>
 
     <label className="pg-label flex flex-col gap-1.5">
-      Dirección musical
-      <textarea value={prompt} onChange={(event) => setPrompt(event.target.value)} maxLength={2000} required rows={4}
-        placeholder="Género, emoción, instrumentación, tempo y estructura. Sé específico: el motor atiende cinco decisiones, no adjetivos."
+      2. Describe la canción
+      <textarea value={prompt} onChange={(event) => setPrompt(event.target.value)} maxLength={2000} required rows={5}
+        placeholder="Ej. Balada de piano melancólica pero esperanzadora, con cuerdas cálidas y batería suave. 72 BPM. Estructura: intro, verso, coro, puente y final."
         className="pg-field p-3 text-sm leading-6" />
     </label>
 
+    <div className="pg-inset p-4">
+      <p className="pg-label" data-tone="muted">Las cinco decisiones que sí escucha el motor</p>
+      <ul className="mt-2 grid gap-x-5 gap-y-1.5 text-[13px] leading-5 sm:grid-cols-2" style={{ color: 'var(--pg-text)' }}>
+        <li><b className="pg-accent-cyan">Género</b> · qué familia rítmica</li>
+        <li><b className="pg-accent-cyan">Emoción</b> · qué debe sentir quien escucha</li>
+        <li><b className="pg-accent-cyan">Instrumentos</b> · qué voces suenan</li>
+        <li><b className="pg-accent-cyan">Tempo</b> · BPM o sensación (lento, bailable)</li>
+        <li><b className="pg-accent-cyan">Estructura</b> · intro, verso, coro, puente, outro</li>
+      </ul>
+      <p className="pg-note mt-2">
+        Los adjetivos sueltos («épico», «bonito») no cambian el arreglo. Una decisión concreta por línea sí.
+      </p>
+    </div>
+
     <div className="grid gap-3 sm:grid-cols-2">
       <label className="pg-label flex flex-col gap-1.5">
-        ADN de género (opcional)
+        3. Género (opcional)
         <select value={genreId} onChange={(event) => setGenreId(event.target.value)}
           className="pg-field h-11 text-sm">
-          <option value="">Que lo decida el prompt</option>
+          <option value="">Que lo deduzca de la descripción</option>
           {GENRES.map((genre) => <option key={genre.id} value={genre.id}>{genre.name}</option>)}
         </select>
       </label>
       <label className="pg-label flex flex-col gap-1.5">
-        BPM (opcional, 40–200)
+        4. BPM (opcional, 40–200)
         <input type="number" min={40} max={200} value={bpm || ''}
           onChange={(event) => setBpm(Number(event.target.value) || 0)}
-          placeholder="Auto"
+          placeholder="Automático"
           className="pg-field h-11 text-sm" />
       </label>
     </div>
 
-    <div className="flex flex-wrap items-center gap-3">
-      <button type="submit" disabled={busy}
-        className="pg-btn pg-btn-primary" style={{ padding: '0.7rem 1.3rem' }}>
-        {busy ? <LoaderCircle className="animate-spin" size={16} /> : <Sparkles size={16} />}
-        {busy ? PHASE_COPY[phase] : 'Componer y guardar'}
-      </button>
-      <button type="button" onClick={createWithVoices} disabled={busy || !title.trim() || !prompt.trim()}
-        className="pg-btn pg-btn-ghost pg-btn-sm">
-        Con voces (proveedor)
-      </button>
-      {arrangement && <button type="button" onClick={preview}
-        className="pg-btn pg-btn-ghost pg-btn-sm">
-        <AudioLines size={16} /> {playing ? 'Detener vista previa' : 'Escuchar en vivo'}
-      </button>}
-      {audioUrl && <button type="button" onClick={download}
-        className="pg-btn pg-btn-ghost pg-btn-sm" data-tone="cyan">
-        <Download size={16} /> Descargar WAV
-      </button>}
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-wrap items-center gap-3">
+        <button type="submit" disabled={busy}
+          className="pg-btn pg-btn-primary" style={{ padding: '0.7rem 1.3rem' }}>
+          {busy ? <LoaderCircle className="animate-spin" size={16} /> : <Sparkles size={16} />}
+          {busy ? PHASE_COPY[phase] : 'Componer y guardar (gratis)'}
+        </button>
+        <button type="button" onClick={createWithVoices} disabled={busy || !title.trim() || !prompt.trim()}
+          className="pg-btn pg-btn-ghost pg-btn-sm">
+          Con voces · usa tu cupo diario
+        </button>
+        {arrangement && <button type="button" onClick={preview}
+          className="pg-btn pg-btn-ghost pg-btn-sm">
+          <AudioLines size={16} /> {playing ? 'Detener vista previa' : 'Escuchar en vivo'}
+        </button>}
+        {audioUrl && <button type="button" onClick={download}
+          className="pg-btn pg-btn-ghost pg-btn-sm" data-tone="cyan">
+          <Download size={16} /> Descargar WAV
+        </button>}
+      </div>
+      <p className="pg-note">
+        <b>Componer y guardar</b> es gratis y local: hasta 10 canciones al día con tu cuenta. <b>Con voces</b> envía
+        la descripción al proveedor, descuenta una generación de tu plan y tarda más.
+      </p>
     </div>
 
     {phase === 'rendering' && progress > 0 && (

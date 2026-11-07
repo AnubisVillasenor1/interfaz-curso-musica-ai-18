@@ -262,7 +262,8 @@ export function CourseDashboard() {
         </a>
         <nav aria-label="Navegación principal" className="hidden items-center gap-6 md:flex">
           {navLinks.map(([label, href]) => <a key={href} className="pg-navlink" href={href}>{label}</a>)}
-          <a href="/studio" className="pg-btn pg-btn-primary" style={{ padding: '0.6rem 1.2rem' }}>Entrar al estudio</a>
+          <Link href="/auth" className="pg-navlink">Entrar</Link>
+          <Link href="/auth?mode=signup" className="pg-btn pg-btn-primary" style={{ padding: '0.6rem 1.2rem' }}>Crear cuenta gratis</Link>
         </nav>
         <button
           type="button"
@@ -280,8 +281,10 @@ export function CourseDashboard() {
           <ul className="flex flex-col gap-3">
             {navLinks.map(([label, href]) => <li key={href}><a className="pg-navlink" href={href}>{label}</a></li>)}
             <li><a className="pg-navlink" href="/ajustes">Ajustes</a></li>
+            <li><Link className="pg-navlink" href="/auth">Entrar</Link></li>
           </ul>
-          <button type="button" className="pg-btn pg-btn-primary mt-5 w-full" onClick={() => { setMenuOpen(false); setShowRegister(true) }}>Inscribirme</button>
+          <Link href="/auth?mode=signup" className="pg-btn pg-btn-primary mt-5 w-full justify-center" onClick={() => setMenuOpen(false)}>Crear cuenta gratis</Link>
+          <button type="button" className="pg-btn pg-btn-ghost mt-3 w-full" onClick={() => { setMenuOpen(false); setShowRegister(true) }}>Comprar el curso · {coursePrice}</button>
         </nav>
       )}
     </header>
@@ -304,11 +307,14 @@ export function CourseDashboard() {
             Aprende, compón y desarrolla tu sonido con herramientas de inteligencia artificial y decisiones propias. De la primera idea a una obra propia: crear con inteligencia artificial, decidir con criterio humano.
           </p>
           <div className="mt-9 flex flex-wrap items-center gap-3">
-            <button type="button" className="pg-btn pg-btn-primary" onClick={() => setShowRegister(true)}>
-              Comenzar la ruta <ArrowRight size={15} />
+            <Link href="/auth?mode=signup" className="pg-btn pg-btn-primary">
+              Crear cuenta gratis <ArrowRight size={15} />
+            </Link>
+            <button type="button" className="pg-btn pg-btn-ghost" onClick={() => setShowRegister(true)}>
+              Comprar el curso · {coursePrice}
             </button>
-            <a href="/studio" className="pg-btn pg-btn-ghost">Crear mi primera canción <Music2 size={15} /></a>
-            <a href="#ruta" className="pg-navlink" style={{ color: 'var(--pg-text)' }}>Explorar el programa</a>
+            <a href="#ruta" className="pg-navlink" style={{ color: 'var(--pg-text)' }}>Ver el programa</a>
+            <Link href="/auth" className="pg-navlink" style={{ color: 'var(--pg-muted)' }}>Ya tengo cuenta · Entrar</Link>
           </div>
           <div className="mt-10 flex flex-wrap items-center gap-6" style={{ fontSize: 'var(--pg-step--1)', color: 'var(--pg-muted)' }}>
             <span className="flex items-center gap-2"><BadgeCheck size={15} style={{ color: 'var(--pg-cyan)' }} /> Constancia por participación (emitida por TAMV)</span>
@@ -581,6 +587,9 @@ export function CourseDashboard() {
             <Link href="/terminos" className="pg-minilink">
               Términos y Condiciones
             </Link>
+            <Link href="/privacidad" className="pg-minilink">
+              Política de Privacidad
+            </Link>
           </div>
         </div>
       </div>
@@ -712,6 +721,14 @@ export function CourseDashboard() {
       <p className="mt-4 text-center" style={{ fontSize: 'var(--pg-step--2)', color: 'var(--pg-muted)' }}>
         Pago procesado de forma segura por Stripe.
       </p>
+      <div className="mt-5 border-t pt-5 text-center" style={{ borderColor: 'var(--pg-hairline)' }}>
+        <p style={{ fontSize: 'var(--pg-step--1)', color: 'var(--pg-text)' }}>
+          ¿Sólo quieres probar el estudio?
+        </p>
+        <Link href="/auth?mode=signup" className="pg-btn pg-btn-ghost pg-btn-sm mt-3" onClick={() => setShowRegister(false)}>
+          Crear cuenta gratis, sin tarjeta
+        </Link>
+      </div>
     </Dialog>
   </main>
 }

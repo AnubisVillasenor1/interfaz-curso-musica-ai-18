@@ -1,6 +1,6 @@
 'use client'
 
-import { FormEvent, useState } from 'react'
+import { FormEvent, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { ArrowLeft, LockKeyhole, Sparkles } from 'lucide-react'
 
@@ -17,6 +17,14 @@ export default function AuthPage() {
   // color obliga a leer para saber en qué caso se está uno.
   const [tone, setTone] = useState<Tone>('pending')
   const [busy, setBusy] = useState(false)
+
+  // Los botones «Crear cuenta» del sitio enlazan a /auth?mode=signup para no
+  // obligar a descubrir el conmutador. Se lee después del montaje para que el
+  // HTML del servidor y el primer render del cliente coincidan.
+  useEffect(() => {
+    const requested = new URLSearchParams(window.location.search).get('mode')
+    if (requested === 'signup' || requested === 'login') setMode(requested)
+  }, [])
 
   function say(text: string, as: Tone = 'pending') {
     setMessage(text)
@@ -92,6 +100,11 @@ export default function AuthPage() {
 
         <h1 className="pg-title">{mode === 'login' ? 'Entra a tu estudio' : 'Crea tu cuenta'}</h1>
         <p className="pg-lede">Guarda tus canciones, avances e insignias en un solo lugar.</p>
+        <p className="pg-meta mt-2">
+          {mode === 'signup'
+            ? 'Es gratis y no pedimos tarjeta. El curso completo se compra aparte, cuando tú decidas.'
+            : 'Si es tu primera vez, cambia a «Crear cuenta» aquí abajo.'}
+        </p>
 
         <form onSubmit={submit} className="mt-7 flex flex-col gap-4">
           {/* Etiqueta + campo, no solo placeholder: un placeholder desaparece en
