@@ -1,6 +1,7 @@
 import { TamvQuote } from '@/components/tamv-quote'
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
+import Link from 'next/link'
 import { PRODUCTS } from '@/lib/products'
 import { getSeoOrigin } from '@/lib/app-url'
 import './globals.css'
@@ -135,6 +136,15 @@ export default function RootLayout({
         {/* Pie institucional visible en TODAS las páginas (frase estratégica §1) */}
         <footer className="pg-container pb-12 pt-4">
           <TamvQuote variant="footer" />
+          {/* Mapa mínimo repetido en cada página: desde una lección, una factura
+              o los términos siempre hay un camino de vuelta al área personal. */}
+          <nav aria-label="Área personal y planes" className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-3">
+            <Link href="/curso" className="pg-navlink">Curso</Link>
+            <Link href="/studio" className="pg-navlink">Estudio</Link>
+            <Link href="/biblioteca" className="pg-navlink">Mi música</Link>
+            <Link href="/perfil" className="pg-navlink">Mi perfil</Link>
+            <Link href="/precios" className="pg-navlink">Planes y pago</Link>
+          </nav>
           <p className="pg-note mt-4 text-center">Play &amp; Go · Crea. Aprende. Hazlo tuyo. Una plataforma de TAMV Online Network.</p>
         </footer>
         {schema && (
