@@ -7,7 +7,7 @@ import { Film } from 'lucide-react'
 import { CourseDashboard } from '@/components/course-dashboard'
 import {
   markIntroSeen,
-  replayIntro,
+  replayIntro as clearIntroSeen,
   shouldRunIntro,
 } from '@/lib/cinematic/gate'
 
@@ -34,7 +34,7 @@ export function IntroGate() {
   }, [])
 
   const replayIntro = useCallback(() => {
-    replayIntro()
+    clearIntroSeen()
     setIsIntroVisible(true)
   }, [])
 
