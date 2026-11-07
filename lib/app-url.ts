@@ -20,6 +20,18 @@ function normalize(value: string): string {
  * una petición server-side no es fiable (lo reescribe el proxy de la plataforma).
  */
 export function getAppUrl(request?: Request): string {
+  // Nunca dejar que un Preview herede el origen de producción. Vercel puede
+  // exponer las mismas variables en ambos entornos y un checkout/callback
+  // podría regresar a producción aunque la petición naciera en Preview.
+  // PREVIEW_APP_URL permite fijar un dominio estable; VERCEL_URL es el fallback
+  // de la URL del deployment actual y evita confiar en un NEXT_PUBLIC_APP_URL
+  // compartido que apunte al dominio de producción.
+  const isPreview = process.env.VERCEL_ENV === 'preview'
+  if (isPreview) {
+    const previewOrigin = process.env.PREVIEW_APP_URL ?? process.env.VERCEL_URL
+    if (previewOrigin) return normalize(previewOrigin)
+  }
+
   const configured =
     process.env.NEXT_PUBLIC_APP_URL ??
     process.env.APP_URL ??
