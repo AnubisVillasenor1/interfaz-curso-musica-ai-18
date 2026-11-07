@@ -11,7 +11,7 @@
 5. Ejecutar la matriz funcional de este documento y adjuntar resultados al PR.
 6. No fusionar ni promover a producción hasta que los criterios obligatorios estén aprobados.
 
-El workflow automatizado utiliza valores públicos ficticios para comprobar que la aplicación compila y se comporta de forma degradada sin credenciales reales. No habilitan autenticación, cobros ni generación externa. El workflow no debe contener secretos de producción.
+El workflow CI automatizado utiliza valores públicos ficticios para comprobar que la aplicación compila y se comporta de forma degradada sin credenciales reales. No habilitan autenticación, cobros ni generación externa. El workflow no debe contener secretos de producción.
 
 ## 2. Variables y servicios del entorno de pruebas
 
@@ -78,7 +78,7 @@ Registrar cada fila como **PASS**, **FAIL**, **BLOCKED** o **NOT TESTED**. Un es
 
 ## 4. Pruebas automáticas
 
-El workflow .github/workflows/preview-readiness.yml ejecuta:
+El workflow canónico .github/workflows/ci.yml ejecuta:
 
 - pnpm install --frozen-lockfile
 - pnpm typecheck
