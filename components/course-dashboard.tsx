@@ -41,8 +41,9 @@ import { COURSE_PRODUCT } from '@/lib/products'
  * los mismos colores que el resto de la interfaz. El lockup de TAMV vuelve a
  * ser tipografía real, no una JPG con el fondo recortado.
  */
-const logoMark = '/brand/logo.svg'
-const heroImage = '/brand/hero-studio.svg'
+const logoMark = 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/tamvlogo1-4wSYHNlhlHSVNIwFL7gOVmGkBaCeqA.jpg'
+const playAndGoLogo = 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logoplayandgo-EAG8du0GfFdQZUWxVmQQa5plKJDFSr.jpg'
+const heroImage = 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-ggBlgonDJDNHatg1hRwzx1TFsT0h7C.png'
 const sampleAudio = '/audio/pista2.mp3'
 
 /**
@@ -75,6 +76,19 @@ const modules = COURSE_MODULES.map((module, index) => {
     state,
   }
 })
+
+const editorialVisuals = [
+  { src: '/visuals/aurora-studio.png', alt: 'Estudio de ondas sonoras cristalinas' },
+  { src: '/visuals/neural-melody.png', alt: 'Melodía convertida en caminos neuronales' },
+  { src: '/visuals/crystal-synth.png', alt: 'Sintetizador de cristal futurista' },
+  { src: '/visuals/sound-orbit.png', alt: 'Órbita de frecuencias musicales' },
+  { src: '/visuals/golden-wave.png', alt: 'Onda sonora de oro líquido' },
+  { src: '/visuals/vocal-atmosphere.png', alt: 'Atmósfera vocal inmersiva' },
+  { src: '/visuals/mixing-console.png', alt: 'Consola de mezcla holográfica' },
+  { src: '/visuals/playlist-night.png', alt: 'Escucha nocturna con prisma de cristal' },
+  { src: '/visuals/sonic-architecture.png', alt: 'Arquitectura construida con ondas sonoras' },
+  { src: '/visuals/creative-spark.png', alt: 'Chispa creativa de partículas musicales' },
+]
 
 const prompts = [
   { name: 'Pop cinematográfico', meta: '96 BPM · voz femenina íntima · piano felt', copy: 'Pop alternativo cinematográfico, 96 BPM, voz femenina íntima y aireada, versos minimalistas con piano felt, pre-coro ascendente, coro amplio con cuerdas y batería orgánica, mezcla cálida y dinámica.' },
@@ -324,15 +338,20 @@ export function CourseDashboard() {
         </div>
 
         <Reveal>
-          <div className="pg-frame">
+          <div className="pg-frame pg-hero-frame">
+            <div className="pg-brand-lockup absolute left-5 top-5 z-10 flex items-center gap-3 rounded-2xl px-3 py-2 backdrop-blur-xl">
+              <img src={playAndGoLogo} alt="Play and Go by TAMV ONLINE" width={44} height={44} className="size-11 rounded-xl object-cover" />
+              <span className="hidden text-[10px] font-semibold uppercase tracking-[0.18em] text-white sm:block">Play and Go<br /><span className="font-normal text-cyan-100/80">by TAMV Online Network</span></span>
+            </div>
             <img
               src={heroImage}
-              alt="Productor dirigiendo una generación musical con inteligencia artificial"
-              width={1600}
-              height={1200}
-              className="aspect-[4/3] w-full object-cover"
+              alt="Play and Go by TAMV Online Network: creación musical con inteligencia artificial"
+              width={1024}
+              height={576}
+              className="aspect-[16/9] w-full object-cover"
             />
-            <audio ref={audioRef} src={sampleAudio} loop preload="none" onEnded={() => setPlaying(false)} />
+
+            <audio ref={audioRef} src={sampleAudio} loop preload="none" onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} onEnded={() => setPlaying(false)} />
             <div
               className="absolute inset-x-5 bottom-5 flex items-center justify-between gap-4 rounded-2xl p-4 backdrop-blur-xl"
               style={{ border: '1px solid var(--pg-hairline)', background: 'var(--pg-veil)' }}
@@ -489,16 +508,17 @@ export function CourseDashboard() {
               <button
                 type="button"
                 onClick={() => { setTemplate({ name: item.name, copy: item.copy }); setCopied(false); setStatus('') }}
-                className="pg-card pg-card-hover h-full p-5 text-left"
+                className="pg-card pg-card-hover relative h-full overflow-hidden p-5 text-left"
               >
-                <span className="flex items-center justify-between">
+                <img src={editorialVisuals[index + 1].src} alt="" aria-hidden="true" loading="lazy" className="prompt-visual absolute inset-0 h-full w-full object-cover" />
+                <span className="relative z-10 flex items-center justify-between">
                   <span className="pg-chip" data-tone="violet">Plantilla</span>
                   <Music2 size={18} style={{ color: 'var(--pg-cyan)' }} />
                 </span>
-                <strong className="mt-7 block" style={{ fontSize: 'var(--pg-step-1)', fontWeight: 600, color: 'var(--pg-ink)' }}>{item.name}</strong>
-                <span className="mt-2 block font-mono" style={{ fontSize: 'var(--pg-step--1)', color: 'var(--pg-cyan)' }}>{item.meta}</span>
-                <span className="mt-4 line-clamp-2 block leading-5" style={{ fontSize: 'var(--pg-step--1)', color: 'var(--pg-muted)' }}>{item.copy}</span>
-                <span className="mt-6 flex items-center gap-2" style={{ fontSize: 'var(--pg-step--1)', color: 'var(--pg-magenta)' }}>
+                <strong className="relative z-10 mt-7 block" style={{ fontSize: 'var(--pg-step-1)', fontWeight: 600, color: 'var(--pg-ink)' }}>{item.name}</strong>
+                <span className="relative z-10 mt-2 block font-mono" style={{ fontSize: 'var(--pg-step--1)', color: 'var(--pg-cyan)' }}>{item.meta}</span>
+                <span className="relative z-10 mt-4 line-clamp-2 block leading-5" style={{ fontSize: 'var(--pg-step--1)', color: 'var(--pg-muted)' }}>{item.copy}</span>
+                <span className="relative z-10 mt-6 flex items-center gap-2" style={{ fontSize: 'var(--pg-step--1)', color: 'var(--pg-magenta)' }}>
                   Abrir plantilla <ArrowRight size={13} />
                 </span>
               </button>
@@ -568,13 +588,26 @@ export function CourseDashboard() {
       </div>
     </section>
 
+    {/* ------------------------------------------------------ VISUALES */}
+    <section id="visuales" className="pg-section pg-color-burst">
+      <div className="pg-container">
+        <div className="flex flex-wrap items-end justify-between gap-5">
+          <div className="max-w-2xl"><p className="pg-eyebrow">Música · imagen · imaginación</p><h2 className="pg-title">Una interfaz que también se escucha con los ojos.</h2><p className="pg-lede">Diez atmósferas originales repartidas entre el hero, el laboratorio y esta galería final: cada una acompaña una etapa distinta del proceso creativo.</p></div>
+          <span className="pg-chip" data-tone="amber">10 atmósferas originales</span>
+        </div>
+        <div className="visual-mosaic mt-10">
+          {editorialVisuals.slice(3).map((visual, index) => <Reveal key={visual.src} delay={index * 55}><figure className={`visual-tile visual-tile-${index % 4}`}><img src={visual.src} alt={visual.alt} loading="lazy" /><figcaption><span>Frecuencia {String(index + 4).padStart(2, '0')}</span><b>{['Órbita', 'Oro líquido', 'Voz', 'Mezcla', 'Escucha', 'Arquitectura', 'Chispa'][index]}</b></figcaption></figure></Reveal>)}
+        </div>
+      </div>
+    </section>
+
     <footer className="pg-section" style={{ paddingTop: '3.5rem' }}>
       <div className="pg-container">
         <TamvQuote variant="footer" />
         <span className="pg-rule mb-8 mt-10 block" />
         <div className="flex flex-wrap items-center justify-between gap-6">
           <div className="flex items-center gap-4">
-            <img src={logoMark} alt="" width={44} height={44} className="size-11 rounded-xl" />
+            <img src={logoMark} alt="TAMV ONLINE Network" width={44} height={44} className="size-11 rounded-xl object-cover ring-1 ring-[#d8c99d]/40" />
             <span className="block">
               <strong className="pg-item-title block tracking-[0.18em]">TAMV ONLINE</strong>
               <span className="pg-eyebrow" style={{ letterSpacing: '.2em' }}>Tecnología · música · futuro</span>

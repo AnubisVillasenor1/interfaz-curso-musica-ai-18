@@ -17,6 +17,8 @@ import CinematicStage from './cinematic-stage'
 import { actAt, CINEMATIC_ACTS, gradeFilter, withAlpha } from '@/lib/cinematic/scenes'
 import { markIntroSeen } from '@/lib/cinematic/gate'
 import { INTRO_TRACK, SoundBed, type BedState } from '@/lib/cinematic/soundbed'
+const TAMV_LOGO_URL = 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/tamvlogo1-4wSYHNlhlHSVNIwFL7gOVmGkBaCeqA.jpg'
+
 import {
   createEnv,
   detectTier,
@@ -487,9 +489,9 @@ export default function CinematicIntro({
       <div className="relative z-20 flex h-full flex-col justify-between px-7 py-8 sm:px-12 sm:py-10 lg:px-20 lg:py-14">
 
         <header className="flex items-start justify-between gap-6">
-          <div className="intro-monogram intro-fade" style={cssVars({ animationDelay: '120ms' })}>
-            <i aria-hidden="true">TAMV</i>
-            <span>Play and Go</span>
+          <div className="intro-monogram intro-fade flex items-center gap-3" style={cssVars({ animationDelay: '120ms' })}>
+            <img src={TAMV_LOGO_URL} alt="TAMV Online Network" width={38} height={38} className="size-9 rounded-full object-cover ring-1 ring-cyan-100/50" />
+            <span><i aria-hidden="true">TAMV</i><small>Play and Go · Online Network</small></span>
           </div>
 
           <div className="intro-fade flex items-center gap-2.5" style={cssVars({ animationDelay: '260ms' })}>
