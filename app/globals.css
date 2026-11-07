@@ -2155,3 +2155,179 @@ html[data-theme='dark'] {
     opacity: 0;
   }
 }
+
+
+/* Premium cinematic refinement — Play & Go / TAMV Crystal Sound.
+   The motion is atmospheric rather than ornamental; controls remain legible
+   and the scene composition adapts to narrow viewports. */
+.intro-shell {
+  isolation: isolate;
+  background: #06090d;
+  color: #f3f6f8;
+}
+.intro-shell::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(4,8,12,.84) 0%, rgba(4,8,12,.58) 34%, rgba(4,8,12,.08) 72%, rgba(4,8,12,.3) 100%),
+    linear-gradient(0deg, rgba(4,8,12,.78) 0%, transparent 28%, transparent 72%, rgba(4,8,12,.34) 100%);
+}
+.intro-shell .intro-monogram {
+  gap: .9rem;
+  text-shadow: 0 2px 24px rgba(0,0,0,.5);
+}
+.intro-shell .intro-monogram img {
+  width: 42px;
+  height: 42px;
+  border-radius: 13px;
+  object-fit: contain;
+  padding: 5px;
+  background: linear-gradient(145deg, rgba(255,255,255,.12), rgba(255,255,255,.025));
+  border: 1px solid rgba(214,230,239,.24);
+  box-shadow: 0 8px 32px rgba(0,0,0,.24), inset 0 1px rgba(255,255,255,.14);
+}
+.intro-shell .intro-monogram > span {
+  display: grid;
+  gap: .22rem;
+}
+.intro-shell .intro-monogram > span i {
+  font-size: .76rem;
+  font-style: normal;
+  font-weight: 650;
+  letter-spacing: .28em;
+  color: #f4f4f0;
+}
+.intro-shell .intro-monogram small {
+  color: rgba(221,232,239,.62);
+  font-size: .58rem;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+.intro-shell .intro-copy {
+  max-width: min(62rem, 76vw);
+  padding-bottom: clamp(.4rem, 2vh, 1.5rem);
+  text-wrap: pretty;
+}
+.intro-shell .intro-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: .8rem;
+  color: #b9e8f0;
+  font-size: clamp(.6rem, .75vw, .72rem);
+  font-weight: 600;
+  letter-spacing: .26em;
+  text-transform: uppercase;
+}
+.intro-shell .intro-kicker::before {
+  content: "";
+  width: 2.2rem;
+  height: 1px;
+  background: linear-gradient(90deg, #8ce8f1, rgba(140,232,241,.05));
+}
+.intro-shell .intro-title {
+  max-width: 12ch;
+  font-size: clamp(3rem, 7.2vw, 7.8rem);
+  font-weight: 520;
+  letter-spacing: -.075em;
+  line-height: .94;
+  text-wrap: balance;
+}
+.intro-shell .intro-line {
+  overflow: visible;
+}
+.intro-shell .shimmer-text {
+  background-image: linear-gradient(112deg, #fff 4%, #dce8ec 43%, #8ce8f1 68%, #d7c49a 100%);
+  background-size: 180% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 8px 36px rgba(0,0,0,.28));
+}
+.intro-shell .intro-body {
+  max-width: 48ch;
+  color: rgba(228,236,240,.78);
+  font-size: clamp(.95rem, 1.18vw, 1.12rem);
+  line-height: 1.8;
+  letter-spacing: .005em;
+}
+.intro-shell .intro-pill {
+  min-height: 40px;
+  border: 1px solid rgba(223,237,243,.2);
+  border-radius: 999px;
+  padding: .62rem 1rem;
+  background: rgba(9,16,22,.42);
+  color: rgba(241,247,249,.86);
+  backdrop-filter: blur(16px);
+  transition: border-color .22s ease, background .22s ease, transform .22s ease;
+}
+.intro-shell .intro-pill:hover {
+  border-color: rgba(140,232,241,.62);
+  background: rgba(30,57,68,.48);
+  transform: translateY(-1px);
+}
+.intro-shell .intro-rail {
+  border-left: 1px solid rgba(219,235,240,.14);
+  padding-left: 1.2rem;
+}
+.intro-shell .intro-rail button {
+  gap: .9rem;
+  padding: .62rem .8rem;
+  border-radius: 0 .6rem .6rem 0;
+  transition: background .2s ease, color .2s ease, border-color .2s ease;
+}
+.intro-shell .intro-rail button[data-current="true"] {
+  background: linear-gradient(90deg, rgba(140,232,241,.12), transparent);
+  box-shadow: inset 2px 0 #8ce8f1;
+}
+.intro-shell .intro-rail .rail-num {
+  font-variant-numeric: tabular-nums;
+  color: rgba(219,235,240,.45);
+}
+.intro-shell .intro-rail button[data-current="true"] .rail-num,
+.intro-shell .intro-rail button[data-current="true"] .rail-name {
+  color: #d9f8fb;
+}
+.intro-shell .intro-time {
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(222,237,243,.12);
+}
+.intro-shell .intro-time i {
+  border-radius: inherit;
+  box-shadow: 0 0 18px var(--time-glow);
+}
+@media (max-width: 767px) {
+  .intro-shell::after {
+    background:
+      linear-gradient(0deg, rgba(4,8,12,.94) 0%, rgba(4,8,12,.72) 40%, rgba(4,8,12,.12) 100%),
+      linear-gradient(180deg, rgba(4,8,12,.38), transparent 34%);
+  }
+  .intro-shell > .relative.z-20 {
+    padding: 1.25rem 1.2rem 1.5rem;
+  }
+  .intro-shell .intro-copy {
+    max-width: 100%;
+    padding-bottom: 1rem;
+  }
+  .intro-shell .intro-title {
+    max-width: 11ch;
+    font-size: clamp(2.8rem, 13vw, 5.1rem);
+    line-height: .98;
+  }
+  .intro-shell .intro-body {
+    max-width: 36ch;
+    font-size: .92rem;
+    line-height: 1.65;
+  }
+  .intro-shell .intro-monogram small {
+    max-width: 11rem;
+    font-size: .52rem;
+    letter-spacing: .09em;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .intro-shell .intro-pill { transition: none; }
+}
