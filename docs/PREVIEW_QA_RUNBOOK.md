@@ -19,7 +19,7 @@ Configurar las variables en **Vercel → Project → Settings → Environment Va
 
 | Variable | Preview | Criterio |
 |---|---|---|
-| NEXT_PUBLIC_APP_URL | URL HTTPS del deployment Preview estable o dominio de QA | Debe coincidir con el origen usado por callbacks y redirecciones |
+| PREVIEW_APP_URL | Opcional: URL HTTPS estable y exclusiva para Preview | Si se omite, la app usa VERCEL_URL para construir el origen del deployment actual; Preview nunca debe caer al origen de producción |\n| NEXT_PUBLIC_APP_URL | URL HTTPS canónica de producción | Se utiliza fuera de Preview; no debe usarse para enrutar callbacks de Preview |
 | NEXT_PUBLIC_SUPABASE_URL | Proyecto Supabase de staging | Proyecto separado de producción |
 | NEXT_PUBLIC_SUPABASE_ANON_KEY o NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY | Clave pública de staging | Una de las dos, de ese mismo proyecto |
 | SUPABASE_SERVICE_ROLE_KEY | Clave de servidor de staging | Nunca usar una clave de producción ni exponerla como NEXT_PUBLIC_* |
