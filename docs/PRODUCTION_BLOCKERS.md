@@ -10,6 +10,8 @@ The Vercel project currently assigns a number of service variables to multiple t
 
 **Risk:** functional tests can create or mutate real profiles, progress, songs, entitlements or payment-related records. A checkout or webhook test can have real financial consequences if the configured Stripe key is live.
 
+The application code now prevents a Preview deployment from falling back to the configured production origin: it prefers `PREVIEW_APP_URL`, then Vercel's `VERCEL_URL`, and returns an empty origin if neither exists. This makes checkout/callback flows fail closed when Preview origin configuration is missing. It does **not** replace backend credential isolation; shared database/provider credentials must still be scoped separately.
+
 **Required remediation before testing write/payment flows:**
 
 1. Create a separate Supabase staging project and database/storage buckets.
