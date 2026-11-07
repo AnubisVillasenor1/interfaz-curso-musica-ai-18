@@ -1,45 +1,62 @@
 'use client'
 
-import dynamic from 'next/dynamic'
 import { useCallback, useEffect, useState } from 'react'
+import dynamic from 'next/dynamic'
 import { Film } from 'lucide-react'
 
 import { CourseDashboard } from '@/components/course-dashboard'
-import { markIntroSeen, replayIntro, shouldRunIntro } from '@/lib/cinematic/gate'
+import {
+  markIntroSeen,
+  replayIntro,
+  shouldRunIntro,
+} from '@/lib/cinematic/gate'
 
-/** three.js entra en el bundle sólo cuando la intro realmente va a verse. */
-const CinematicIntro = dynamic(() => import('./cinematic-intro'), { ssr: false, loading: () => null })
+const CinematicIntro = dynamic(
+  () => import('./cinematic-intro').then((mod) => mod.CinematicIntro),
+  {
+    ssr: false,
+    loading: () => null,
+  },
+)
 
 export function IntroGate() {
-  const [showIntro, setShowIntro] = useState(false)
+  const [isIntroVisible, setIsIntroVisible] = useState(false)
 
   useEffect(() => {
-    // Decidimos en cliente: el HTML llega igual de rápido y Google no ve un muro.
-    if (shouldRunIntro()) setShowIntro(true)
+    if (shouldRunIntro()) {
+      setIsIntroVisible(true)
+    }
   }, [])
 
-  const close = useCallback(() => {
+  const closeIntro = useCallback(() => {
     markIntroSeen()
-    setShowIntro(false)
+    setIsIntroVisible(false)
   }, [])
 
-  const replay = useCallback(() => {
+  const replayIntro = useCallback(() => {
     replayIntro()
-    setShowIntro(true)
+    setIsIntroVisible(true)
   }, [])
 
   return (
     <>
       <CourseDashboard />
-      {showIntro && <CinematicIntro onComplete={close} onSkip={close} />}
-      {!showIntro && (
+
+      {isIntroVisible ? (
+        <CinematicIntro
+          onComplete={closeIntro}
+          onSkip={closeIntro}
+        />
+      ) : (
         <button
           type="button"
-          onClick={replay}
-          className="pg-shell pg-btn pg-btn-ghost fixed bottom-24 right-5 z-40 hidden font-mono text-[9.5px] uppercase tracking-[0.2em] md:inline-flex"
+          onClick={replayIntro}
+          aria-label="Volver a ver la introducción cinemática"
+          className="pg-shell pg-btn pg-btn-ghost fixed bottom-24 right-5 z-40 hidden items-center gap-2 font-mono text-[9.5px] uppercase tracking-[0.2em] transition-opacity hover:opacity-80 active:scale-95 md:inline-flex"
           style={{ padding: '0.6rem 1.05rem' }}
         >
-          <Film size={13} /> Ver la intro
+          <Film className="size-3.5" aria-hidden="true" />
+          <span>Ver la intro</span>
         </button>
       )}
     </>
