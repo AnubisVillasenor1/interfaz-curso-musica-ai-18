@@ -77,6 +77,19 @@ const modules = COURSE_MODULES.map((module, index) => {
   }
 })
 
+const editorialVisuals = [
+  { src: '/visuals/aurora-studio.png', alt: 'Estudio de ondas sonoras cristalinas' },
+  { src: '/visuals/neural-melody.png', alt: 'Melodía convertida en caminos neuronales' },
+  { src: '/visuals/crystal-synth.png', alt: 'Sintetizador de cristal futurista' },
+  { src: '/visuals/sound-orbit.png', alt: 'Órbita de frecuencias musicales' },
+  { src: '/visuals/golden-wave.png', alt: 'Onda sonora de oro líquido' },
+  { src: '/visuals/vocal-atmosphere.png', alt: 'Atmósfera vocal inmersiva' },
+  { src: '/visuals/mixing-console.png', alt: 'Consola de mezcla holográfica' },
+  { src: '/visuals/playlist-night.png', alt: 'Escucha nocturna con prisma de cristal' },
+  { src: '/visuals/sonic-architecture.png', alt: 'Arquitectura construida con ondas sonoras' },
+  { src: '/visuals/creative-spark.png', alt: 'Chispa creativa de partículas musicales' },
+]
+
 const prompts = [
   { name: 'Pop cinematográfico', meta: '96 BPM · voz femenina íntima · piano felt', copy: 'Pop alternativo cinematográfico, 96 BPM, voz femenina íntima y aireada, versos minimalistas con piano felt, pre-coro ascendente, coro amplio con cuerdas y batería orgánica, mezcla cálida y dinámica.' },
   { name: 'Reggaetón nocturno', meta: '92 BPM · voz masculina suave · dembow profundo', copy: 'Reggaetón oscuro y elegante, 92 BPM, voz masculina suave con flow conversado, dembow profundo, synth bass cálido, percusión seca, atmósfera nocturna y hook memorable.' },
@@ -334,7 +347,7 @@ export function CourseDashboard() {
             <div className="pg-banner-frame relative mt-5 overflow-hidden rounded-2xl">
               <img src={heroBanner} alt="Banner musical de Play and Go con ondas, notas y circuitos" width={1024} height={320} className="block h-auto max-h-40 w-full object-cover object-center" />
             </div>
-            <audio ref={audioRef} src={sampleAudio} loop preload="none" onEnded={() => setPlaying(false)} />
+            <audio ref={audioRef} src={sampleAudio} loop preload="none" onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} onEnded={() => setPlaying(false)} />
             <div
               className="absolute inset-x-5 bottom-5 flex items-center justify-between gap-4 rounded-2xl p-4 backdrop-blur-xl"
               style={{ border: '1px solid var(--pg-hairline)', background: 'var(--pg-veil)' }}
@@ -388,6 +401,19 @@ export function CourseDashboard() {
             </div>
           </Reveal>
         ))}
+      </div>
+    </section>
+
+    {/* ------------------------------------------------------ VISUALES */}
+    <section id="visuales" className="pg-section pg-color-burst">
+      <div className="pg-container">
+        <div className="flex flex-wrap items-end justify-between gap-5">
+          <div className="max-w-2xl"><p className="pg-eyebrow" style={{ color: 'var(--pg-cyan)' }}>Música · imagen · imaginación</p><h2 className="pg-title">Una interfaz que también se escucha con los ojos.</h2><p className="pg-lede">Cada módulo tiene una atmósfera: luz, frecuencia y materia visual para que la creación se sienta viva.</p></div>
+          <span className="pg-chip" data-tone="violet">10 atmósferas originales</span>
+        </div>
+        <div className="visual-mosaic mt-10">
+          {editorialVisuals.slice(3).map((visual, index) => <Reveal key={visual.src} delay={index * 55}><figure className={`visual-tile visual-tile-${index % 4}`}><img src={visual.src} alt={visual.alt} loading="lazy" /><figcaption><span>Frecuencia {String(index + 4).padStart(2, '0')}</span><b>{['Órbita', 'Oro líquido', 'Voz', 'Mezcla', 'Escucha', 'Arquitectura', 'Chispa'][index]}</b></figcaption></figure></Reveal>)}
+        </div>
       </div>
     </section>
 
@@ -491,16 +517,17 @@ export function CourseDashboard() {
               <button
                 type="button"
                 onClick={() => { setTemplate({ name: item.name, copy: item.copy }); setCopied(false); setStatus('') }}
-                className="pg-card pg-card-hover h-full p-5 text-left"
+                className="pg-card pg-card-hover relative h-full overflow-hidden p-5 text-left"
               >
-                <span className="flex items-center justify-between">
+                <img src={editorialVisuals[index + 1].src} alt="" aria-hidden="true" loading="lazy" className="prompt-visual absolute inset-0 h-full w-full object-cover" />
+                <span className="relative z-10 flex items-center justify-between">
                   <span className="pg-chip" data-tone="violet">Plantilla</span>
                   <Music2 size={18} style={{ color: 'var(--pg-cyan)' }} />
                 </span>
-                <strong className="mt-7 block" style={{ fontSize: 'var(--pg-step-1)', fontWeight: 600, color: 'var(--pg-ink)' }}>{item.name}</strong>
-                <span className="mt-2 block font-mono" style={{ fontSize: 'var(--pg-step--1)', color: 'var(--pg-cyan)' }}>{item.meta}</span>
-                <span className="mt-4 line-clamp-2 block leading-5" style={{ fontSize: 'var(--pg-step--1)', color: 'var(--pg-muted)' }}>{item.copy}</span>
-                <span className="mt-6 flex items-center gap-2" style={{ fontSize: 'var(--pg-step--1)', color: 'var(--pg-magenta)' }}>
+                <strong className="relative z-10 mt-7 block" style={{ fontSize: 'var(--pg-step-1)', fontWeight: 600, color: 'var(--pg-ink)' }}>{item.name}</strong>
+                <span className="relative z-10 mt-2 block font-mono" style={{ fontSize: 'var(--pg-step--1)', color: 'var(--pg-cyan)' }}>{item.meta}</span>
+                <span className="relative z-10 mt-4 line-clamp-2 block leading-5" style={{ fontSize: 'var(--pg-step--1)', color: 'var(--pg-muted)' }}>{item.copy}</span>
+                <span className="relative z-10 mt-6 flex items-center gap-2" style={{ fontSize: 'var(--pg-step--1)', color: 'var(--pg-magenta)' }}>
                   Abrir plantilla <ArrowRight size={13} />
                 </span>
               </button>
