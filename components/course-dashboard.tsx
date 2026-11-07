@@ -8,6 +8,7 @@ import {
   Check,
   ChevronRight,
   Copy,
+  CreditCard,
   Headphones,
   LockKeyhole,
   Menu,
@@ -18,6 +19,8 @@ import {
   Send,
   Sparkles,
   Trophy,
+  UserRound,
+  UserPlus,
   X,
   Zap,
   type LucideIcon,
@@ -254,12 +257,59 @@ export function CourseDashboard() {
   }
 
   const navLinks = [
-    ['Academia', '/curso'],
+    ['Curso', '/curso'],
     ['Estudio', '/studio'],
-    ['Biblioteca', '/biblioteca'],
+    ['Mi música', '/biblioteca'],
+    ['Mi perfil', '/perfil'],
     ['Comunidad', '/comunidad'],
-    ['Membresías', '/precios'],
-    ['Información', '/informacion'],
+    ['Planes y pago', '/precios'],
+  ] as const
+
+  /**
+   * El mapa de la plataforma, en la portada.
+   *
+   * La queja concreta fue «no supe dónde registrarme ni dónde está mi perfil o
+   * mi música». La navegación superior no basta: en móvil vive detrás de una
+   * hamburguesa. Estas cuatro puertas explican en una línea qué hay detrás de
+   * cada una y llevan directo, sin pasar por el menú.
+   */
+  const spaceCards = [
+    {
+      href: '/auth?mode=signup',
+      icon: UserPlus,
+      eyebrow: 'Paso 1',
+      title: 'Crear cuenta',
+      body: 'Es gratis y no pide tarjeta. Con la cuenta se guardan tus canciones y tu progreso.',
+      action: 'Registrarme',
+      primary: true,
+    },
+    {
+      href: '/perfil',
+      icon: UserRound,
+      eyebrow: 'Tu cuenta',
+      title: 'Mi perfil',
+      body: 'Tu plan, el cupo que te queda, tu avance en el curso y el botón para cerrar sesión.',
+      action: 'Ver mi perfil',
+      primary: false,
+    },
+    {
+      href: '/biblioteca',
+      icon: Music2,
+      eyebrow: 'Tu obra',
+      title: 'Mi música',
+      body: 'Todo lo que has compuesto, listo para escuchar y descargar en WAV.',
+      action: 'Abrir mi música',
+      primary: false,
+    },
+    {
+      href: '/precios',
+      icon: CreditCard,
+      eyebrow: 'Pagos',
+      title: 'Planes y pago',
+      body: `Compara el plan gratuito con el curso (${coursePrice}, pago único) y el estudio mensual. El cobro lo procesa Stripe.`,
+      action: 'Ver planes y precios',
+      primary: false,
+    },
   ] as const
 
   return <main className="pg-shell relative min-h-screen overflow-x-clip" style={{ background: 'var(--pg-bg)' }}>
@@ -274,14 +324,14 @@ export function CourseDashboard() {
             <span className="pg-eyebrow" style={{ letterSpacing: '.24em' }}>por TAMV ONLINE NETWORK</span>
           </span>
         </a>
-        <nav aria-label="Navegación principal" className="hidden items-center gap-6 md:flex">
+        <nav aria-label="Navegación principal" className="hidden items-center gap-5 lg:flex">
           {navLinks.map(([label, href]) => <a key={href} className="pg-navlink" href={href}>{label}</a>)}
           <Link href="/auth" className="pg-navlink">Entrar</Link>
           <Link href="/auth?mode=signup" className="pg-btn pg-btn-primary" style={{ padding: '0.6rem 1.2rem' }}>Crear cuenta gratis</Link>
         </nav>
         <button
           type="button"
-          className="md:hidden"
+          className="lg:hidden"
           aria-label={menuOpen ? 'Cerrar menú' : 'Abrir menú'}
           aria-expanded={menuOpen}
           onClick={() => setMenuOpen((value) => !value)}
@@ -290,15 +340,16 @@ export function CourseDashboard() {
         </button>
       </div>
       {menuOpen && (
-        <nav aria-label="Navegación móvil" className="pg-container md:hidden" style={{ paddingBottom: '1.25rem' }}>
+        <nav aria-label="Navegación móvil" className="pg-container lg:hidden" style={{ paddingBottom: '1.25rem' }}>
           <span className="pg-rule mb-4 block" />
           <ul className="flex flex-col gap-3">
             {navLinks.map(([label, href]) => <li key={href}><a className="pg-navlink" href={href}>{label}</a></li>)}
             <li><a className="pg-navlink" href="/ajustes">Ajustes</a></li>
+            <li><a className="pg-navlink" href="/informacion">Información</a></li>
             <li><Link className="pg-navlink" href="/auth">Entrar</Link></li>
           </ul>
           <Link href="/auth?mode=signup" className="pg-btn pg-btn-primary mt-5 w-full justify-center" onClick={() => setMenuOpen(false)}>Crear cuenta gratis</Link>
-          <button type="button" className="pg-btn pg-btn-ghost mt-3 w-full" onClick={() => { setMenuOpen(false); setShowRegister(true) }}>Comprar el curso · {coursePrice}</button>
+          <button type="button" className="pg-btn pg-btn-ghost mt-3 w-full" onClick={() => { setMenuOpen(false); setShowRegister(true) }}>Pagar el curso · {coursePrice}</button>
         </nav>
       )}
     </header>
@@ -325,7 +376,7 @@ export function CourseDashboard() {
               Crear cuenta gratis <ArrowRight size={15} />
             </Link>
             <button type="button" className="pg-btn pg-btn-ghost" onClick={() => setShowRegister(true)}>
-              Comprar el curso · {coursePrice}
+              Pagar el curso · {coursePrice}
             </button>
             <a href="#ruta" className="pg-navlink" style={{ color: 'var(--pg-text)' }}>Ver el programa</a>
             <Link href="/auth" className="pg-navlink" style={{ color: 'var(--pg-muted)' }}>Ya tengo cuenta · Entrar</Link>
@@ -405,6 +456,50 @@ export function CourseDashboard() {
             </div>
           </Reveal>
         ))}
+      </div>
+    </section>
+
+    {/* ------------------------------------------------------ TU ESPACIO */}
+    <section id="tu-espacio" className="pg-section">
+      <div className="pg-container">
+        <div className="flex flex-wrap items-end justify-between gap-6">
+          <div className="max-w-2xl">
+            <p className="pg-eyebrow">Tu espacio</p>
+            <h2 className="pg-title">¿Dónde está cada cosa?</h2>
+            <p className="pg-lede">
+              Cuatro puertas, sin menús escondidos: crear la cuenta, ver tu perfil, escuchar tu música y pagar tu plan.
+            </p>
+          </div>
+          <Link href="/auth" className="pg-navlink">
+            Ya tengo cuenta · Entrar
+          </Link>
+        </div>
+        <div className="mt-9 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {spaceCards.map((card, index) => (
+            <Reveal key={card.title} delay={index * 60}>
+              <Link
+                href={card.href}
+                className={`pg-card pg-card-hover flex h-full flex-col p-5${card.primary ? ' pg-card-featured' : ''}`}
+              >
+                <span className="flex items-center justify-between gap-3">
+                  <span className="pg-mark">
+                    <card.icon size={18} />
+                  </span>
+                  <span className="pg-eyebrow">{card.eyebrow}</span>
+                </span>
+                <strong className="mt-5 block" style={{ fontSize: 'var(--pg-step-1)', color: 'var(--pg-ink)' }}>
+                  {card.title}
+                </strong>
+                <span className="mt-2 block flex-1 text-[13px] leading-5" style={{ color: 'var(--pg-muted)' }}>
+                  {card.body}
+                </span>
+                <span className="mt-5 flex items-center gap-1.5 text-[13px]" style={{ color: 'var(--pg-cyan)' }}>
+                  {card.action} <ArrowRight size={13} />
+                </span>
+              </Link>
+            </Reveal>
+          ))}
+        </div>
       </div>
     </section>
 
@@ -617,6 +712,9 @@ export function CourseDashboard() {
             <p style={{ fontSize: 'var(--pg-step--1)', color: 'var(--pg-muted)' }}>
               Play and Go by TAMV ONLINE · Orgullosamente Realmontenses
             </p>
+            <Link href="/informacion" className="pg-minilink">
+              Información
+            </Link>
             <Link href="/terminos" className="pg-minilink">
               Términos y Condiciones
             </Link>

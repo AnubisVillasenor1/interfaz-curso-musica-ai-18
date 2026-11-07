@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ArrowLeft, Music2, ArrowRight } from 'lucide-react'
 
+import { AccountTabs } from '@/components/account/account-tabs'
 import { CourseModulesIndex } from '@/components/course/module-index'
 import { TamvQuote } from '@/components/tamv-quote'
 import { COURSE_FRAMEWORK, COURSE_MODULES, COURSE_TOTAL_LESSONS, COURSE_UNITS, FINAL_PROJECT, lessonsByModule } from '@/lib/course'
@@ -43,6 +44,10 @@ export default function CursoPage() {
       </header>
 
       <div className="pg-container pb-20">
+        <div className="mb-8">
+          <AccountTabs active="curso" />
+        </div>
+
         <section className="pg-section">
           <p className="pg-eyebrow">
             {COURSE_MODULES.length} módulos · {COURSE_TOTAL_LESSONS} lecciones · {totalMinutes} min

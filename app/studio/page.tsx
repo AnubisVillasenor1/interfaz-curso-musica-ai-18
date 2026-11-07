@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { ArrowRight, AudioLines, Mic2, MousePointerClick, UserPlus } from 'lucide-react'
 
+import { AccountTabs } from '@/components/account/account-tabs'
 import { LocalComposer } from '@/components/local-composer'
 import { MusicStudio } from '@/components/music-studio'
 import { RealAudioStudio } from '@/components/real-audio-studio'
@@ -66,6 +67,10 @@ export default async function StudioPage({
             resultado. El motor local es gratuito; las voces del proveedor se activan con el curso o el plan mensual.
           </p>
         </header>
+
+        <div className="mb-8">
+          <AccountTabs active="estudio" />
+        </div>
 
         <ol className="mb-8 grid gap-4 md:grid-cols-3">
           {steps.map((step, index) => (

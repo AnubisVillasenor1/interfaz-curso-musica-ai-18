@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 
+import { AccountTabs } from '@/components/account/account-tabs'
 import { ProfilePanel } from '@/components/account/profile-panel'
 
 export const metadata: Metadata = {
@@ -23,22 +24,11 @@ export default function PerfilPage() {
       </header>
 
       <div className="pg-container max-w-4xl pt-6 pb-20">
-        <ProfilePanel />
+        <AccountTabs active="perfil" />
 
-        <div className="mt-8">
-          <div className="pg-rule" />
+        <div className="mt-6">
+          <ProfilePanel />
         </div>
-        <nav className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-3">
-          <a href="/biblioteca" className="pg-navlink">
-            Mi biblioteca
-          </a>
-          <a href="/studio" className="pg-navlink">
-            Ir al estudio
-          </a>
-          <a href="/precios" className="pg-navlink">
-            Ver planes
-          </a>
-        </nav>
       </div>
     </main>
   )

@@ -163,6 +163,11 @@ export function ProfilePanel() {
               Iniciar sesión <ArrowRight size={15} aria-hidden="true" />
             </button>
           )}
+          {state === 'unauthorized' && (
+            <a href="/auth?mode=signup&next=/perfil" className="pg-btn pg-btn-ghost">
+              Crear cuenta gratis
+            </a>
+          )}
           <button
             type="button"
             onClick={() => void load()}

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 
+import { AccountTabs } from '@/components/account/account-tabs'
 import { LibraryPanel } from '@/components/account/library-panel'
 
 export const metadata: Metadata = {
@@ -23,7 +24,9 @@ export default function BibliotecaPage() {
       </header>
 
       <div className="pg-container max-w-4xl pb-20">
-        <section className="pg-section pb-8">
+        <AccountTabs active="musica" />
+
+        <section className="pg-section pb-8 pt-8">
           <p className="pg-eyebrow">Tu biblioteca</p>
           <h1 className="pg-title">Tus canciones</h1>
           <p className="pg-lede">

@@ -166,15 +166,20 @@ export function LibraryPanel() {
             Inicia sesión para ver tu biblioteca
           </h2>
           <p className="pg-prose mt-2">Tus canciones están ligadas a tu cuenta.</p>
-          <button
-            type="button"
-            onClick={() => {
-              window.location.href = '/auth?next=/biblioteca'
-            }}
-            className="pg-btn pg-btn-primary mt-5"
-          >
-            Iniciar sesión
-          </button>
+          <div className="mt-5 flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={() => {
+                window.location.href = '/auth?next=/biblioteca'
+              }}
+              className="pg-btn pg-btn-primary"
+            >
+              Iniciar sesión
+            </button>
+            <a href="/auth?mode=signup&next=/biblioteca" className="pg-btn pg-btn-ghost">
+              Crear cuenta gratis
+            </a>
+          </div>
         </div>
       )}
 

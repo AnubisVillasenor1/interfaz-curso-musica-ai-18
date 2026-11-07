@@ -1646,6 +1646,14 @@ html[data-theme='dark'] {
     border-color: var(--pg-cyan);
     font-weight: 600;
   }
+  /* Enlace de navegación activo. `aria-current` es la semántica correcta para
+     una pestaña que es un enlace, no un botón que alterna estado. */
+  .pg-shell .pg-seg[aria-current='page'] {
+    color: var(--pg-bg);
+    background: var(--pg-cyan);
+    border-color: var(--pg-cyan);
+    font-weight: 600;
+  }
 
   /* Tarjeta de prompt: cuerpo de .pg-card con el tinte del objeto. */
   .pg-card-prompt {

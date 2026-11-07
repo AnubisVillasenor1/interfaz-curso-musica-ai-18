@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 
+import { AccountTabs } from '@/components/account/account-tabs'
 import { PricingTable } from '@/components/account/pricing-table'
 
 export const metadata: Metadata = {
@@ -37,7 +38,11 @@ export default function PreciosPage() {
           </p>
         </header>
 
-        <div className="mt-12">
+        <div className="mt-10">
+          <AccountTabs active="pagos" />
+        </div>
+
+        <div className="mt-10">
           <PricingTable />
         </div>
 
