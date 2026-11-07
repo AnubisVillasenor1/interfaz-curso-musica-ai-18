@@ -28,8 +28,10 @@ export function getAppUrl(request?: Request): string {
   // compartido que apunte al dominio de producción.
   const isPreview = process.env.VERCEL_ENV === 'preview'
   if (isPreview) {
-    const previewOrigin = process.env.PREVIEW_APP_URL ?? process.env.VERCEL_URL
-    if (previewOrigin) return normalize(previewOrigin)
+    const previewOrigin = process.env.PREVIEW_APP_URL || process.env.VERCEL_URL
+    // Fail closed: no production-origin fallback in Preview, even if Vercel
+    // does not provide VERCEL_URL or a branch-specific URL was misconfigured.
+    return previewOrigin ? normalize(previewOrigin) : ''
   }
 
   const configured =
