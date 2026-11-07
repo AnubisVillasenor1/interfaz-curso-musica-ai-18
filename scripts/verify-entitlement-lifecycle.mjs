@@ -22,6 +22,7 @@ const checks = [
   ['requires subscription identity before revoking Pro', fulfillment.includes(".eq('subscription_id', subscriptionId)") && fulfillment.includes('stale_subscription')],
   ['processes subscription updates from Stripe', webhook.includes("event.type === 'customer.subscription.updated'") && webhook.includes('sync_entitlement_effective_state')],
   ['verifies the subscription with the Stripe API before fulfilment', webhook.includes('subscriptions.retrieve(subscriptionId)')],
+  ['reads billing periods from subscription items in current Stripe SDK', webhook.includes('subscription.items.data') && webhook.includes('item.current_period_end')],
 ]
 
 let failures = 0

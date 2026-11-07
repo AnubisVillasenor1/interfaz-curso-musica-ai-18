@@ -78,6 +78,15 @@ export async function POST(request: Request) {
   }
 }
 
+function subscriptionPeriodEnd(subscription: Stripe.Subscription): number | null {
+  const periods = subscription.items.data
+    .map((item) => item.current_period_end)
+    .filter((value): value is number => Number.isFinite(value) && value > 0)
+  // El curso Pro usa un solo precio recurrente. Si una suscripción futura tiene
+  // varios periodos, se falla de forma conservadora al más próximo a vencer.
+  return periods.length > 0 ? Math.min(...periods) : null
+}
+
 async function handleCheckoutCompleted(
   admin: NonNullable<ReturnType<typeof createAdminClient>>,
   session: Stripe.Checkout.Session,
@@ -166,7 +175,7 @@ async function handleCheckoutCompleted(
       subscription = {
         id: currentSubscription.id,
         status: currentSubscription.status,
-        currentPeriodEnd: currentSubscription.current_period_end,
+        currentPeriodEnd: subscriptionPeriodEnd(currentSubscription),
       }
     } catch (error) {
       console.error('[webhook] no se pudo verificar la suscripción en Stripe', {
@@ -200,7 +209,6 @@ async function handleCheckoutCompleted(
     return NextResponse.json({ received: true, queued: true })
   }
 
-  const subscriptionId = typeof session.subscription === 'string' ? session.subscription : session.subscription?.id
   const delivered = await grantProduct(
     admin,
     userId,
@@ -221,9 +229,10 @@ async function handleSubscriptionUpdated(
   admin: NonNullable<ReturnType<typeof createAdminClient>>,
   subscription: Stripe.Subscription,
 ): Promise<Response> {
-  const periodEnd = Number.isFinite(subscription.current_period_end)
-    ? new Date(subscription.current_period_end * 1000).toISOString()
-    : null
+  const periodEndSeconds = subscriptionPeriodEnd(subscription)
+  const periodEnd = periodEndSeconds === null
+    ? null
+    : new Date(periodEndSeconds * 1000).toISOString()
 
   const { data: row, error } = await admin
     .from('entitlements')
