@@ -10,6 +10,10 @@ __v0_jsx-dev-runtime.ts
 # Environment variables
 .env*.local
 
+# Configuración local de herramientas (modelo/proveedor del agente). No es código
+# de la app y no debe fijar el modelo de quien clone el repo.
+opencode.json
+
 # Common ignores
 node_modules
 .next/
