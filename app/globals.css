@@ -587,14 +587,15 @@ html[data-theme='dark'] {
 
   /* Grano de película: ruido SVG en overlay, desplazado en pasos para que
      respire sin volverse un parpadeo digital */
-  .intro-grain {
+.intro-grain {
     position: absolute;
-    inset: -14%;
+    inset: -40%;
+    z-index: 8;
     pointer-events: none;
-    opacity: 0.055;
-    mix-blend-mode: overlay;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23g)'/%3E%3C/svg%3E");
-    animation: intro-grain 0.9s steps(1) infinite;
+    opacity: 0.018;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.78' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.42'/%3E%3C/svg%3E");
+    mix-blend-mode: soft-light;
+    animation: intro-grain 2.8s steps(2) infinite;
   }
 
   /* Halos de pantalla: dos luces frías muy difusas que dan profundidad al DOM */
@@ -731,10 +732,10 @@ html[data-theme='dark'] {
     padding-bottom: 0.06em;
   }
   .intro-line > span {
-    display: block;
-    transform: translate3d(0, 108%, 0);
-    animation: intro-line-up 1.15s cubic-bezier(0.16, 0.84, 0.24, 1) both;
-    animation-delay: calc(var(--line, 0) * 115ms + 120ms);
+    display: inline-block;
+    animation: intro-line-up 1.35s cubic-bezier(0.16, 0.84, 0.24, 1) both;
+    animation-delay: calc(var(--line) * 150ms + 180ms);
+    will-change: transform, opacity, filter;
   }
 
   .intro-body {
@@ -987,9 +988,15 @@ html[data-theme='dark'] {
     opacity: 1;
   }
 
-  @keyframes intro-line-up {
-    from { transform: translate3d(0, 108%, 0); }
-    to { transform: none; }
+@keyframes intro-line-up {
+    from { opacity: 0; transform: translate3d(0, 54px, 0) scale(.96); filter: blur(18px); letter-spacing: .08em; }
+    62% { opacity: 1; filter: blur(0); }
+    to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); filter: blur(0); letter-spacing: 0; }
+  }
+  @keyframes intro-rule {
+    from { opacity: 0; transform: scaleX(0); transform-origin: left; filter: brightness(2.5); }
+    70% { opacity: 1; filter: brightness(1.4); }
+    to { opacity: 1; transform: scaleX(1); transform-origin: left; filter: brightness(1); }
   }
   @keyframes intro-rule {
     from { transform: scaleX(0); opacity: 0; }

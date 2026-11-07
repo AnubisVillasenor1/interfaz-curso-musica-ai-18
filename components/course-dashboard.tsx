@@ -331,8 +331,8 @@ export function CourseDashboard() {
               height={576}
               className="aspect-[16/9] w-full object-cover"
             />
-            <div className="pg-banner-frame mx-4 -mt-10 relative z-10 overflow-hidden rounded-2xl">
-              <img src={heroBanner} alt="Banner musical de Play and Go con ondas, notas y circuitos" width={1024} height={320} className="h-24 w-full object-cover sm:h-32" />
+            <div className="pg-banner-frame relative mt-5 overflow-hidden rounded-2xl">
+              <img src={heroBanner} alt="Banner musical de Play and Go con ondas, notas y circuitos" width={1024} height={320} className="block h-auto max-h-40 w-full object-cover object-center" />
             </div>
             <audio ref={audioRef} src={sampleAudio} loop preload="none" onEnded={() => setPlaying(false)} />
             <div
