@@ -43,7 +43,6 @@ import { COURSE_PRODUCT } from '@/lib/products'
 const logoMark = 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/tamvlogo1-4wSYHNlhlHSVNIwFL7gOVmGkBaCeqA.jpg'
 const playAndGoLogo = 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logoplayandgo-EAG8du0GfFdQZUWxVmQQa5plKJDFSr.jpg'
 const heroImage = 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-ggBlgonDJDNHatg1hRwzx1TFsT0h7C.png'
-const heroBanner = 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-rwD1QPRMTzXqdzENNOyDxWuHJms4aw.png'
 const sampleAudio = '/audio/pista2.mp3'
 
 /**
@@ -344,9 +343,7 @@ export function CourseDashboard() {
               height={576}
               className="aspect-[16/9] w-full object-cover"
             />
-            <div className="pg-banner-frame relative mt-5 overflow-hidden rounded-2xl">
-              <img src={heroBanner} alt="Banner musical de Play and Go con ondas, notas y circuitos" width={1024} height={320} className="block h-auto max-h-40 w-full object-cover object-center" />
-            </div>
+
             <audio ref={audioRef} src={sampleAudio} loop preload="none" onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} onEnded={() => setPlaying(false)} />
             <div
               className="absolute inset-x-5 bottom-5 flex items-center justify-between gap-4 rounded-2xl p-4 backdrop-blur-xl"
