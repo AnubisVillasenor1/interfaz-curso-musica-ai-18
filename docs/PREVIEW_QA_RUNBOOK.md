@@ -6,12 +6,12 @@
 
 1. Trabajar en una rama distinta de main.
 2. Abrir un Pull Request contra main.
-3. Esperar el workflow **Preview readiness**: instalación reproducible, typecheck, build de producción y smoke tests HTTP.
+3. Esperar el workflow canónico **ci**: instalación reproducible, typecheck, build de producción y smoke tests HTTP.
 4. Revisar el deployment Preview asociado al commit del PR en Vercel.
 5. Ejecutar la matriz funcional de este documento y adjuntar resultados al PR.
 6. No fusionar ni promover a producción hasta que los criterios obligatorios estén aprobados.
 
-El workflow CI automatizado utiliza valores públicos ficticios para comprobar que la aplicación compila y se comporta de forma degradada sin credenciales reales. No habilitan autenticación, cobros ni generación externa. El workflow no debe contener secretos de producción.
+El workflow CI automatizado no recibe credenciales de servicios externos. Comprueba que la aplicación compila y que las rutas/API se comportan de forma segura sin credenciales reales; no habilita autenticación, cobros ni generación externa. No añadir secretos de producción al workflow.
 
 ## 2. Variables y servicios del entorno de pruebas
 
@@ -19,7 +19,8 @@ Configurar las variables en **Vercel → Project → Settings → Environment Va
 
 | Variable | Preview | Criterio |
 |---|---|---|
-| PREVIEW_APP_URL | Opcional: URL HTTPS estable y exclusiva para Preview | Si se omite, la app usa VERCEL_URL para construir el origen del deployment actual; Preview nunca debe caer al origen de producción |\n| NEXT_PUBLIC_APP_URL | URL HTTPS canónica de producción | Se utiliza fuera de Preview; no debe usarse para enrutar callbacks de Preview |
+| PREVIEW_APP_URL | Opcional: URL HTTPS estable y exclusiva para Preview | Si se omite, la app usa VERCEL_URL para construir el origen del deployment actual; Preview nunca debe caer al origen de producción |
+| NEXT_PUBLIC_APP_URL | URL HTTPS canónica de producción | Se utiliza fuera de Preview; no debe usarse para enrutar callbacks de Preview |
 | NEXT_PUBLIC_SUPABASE_URL | Proyecto Supabase de staging | Proyecto separado de producción |
 | NEXT_PUBLIC_SUPABASE_ANON_KEY o NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY | Clave pública de staging | Una de las dos, de ese mismo proyecto |
 | SUPABASE_SERVICE_ROLE_KEY | Clave de servidor de staging | Nunca usar una clave de producción ni exponerla como NEXT_PUBLIC_* |
