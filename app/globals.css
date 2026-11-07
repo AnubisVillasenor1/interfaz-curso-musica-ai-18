@@ -1038,11 +1038,11 @@ html[data-theme='dark'] {
      descienden de ellos. Cambiar la marca es cambiar siete líneas.
      ================================================================== */
   .pg-shell {
-    --pg-cyan: #75e9f2;
-    --pg-cyan-soft: #8cecf3;
-    --pg-violet: #c09eff;
-    --pg-magenta: #ff9eea;
-    --pg-amber: #ffcf72;
+ --pg-cyan: #5aa7d8;
+ --pg-cyan-soft: #9fc9df;
+ --pg-violet: #6d8eaa;
+ --pg-magenta: #b89562;
+ --pg-amber: #d7c49a;
     --pg-mint: #83d7b4;
     --pg-ink: #edfaff;
     --pg-text: #adc4d0;
@@ -1196,7 +1196,7 @@ html[data-theme='dark'] {
   .pg-color-burst { overflow: hidden; }
   .pg-color-burst::after { content: ''; position: absolute; width: 28rem; height: 28rem; right: -12rem; top: 15%; border-radius: 999px; background: radial-gradient(circle, rgba(86, 181, 255, .24), rgba(157, 86, 255, .12) 42%, transparent 70%); filter: blur(28px); pointer-events: none; animation: pg-burst 9s ease-in-out infinite; }
   .visual-mosaic { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 0.8rem; }
-  .visual-tile { position: relative; min-height: 12rem; overflow: hidden; border: 1px solid rgba(228, 237, 243, .2); border-radius: 1.25rem; background: #0b1420; box-shadow: 0 20px 50px -25px #000, inset 0 1px rgba(255,255,255,.3); }
+  .visual-tile { position: relative; min-height: 17rem; aspect-ratio: 4 / 3; overflow: hidden; border: 1px solid rgba(228, 237, 243, .2); border-radius: 1.25rem; background: #0b1420; box-shadow: 0 20px 50px -25px #000, inset 0 1px rgba(255,255,255,.3); }
   .visual-tile img { width: 100%; height: 100%; min-height: 12rem; object-fit: cover; opacity: .76; transform: scale(1.02); transition: transform .8s cubic-bezier(.16,.84,.24,1), opacity .4s ease, filter .4s ease; }
   .visual-tile:hover img { opacity: 1; transform: scale(1.1); filter: saturate(1.25) contrast(1.06); }
   .visual-tile::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 28%, rgba(5, 10, 18, .9)); pointer-events: none; }

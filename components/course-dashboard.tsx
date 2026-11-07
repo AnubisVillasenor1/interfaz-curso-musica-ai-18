@@ -401,19 +401,6 @@ export function CourseDashboard() {
       </div>
     </section>
 
-    {/* ------------------------------------------------------ VISUALES */}
-    <section id="visuales" className="pg-section pg-color-burst">
-      <div className="pg-container">
-        <div className="flex flex-wrap items-end justify-between gap-5">
-          <div className="max-w-2xl"><p className="pg-eyebrow" style={{ color: 'var(--pg-cyan)' }}>Música · imagen · imaginación</p><h2 className="pg-title">Una interfaz que también se escucha con los ojos.</h2><p className="pg-lede">Cada módulo tiene una atmósfera: luz, frecuencia y materia visual para que la creación se sienta viva.</p></div>
-          <span className="pg-chip" data-tone="violet">10 atmósferas originales</span>
-        </div>
-        <div className="visual-mosaic mt-10">
-          {editorialVisuals.slice(3).map((visual, index) => <Reveal key={visual.src} delay={index * 55}><figure className={`visual-tile visual-tile-${index % 4}`}><img src={visual.src} alt={visual.alt} loading="lazy" /><figcaption><span>Frecuencia {String(index + 4).padStart(2, '0')}</span><b>{['Órbita', 'Oro líquido', 'Voz', 'Mezcla', 'Escucha', 'Arquitectura', 'Chispa'][index]}</b></figcaption></figure></Reveal>)}
-        </div>
-      </div>
-    </section>
-
     {/* ---------------------------------------------------------- RUTA */}
     <section id="ruta" className="pg-section">
       <div className="pg-container">
@@ -590,6 +577,19 @@ export function CourseDashboard() {
               </Reveal>
             ))}
           </div>
+        </div>
+      </div>
+    </section>
+
+    {/* ------------------------------------------------------ VISUALES */}
+    <section id="visuales" className="pg-section pg-color-burst">
+      <div className="pg-container">
+        <div className="flex flex-wrap items-end justify-between gap-5">
+          <div className="max-w-2xl"><p className="pg-eyebrow">Música · imagen · imaginación</p><h2 className="pg-title">Una interfaz que también se escucha con los ojos.</h2><p className="pg-lede">Diez atmósferas originales repartidas entre el hero, el laboratorio y esta galería final: cada una acompaña una etapa distinta del proceso creativo.</p></div>
+          <span className="pg-chip" data-tone="amber">10 atmósferas originales</span>
+        </div>
+        <div className="visual-mosaic mt-10">
+          {editorialVisuals.slice(3).map((visual, index) => <Reveal key={visual.src} delay={index * 55}><figure className={`visual-tile visual-tile-${index % 4}`}><img src={visual.src} alt={visual.alt} loading="lazy" /><figcaption><span>Frecuencia {String(index + 4).padStart(2, '0')}</span><b>{['Órbita', 'Oro líquido', 'Voz', 'Mezcla', 'Escucha', 'Arquitectura', 'Chispa'][index]}</b></figcaption></figure></Reveal>)}
         </div>
       </div>
     </section>
