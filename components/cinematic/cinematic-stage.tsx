@@ -5,7 +5,11 @@ import { useFrame, useThree } from '@react-three/fiber'
 import { AdaptiveDpr, PerformanceMonitor } from '@react-three/drei'
 import * as THREE from 'three'
 
-import { actAt, CINEMATIC_ACTS, type CinematicAct } from '@/lib/cinematic/scenes'
+import {
+  actAt,
+  CINEMATIC_ACTS,
+  type CinematicAct,
+} from '@/lib/cinematic/scenes'
 import {
   ARC_SHADER,
   CORE_SHADER,
@@ -15,274 +19,556 @@ import {
   RING_SHADER,
   STREAK_SHADER,
 } from '@/lib/cinematic/shaders'
-import type { CinematicEnv, QualityTier } from '@/lib/cinematic/quality'
+import type {
+  CinematicEnv,
+  QualityTier,
+} from '@/lib/cinematic/quality'
 
-/**
- * three r152+ ya gestiona el espacio de color: `new THREE.Color('#rrggbb')`
- * interpreta el hex como sRGB y lo lleva al espacio lineal de trabajo. Volver
- * a aplicar convertSRGBToLinear() oscurece y satura de más, así que se guarda
- * la conversión correcta una sola vez por hex.
- */
-const LINEAR_CACHE = new Map<string, THREE.Color>()
+/* ------------------------------------------------------------------ */
+/* Constantes y utilidades                                             */
+/* ------------------------------------------------------------------ */
 
-function linear(hex: string): THREE.Color {
-  const cached = LINEAR_CACHE.get(hex)
-  if (cached) return cached
+const MAX_DELTA = 1 / 30
+
+const PARTICLE_COUNT: Record<QualityTier, number> = {
+  low: 2_200,
+  medium: 6_500,
+  high: 13_000,
+}
+
+const GEOMETRY_DETAIL: Record<QualityTier, number> = {
+  low: 2,
+  medium: 3,
+  high: 4,
+}
+
+const ARC_RADIAL_SEGMENTS: Record<QualityTier, number> = {
+  low: 64,
+  medium: 110,
+  high: 160,
+}
+
+const RING_RADIAL_SEGMENTS: Record<QualityTier, number> = {
+  low: 80,
+  medium: 130,
+  high: 200,
+}
+
+const linearColorCache = new Map<string, THREE.Color>()
+
+function linearColor(hex: string): THREE.Color {
+  const cached = linearColorCache.get(hex)
+
+  if (cached) {
+    return cached
+  }
+
   const color = new THREE.Color(hex)
-  LINEAR_CACHE.set(hex, color)
+  linearColorCache.set(hex, color)
+
   return color
 }
 
-/** Copia del color lineal de un acto, para no mutar la caché en los lerps. */
-function colorOf(act: CinematicAct, key: keyof CinematicAct['palette']): THREE.Color {
-  return linear(act.palette[key]).clone()
+function paletteColor(
+  act: CinematicAct,
+  key: keyof CinematicAct['palette'],
+): THREE.Color {
+  return linearColor(act.palette[key]).clone()
 }
 
-const PARTICLE_COUNT: Record<QualityTier, number> = {
-  low: 2200,
-  medium: 6500,
-  high: 13000,
+function clampDelta(delta: number): number {
+  return Math.min(delta, MAX_DELTA)
 }
 
-/**
- * Peso de foco amortiguado.
- *
- * Cada acto dice qué capa manda (`focus`); si el peso se cambiara de golpe la
- * composición daría un salto justo en el corte. Con 2 por segundo la capa
- * crece durante el fundido de la transición y el encuadre llega ya reequilibrado.
- */
-function focusValue(current: number, wanted: number, step: number): number {
-  return THREE.MathUtils.damp(current, wanted, 2, step)
+function dampFocus(
+  current: number,
+  target: number,
+  delta: number,
+): number {
+  return THREE.MathUtils.damp(current, target, 2, delta)
 }
+
+/* ------------------------------------------------------------------ */
+/* Tipos                                                               */
+/* ------------------------------------------------------------------ */
 
 interface StageProps {
   actIndex: number
   quality: QualityTier
   reducedMotion: boolean
-  env: React.RefObject<CinematicEnv>
+  env: React.RefObject<CinematicEnv | null>
   onQualityDecline: () => void
 }
 
-/** Props que consumen los nodos de escena (el gobernador vive en la raíz). */
-type SceneNodeProps = Pick<StageProps, 'actIndex' | 'quality' | 'reducedMotion' | 'env'>
+type SceneNodeProps = Pick<
+  StageProps,
+  'actIndex' | 'quality' | 'reducedMotion' | 'env'
+>
+
+type CameraNodeProps = Pick<
+  StageProps,
+  'actIndex' | 'reducedMotion' | 'env'
+>
 
 /* ------------------------------------------------------------------ */
-/* Cámara cinemática: muelle crítico + trayectoria continua            */
-/*                                                                      */
-/* El muelle críticamente amortiguado hace que la cámara llegue         */
-/* deslizando en vez de frenada en seco, y la trayectoria dentro del acto */
-/* convierte la pose siguiente en un punto de partida, no en un corte.  */
-/* El objetivo mira con retardo (latigazo de cinematógrafo) y el alabeo */
-/* sale de la propia velocidad lateral, como en un travelling real.     */
+/* Hook: sincronización de paleta y ambiente                           */
 /* ------------------------------------------------------------------ */
-function CameraRig({ actIndex, reducedMotion, env }: Pick<StageProps, 'actIndex' | 'reducedMotion' | 'env'>) {
-  const { camera, pointer } = useThree()
 
-  const rig = useMemo(() => ({
-    pos: new THREE.Vector3(),
-    vel: new THREE.Vector3(),
-    desired: new THREE.Vector3(),
-    offset: new THREE.Vector3(),
-    aim: new THREE.Vector3(),
-    target: new THREE.Vector3(),
-    pointer: new THREE.Vector2(),
-    clock: 0,
-    act: -1,
-    roll: 0,
-    started: false,
-  }), [])
+interface PaletteUniforms {
+  uKey: { value: THREE.Color }
+  uWarm?: { value: THREE.Color }
+  uEmber?: { value: THREE.Color }
+  uFog?: { value: THREE.Color }
+  uCore?: { value: THREE.Color }
+}
+
+function usePaletteSync(
+  uniforms: PaletteUniforms,
+  actIndex: number,
+  env: React.RefObject<CinematicEnv | null>,
+  options?: {
+    colorLerp?: number
+    levelDamping?: number
+    bassDamping?: number
+    warpDamping?: number
+  },
+) {
+  const {
+    colorLerp = 1.2,
+    levelDamping = 7,
+    bassDamping = 14,
+    warpDamping = 5,
+  } = options ?? {}
 
   useFrame((_, delta) => {
-    const act = actAt(actIndex)
-    const cam = act.camera
-    // Paso real limitado: si el navegador congela la pestaña, el muelle no explode.
-    const step = Math.min(delta, 1 / 30)
+    const environment = env.current
 
-    if (rig.act !== actIndex) {
-      rig.act = actIndex
+    if (!environment) {
+      return
+    }
+
+    const step = clampDelta(delta)
+    const act = actAt(actIndex)
+
+    uniforms.uKey.value.lerp(
+      linearColor(act.palette.key),
+      step * colorLerp,
+    )
+
+    uniforms.uWarm?.value.lerp(
+      linearColor(act.palette.ember),
+      step * colorLerp,
+    )
+
+    uniforms.uEmber?.value.lerp(
+      linearColor(act.palette.ember),
+      step * colorLerp,
+    )
+
+    uniforms.uFog?.value.lerp(
+      linearColor(act.palette.fog),
+      step * colorLerp,
+    )
+
+    uniforms.uCore?.value.lerp(
+      linearColor(act.palette.core),
+      step * colorLerp,
+    )
+
+    if ('uLevel' in uniforms) {
+      const level = uniforms.uLevel as { value: number }
+      level.value = THREE.MathUtils.damp(
+        level.value,
+        environment.level,
+        levelDamping,
+        step,
+      )
+    }
+
+    if ('uBass' in uniforms) {
+      const bass = uniforms.uBass as { value: number }
+      bass.value = THREE.MathUtils.damp(
+        bass.value,
+        environment.bass,
+        bassDamping,
+        step,
+      )
+    }
+
+    if ('uWarp' in uniforms) {
+      const warp = uniforms.uWarp as { value: number }
+      warp.value = THREE.MathUtils.damp(
+        warp.value,
+        environment.warp,
+        warpDamping,
+        step,
+      )
+    }
+  })
+}
+
+/* ------------------------------------------------------------------ */
+/* Cámara cinemática                                                   */
+/* ------------------------------------------------------------------ */
+
+function CameraRig({
+  actIndex,
+  reducedMotion,
+  env,
+}: CameraNodeProps) {
+  const camera = useThree((state) => state.camera)
+  const pointer = useThree((state) => state.pointer)
+
+  const rig = useMemo(
+    () => ({
+      position: new THREE.Vector3(),
+      velocity: new THREE.Vector3(),
+      desired: new THREE.Vector3(),
+      offset: new THREE.Vector3(),
+      aim: new THREE.Vector3(),
+      target: new THREE.Vector3(),
+      pointer: new THREE.Vector2(),
+      clock: 0,
+      actIndex: -1,
+      roll: 0,
+      started: false,
+    }),
+    [],
+  )
+
+  useFrame((_, delta) => {
+    const environment = env.current
+
+    if (!environment) {
+      return
+    }
+
+    const act = actAt(actIndex)
+    const cameraConfig = act.camera
+    const step = clampDelta(delta)
+
+    if (rig.actIndex !== actIndex) {
+      rig.actIndex = actIndex
       rig.clock = 0
     } else if (!reducedMotion) {
       rig.clock += step
     }
 
-    // Progreso del acto, suavizado: el dolly y la grúa se recorren, no se saltan.
-    const s = THREE.MathUtils.clamp(rig.clock / Math.max(1, act.duration), 0, 1)
-    const glide = s * s * (3 - 2 * s)
-    const a = cam.rate * rig.clock
-    const off = rig.offset
+    const progress = THREE.MathUtils.clamp(
+      rig.clock / Math.max(1, act.duration),
+      0,
+      1,
+    )
 
-    off.set(0, 0, 0)
+    const glide = progress * progress * (3 - 2 * progress)
+    const angle = cameraConfig.rate * rig.clock
+    const offset = rig.offset
+
+    offset.set(0, 0, 0)
+
     if (!reducedMotion) {
-      switch (cam.path) {
+      switch (cameraConfig.path) {
         case 'orbit':
-          off.x = Math.sin(a) * cam.swing
-          off.z = (Math.cos(a) - 1) * cam.swing * 0.3
-          off.y = Math.sin(a * 0.7) * cam.swing * 0.16
-          off.z -= cam.dolly * glide * 0.4
+          offset.x = Math.sin(angle) * cameraConfig.swing
+          offset.z =
+            (Math.cos(angle) - 1) * cameraConfig.swing * 0.3
+          offset.y =
+            Math.sin(angle * 0.7) * cameraConfig.swing * 0.16
+          offset.z -= cameraConfig.dolly * glide * 0.4
           break
+
         case 'arc': {
-          // Barrido acotado: la escena gira medio círculo y vuelve, sin dar vueltas.
-          const sweep = THREE.MathUtils.clamp(a, -0.85, 0.85)
-          off.x = Math.sin(sweep) * cam.swing
-          off.z = (Math.cos(sweep) - 1) * cam.swing * 0.55
-          off.y = Math.sin(sweep * 1.3) * cam.swing * 0.22
-          off.z -= cam.dolly * glide * 0.3
+          const sweep = THREE.MathUtils.clamp(angle, -0.85, 0.85)
+
+          offset.x = Math.sin(sweep) * cameraConfig.swing
+          offset.z =
+            (Math.cos(sweep) - 1) * cameraConfig.swing * 0.55
+          offset.y =
+            Math.sin(sweep * 1.3) * cameraConfig.swing * 0.22
+          offset.z -= cameraConfig.dolly * glide * 0.3
           break
         }
+
         case 'crane':
-          off.y = cam.rise * glide + Math.sin(a) * cam.swing * 0.18
-          off.x = Math.sin(a) * cam.swing * 0.7
-          off.z -= cam.dolly * glide * 0.55
+          offset.y =
+            cameraConfig.rise * glide +
+            Math.sin(angle) * cameraConfig.swing * 0.18
+          offset.x =
+            Math.sin(angle) * cameraConfig.swing * 0.7
+          offset.z -= cameraConfig.dolly * glide * 0.55
           break
+
         case 'rise':
-          off.y = cam.rise * glide
-          off.z -= cam.dolly * glide * 0.4
-          off.x = Math.sin(a) * cam.swing * 0.5
+          offset.y = cameraConfig.rise * glide
+          offset.z -= cameraConfig.dolly * glide * 0.4
+          offset.x =
+            Math.sin(angle) * cameraConfig.swing * 0.5
           break
+
         case 'pull':
         case 'push':
         default:
-          // push y pull son el mismo eje; el signo de `dolly` decide.
-          off.z -= cam.dolly * glide
-          off.x = Math.sin(a) * cam.swing * 0.45
-          off.y = Math.sin(a * 0.8 + 0.5) * cam.swing * 0.18
+          offset.z -= cameraConfig.dolly * glide
+          offset.x =
+            Math.sin(angle) * cameraConfig.swing * 0.45
+          offset.y =
+            Math.sin(angle * 0.8 + 0.5) *
+            cameraConfig.swing *
+            0.18
           break
       }
 
-      // Micro-temblor de operador: dos senos inconmensurables, imperceptibles
-      // como movimiento y decisivos como vida.
-      off.x += Math.sin(rig.clock * 0.23) * cam.handheld + Math.sin(rig.clock * 0.61 + 1.7) * cam.handheld * 0.35
-      off.y += Math.cos(rig.clock * 0.17 + 0.4) * cam.handheld
-      off.z += Math.sin(rig.clock * 0.11 + 2.2) * cam.handheld * 0.6
+      offset.x +=
+        Math.sin(rig.clock * 0.23) * cameraConfig.handheld +
+        Math.sin(rig.clock * 0.61 + 1.7) *
+          cameraConfig.handheld *
+          0.35
 
-      // En el warp la cámara atraviesa el portal: el corte se siente como viaje.
-      const warp = env.current.warp
-      off.z -= warp * 3.4
-      off.x += warp * Math.sin(rig.clock * 2.1) * 0.5
+      offset.y +=
+        Math.cos(rig.clock * 0.17 + 0.4) *
+        cameraConfig.handheld
+
+      offset.z +=
+        Math.sin(rig.clock * 0.11 + 2.2) *
+        cameraConfig.handheld *
+        0.6
+
+      const warp = environment.warp
+
+      offset.z -= warp * 3.4
+      offset.x += warp * Math.sin(rig.clock * 2.1) * 0.5
     }
 
-    // El puntero también se amortigua: sin esto, la parallax replica el temblor
-    // de la mano y todo el encuadre se vuelve nervioso.
     const parallax = reducedMotion ? 0 : 1
-    const gain = 0.55 + cam.swing * 0.08
-    rig.pointer.x = THREE.MathUtils.damp(rig.pointer.x, pointer.x * parallax * gain, 3.2, step)
-    rig.pointer.y = THREE.MathUtils.damp(rig.pointer.y, pointer.y * parallax * gain * 0.55, 3.2, step)
+    const gain = 0.55 + cameraConfig.swing * 0.08
+
+    rig.pointer.x = THREE.MathUtils.damp(
+      rig.pointer.x,
+      pointer.x * parallax * gain,
+      3.2,
+      step,
+    )
+
+    rig.pointer.y = THREE.MathUtils.damp(
+      rig.pointer.y,
+      pointer.y * parallax * gain * 0.55,
+      3.2,
+      step,
+    )
 
     const desired = rig.desired
-    desired.set(cam.position[0], cam.position[1], cam.position[2])
-    desired.add(off)
+
+    desired.set(
+      cameraConfig.position[0],
+      cameraConfig.position[1],
+      cameraConfig.position[2],
+    )
+
+    desired.add(offset)
     desired.x += rig.pointer.x
     desired.y += rig.pointer.y
 
-    // Punto de mira del acto, con un pequeño desplazamiento opuesto en el warp
-    // para que el portal parezca pasar de largo en vez de abrirse al frente.
-    rig.target.set(cam.target[0], cam.target[1], cam.target[2])
-    if (!reducedMotion) rig.target.x -= env.current.warp * 0.4
+    rig.target.set(
+      cameraConfig.target[0],
+      cameraConfig.target[1],
+      cameraConfig.target[2],
+    )
+
+    if (!reducedMotion) {
+      rig.target.x -= environment.warp * 0.4
+    }
 
     if (!rig.started) {
-      rig.pos.copy(camera.position)
-      rig.aim.set(cam.target[0], cam.target[1], cam.target[2])
+      rig.position.copy(camera.position)
+      rig.aim.set(
+        cameraConfig.target[0],
+        cameraConfig.target[1],
+        cameraConfig.target[2],
+      )
       rig.started = true
     }
 
     if (reducedMotion) {
-      // Con prefers-reduced-motion el encuadre se corta, no se viaja. Además es
-      // lo único que funciona aquí: el Canvas corre en frameloop="demand" y un
-      // muelle necesita frames para asentarse, así que se quedaría a medio
-      // camino entre dos poses para siempre.
-      rig.pos.copy(desired)
-      rig.vel.set(0, 0, 0)
+      rig.position.copy(desired)
+      rig.velocity.set(0, 0, 0)
       rig.aim.copy(rig.target)
       rig.roll = 0
     } else {
-      // Muelle críticamente amortiguado (zeta = 1). Frecuencia natural ~0.3 Hz:
-      // unos 2 s de aproximación, que es el ritmo de un travelling largo.
-      const omega = 2 * Math.PI * 0.3 * cam.stiffness
-      const k = omega * omega
-      const c = 2 * omega
-      rig.vel.x += ((desired.x - rig.pos.x) * k - rig.vel.x * c) * step
-      rig.vel.y += ((desired.y - rig.pos.y) * k - rig.vel.y * c) * step
-      rig.vel.z += ((desired.z - rig.pos.z) * k - rig.vel.z * c) * step
-      rig.pos.x += rig.vel.x * step
-      rig.pos.y += rig.vel.y * step
-      rig.pos.z += rig.vel.z * step
+      const omega = 2 * Math.PI * 0.3 * cameraConfig.stiffness
+      const stiffness = omega * omega
+      const damping = 2 * omega
 
-      // El objetivo va más lento que la posición: al cambiar de acto la cámara
-      // gira un instante sobre sí misma en lugar de recomponer el encuadre de golpe.
-      rig.aim.x = THREE.MathUtils.damp(rig.aim.x, rig.target.x, 1.7, step)
-      rig.aim.y = THREE.MathUtils.damp(rig.aim.y, rig.target.y, 1.7, step)
-      rig.aim.z = THREE.MathUtils.damp(rig.aim.z, rig.target.z, 1.7, step)
+      rig.velocity.x +=
+        ((desired.x - rig.position.x) * stiffness -
+          rig.velocity.x * damping) *
+        step
 
-      // Alabeo inducido por la deriva lateral, con tope en radianes.
-      const wanted = THREE.MathUtils.clamp(-rig.vel.x * 0.055, -cam.roll, cam.roll)
-      rig.roll = THREE.MathUtils.damp(rig.roll, wanted + env.current.warp * 0.03, 2.6, step)
+      rig.velocity.y +=
+        ((desired.y - rig.position.y) * stiffness -
+          rig.velocity.y * damping) *
+        step
+
+      rig.velocity.z +=
+        ((desired.z - rig.position.z) * stiffness -
+          rig.velocity.z * damping) *
+        step
+
+      rig.position.x += rig.velocity.x * step
+      rig.position.y += rig.velocity.y * step
+      rig.position.z += rig.velocity.z * step
+
+      rig.aim.x = THREE.MathUtils.damp(
+        rig.aim.x,
+        rig.target.x,
+        1.7,
+        step,
+      )
+
+      rig.aim.y = THREE.MathUtils.damp(
+        rig.aim.y,
+        rig.target.y,
+        1.7,
+        step,
+      )
+
+      rig.aim.z = THREE.MathUtils.damp(
+        rig.aim.z,
+        rig.target.z,
+        1.7,
+        step,
+      )
+
+      const targetRoll = THREE.MathUtils.clamp(
+        -rig.velocity.x * 0.055,
+        -cameraConfig.roll,
+        cameraConfig.roll,
+      )
+
+      rig.roll = THREE.MathUtils.damp(
+        rig.roll,
+        targetRoll + environment.warp * 0.03,
+        2.6,
+        step,
+      )
     }
-    camera.position.copy(rig.pos)
+
+    camera.position.copy(rig.position)
     camera.up.set(Math.sin(rig.roll), Math.cos(rig.roll), 0)
     camera.lookAt(rig.aim)
 
-    const perspective = camera as THREE.PerspectiveCamera
-    if (perspective.isPerspectiveCamera) {
-      // Respiración focal: los graves cierran el encuadre, el warp lo abre.
-      const wanted = reducedMotion ? cam.fov : cam.fov - env.current.bass * 1.8 - env.current.level * 0.9 + env.current.warp * 9
-      perspective.fov = reducedMotion ? wanted : THREE.MathUtils.damp(perspective.fov, wanted, 2.4, step)
-      perspective.updateProjectionMatrix()
+    if (camera instanceof THREE.PerspectiveCamera) {
+      const targetFov = reducedMotion
+        ? cameraConfig.fov
+        : cameraConfig.fov -
+          environment.bass * 1.8 -
+          environment.level * 0.9 +
+          environment.warp * 9
+
+      camera.fov = reducedMotion
+        ? targetFov
+        : THREE.MathUtils.damp(
+            camera.fov,
+            targetFov,
+            2.4,
+            step,
+          )
+
+      camera.updateProjectionMatrix()
     }
   })
 
   return null
 }
 
-/** Sincroniza el nivel amortiguado en el env compartido, sin re-render de React. */
-function EnvSync({ env }: { env: React.MutableRefObject<CinematicEnv> }) {
+/* ------------------------------------------------------------------ */
+/* Sincronización ambiental                                            */
+/* ------------------------------------------------------------------ */
+
+function EnvSync({
+  env,
+}: {
+  env: React.RefObject<CinematicEnv | null>
+}) {
   useFrame((_, delta) => {
-    const step = Math.min(delta, 1 / 30)
-    env.current.level = THREE.MathUtils.damp(env.current.level, env.current.target, 9, step)
+    const environment = env.current
+
+    if (!environment) {
+      return
+    }
+
+    const step = clampDelta(delta)
+
+    environment.level = THREE.MathUtils.damp(
+      environment.level,
+      environment.target,
+      9,
+      step,
+    )
   })
+
   return null
 }
 
 /* ------------------------------------------------------------------ */
-/* Nebula de fondo: esfera invertida con fbm, una sola draw call       */
+/* Nebulosa                                                            */
 /* ------------------------------------------------------------------ */
-function Nebula({ actIndex, reducedMotion, env }: Pick<StageProps, 'actIndex' | 'reducedMotion' | 'env'>) {
-  const mesh = useRef<THREE.Mesh>(null)
 
-  const uniforms = useMemo(() => ({
-    uTime: { value: 0 },
-    uWarp: { value: 0 },
-    uLevel: { value: 0 },
-    uFog: { value: colorOf(actAt(0), 'fog') },
-    uKey: { value: colorOf(actAt(0), 'key') },
-    uEmber: { value: colorOf(actAt(0), 'ember') },
-  }), [])
+function Nebula({
+  actIndex,
+  reducedMotion,
+  env,
+}: Pick<StageProps, 'actIndex' | 'reducedMotion' | 'env'>) {
+  const meshRef = useRef<THREE.Mesh>(null)
 
-  // `args` reconstruye el ShaderMaterial si cambia por identidad: memoizado, el
-  // material (y su compilación GLSL) sobrevive intacto al corte entre actos.
+  const uniforms = useMemo(
+    () => ({
+      uTime: { value: 0 },
+      uWarp: { value: 0 },
+      uLevel: { value: 0 },
+      uFog: { value: paletteColor(actAt(0), 'fog') },
+      uKey: { value: paletteColor(actAt(0), 'key') },
+      uEmber: { value: paletteColor(actAt(0), 'ember') },
+    }),
+    [],
+  )
+
   const materialArgs = useMemo(
-    () => [{ ...NEBULA_SHADER, uniforms, side: THREE.BackSide, depthWrite: false }] as [THREE.ShaderMaterialParameters],
+    () => ({
+      ...NEBULA_SHADER,
+      uniforms,
+      side: THREE.BackSide,
+      depthWrite: false,
+    }),
     [uniforms],
   )
 
+  usePaletteSync(uniforms, actIndex, env, {
+    levelDamping: 6,
+    warpDamping: 4,
+  })
+
   useFrame((_, delta) => {
-    const step = Math.min(delta, 1 / 30)
-    const act = actAt(actIndex)
-    if (!reducedMotion) uniforms.uTime.value += step
-    ;(uniforms.uFog.value as THREE.Color).lerp(linear(act.palette.fog), step * 1.2)
-    ;(uniforms.uKey.value as THREE.Color).lerp(linear(act.palette.key), step * 1.2)
-    ;(uniforms.uEmber.value as THREE.Color).lerp(linear(act.palette.ember), step * 1.2)
-    uniforms.uWarp.value = THREE.MathUtils.damp(uniforms.uWarp.value as number, env.current.warp, 4, step)
-    uniforms.uLevel.value = THREE.MathUtils.damp(uniforms.uLevel.value as number, env.current.level, 6, step)
-    if (mesh.current && !reducedMotion) {
-      // Fondo contrarrotado: como la niebla se mueve en sentido contrario a la
-      // cámara, el paralaje de profundidad se lee incluso en encuadres cerrados.
-      mesh.current.rotation.y -= step * 0.008
-      mesh.current.rotation.x = Math.sin(uniforms.uTime.value as number * 0.02) * 0.05
+    if (reducedMotion) {
+      return
+    }
+
+    const step = clampDelta(delta)
+
+    uniforms.uTime.value += step
+
+    if (meshRef.current) {
+      meshRef.current.rotation.y -= step * 0.008
+      meshRef.current.rotation.x =
+        Math.sin(uniforms.uTime.value * 0.02) * 0.05
     }
   })
 
   return (
-    <mesh ref={mesh} renderOrder={-10} frustumCulled={false}>
+    <mesh
+      ref={meshRef}
+      renderOrder={-10}
+      frustumCulled={false}
+    >
       <sphereGeometry args={[40, 40, 24]} />
       <shaderMaterial args={materialArgs} />
     </mesh>
@@ -290,72 +576,142 @@ function Nebula({ actIndex, reducedMotion, env }: Pick<StageProps, 'actIndex' | 
 }
 
 /* ------------------------------------------------------------------ */
-/* Núcleo holográfico: icosaedro desplazado por ruido + jaula de alambre */
+/* Núcleo holográfico                                                  */
 /* ------------------------------------------------------------------ */
-function HolographicCore({ actIndex, quality, reducedMotion, env }: SceneNodeProps) {
-  const group = useRef<THREE.Group>(null)
-  const wire = useRef<THREE.Mesh>(null)
-  const focus = useRef(1)
-  const detail = quality === 'high' ? 4 : quality === 'medium' ? 3 : 2
 
-  const uniforms = useMemo(() => ({
-    uTime: { value: 0 },
-    uLevel: { value: 0 },
-    uBass: { value: 0 },
-    uWarp: { value: 0 },
-    uKey: { value: colorOf(actAt(0), 'key') },
-    uCore: { value: colorOf(actAt(0), 'core') },
-    uWarm: { value: colorOf(actAt(0), 'ember') },
-  }), [])
+function HolographicCore({
+  actIndex,
+  quality,
+  reducedMotion,
+  env,
+}: SceneNodeProps) {
+  const groupRef = useRef<THREE.Group>(null)
+  const wireRef = useRef<THREE.Mesh>(null)
+  const focusRef = useRef(1)
+
+  const detail = GEOMETRY_DETAIL[quality]
+
+  const uniforms = useMemo(
+    () => ({
+      uTime: { value: 0 },
+      uLevel: { value: 0 },
+      uBass: { value: 0 },
+      uWarp: { value: 0 },
+      uKey: { value: paletteColor(actAt(0), 'key') },
+      uCore: { value: paletteColor(actAt(0), 'core') },
+      uWarm: { value: paletteColor(actAt(0), 'ember') },
+    }),
+    [],
+  )
 
   const materialArgs = useMemo(
-    () => [{ ...CORE_SHADER, uniforms, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }] as [THREE.ShaderMaterialParameters],
+    () => ({
+      ...CORE_SHADER,
+      uniforms,
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+    }),
     [uniforms],
   )
 
+  usePaletteSync(uniforms, actIndex, env, {
+    levelDamping: 7,
+    bassDamping: 14,
+    warpDamping: 5,
+  })
+
   useFrame((_, delta) => {
-    const step = Math.min(delta, 1 / 30)
+    const environment = env.current
+
+    if (!environment) {
+      return
+    }
+
+    const step = clampDelta(delta)
     const act = actAt(actIndex)
-    if (!reducedMotion) uniforms.uTime.value += step
-    ;(uniforms.uKey.value as THREE.Color).lerp(linear(act.palette.key), step * 1.2)
-    ;(uniforms.uCore.value as THREE.Color).lerp(linear(act.palette.core), step * 1.2)
-    ;(uniforms.uWarm.value as THREE.Color).lerp(linear(act.palette.ember), step * 1.2)
-    uniforms.uLevel.value = THREE.MathUtils.damp(uniforms.uLevel.value as number, env.current.level, 7, step)
-    uniforms.uBass.value = THREE.MathUtils.damp(uniforms.uBass.value as number, env.current.bass, 14, step)
-    uniforms.uWarp.value = THREE.MathUtils.damp(uniforms.uWarp.value as number, env.current.warp, 5, step)
 
-    focus.current = focusValue(focus.current, act.focus.core, step)
+    if (!reducedMotion) {
+      uniforms.uTime.value += step
+    }
 
-    if (group.current) {
-      // El peso de foco decide cuánto manda el núcleo en el encuadre; el audio
-      // sólo lo infla un pellizco, para que el golpe se sienta sin verse falso.
-      const size = 0.78 + focus.current * 0.34 + env.current.level * 0.05 + env.current.bass * 0.08
-      group.current.scale.setScalar(THREE.MathUtils.damp(group.current.scale.x, size, 3.2, step))
+    focusRef.current = dampFocus(
+      focusRef.current,
+      act.focus.core,
+      step,
+    )
+
+    if (groupRef.current) {
+      const targetScale =
+        0.78 +
+        focusRef.current * 0.34 +
+        environment.level * 0.05 +
+        environment.bass * 0.08
+
+      groupRef.current.scale.setScalar(
+        THREE.MathUtils.damp(
+          groupRef.current.scale.x,
+          targetScale,
+          3.2,
+          step,
+        ),
+      )
+
       if (!reducedMotion) {
-        group.current.rotation.y += step * (0.12 + env.current.level * 0.5)
-        group.current.rotation.x = Math.sin((uniforms.uTime.value as number) * 0.18) * 0.22
-        // Flotación lentísima: un punto fijo en pantalla siempre se lee como imagen quieta.
-        group.current.position.y = Math.sin((uniforms.uTime.value as number) * 0.31) * 0.09
+        groupRef.current.rotation.y +=
+          step * (0.12 + environment.level * 0.5)
+
+        groupRef.current.rotation.x =
+          Math.sin(uniforms.uTime.value * 0.18) * 0.22
+
+        groupRef.current.position.y =
+          Math.sin(uniforms.uTime.value * 0.31) * 0.09
       }
     }
-    if (wire.current) {
-      const wanted = 1.06 + env.current.level * 0.1 + env.current.bass * 0.22
-      wire.current.scale.setScalar(THREE.MathUtils.damp(wire.current.scale.x, wanted, 6, step))
-      wire.current.rotation.y -= step * 0.28
-      const material = wire.current.material as THREE.MeshBasicMaterial
-      material.color.lerp(linear(act.palette.key), step * 1.2)
-      material.opacity = 0.03 + focus.current * 0.07
+
+    if (wireRef.current) {
+      const targetScale =
+        1.06 +
+        environment.level * 0.1 +
+        environment.bass * 0.22
+
+      wireRef.current.scale.setScalar(
+        THREE.MathUtils.damp(
+          wireRef.current.scale.x,
+          targetScale,
+          6,
+          step,
+        ),
+      )
+
+      if (!reducedMotion) {
+        wireRef.current.rotation.y -= step * 0.28
+      }
+
+      const material =
+        wireRef.current.material as THREE.MeshBasicMaterial
+
+      material.color.lerp(
+        linearColor(act.palette.key),
+        step * 1.2,
+      )
+
+      material.opacity =
+        0.03 + focusRef.current * 0.07
     }
   })
 
   return (
-    <group ref={group}>
+    <group ref={groupRef}>
       <mesh>
         <icosahedronGeometry args={[1.74, detail]} />
         <shaderMaterial args={materialArgs} />
       </mesh>
-      <mesh ref={wire}>
-        <icosahedronGeometry args={[1.82, Math.max(1, detail - 2)]} />
+
+      <mesh ref={wireRef}>
+        <icosahedronGeometry
+          args={[1.82, Math.max(1, detail - 2)]}
+        />
         <meshBasicMaterial
           color={actAt(0).palette.key}
           wireframe
@@ -370,86 +726,170 @@ function HolographicCore({ actIndex, quality, reducedMotion, env }: SceneNodePro
 }
 
 /* ------------------------------------------------------------------ */
-/* Armilla: filetes finos que orbitan el núcleo, en distintas inclinaciones */
+/* Arcos armilares                                                     */
 /* ------------------------------------------------------------------ */
-function ArmillaryArcs({ actIndex, quality, reducedMotion, env }: SceneNodeProps) {
-  const arcs = useMemo(() => [
-    { radius: 2.35, tilt: [1.32, 0.2, 0.1] as [number, number, number], speed: 0.09, phase: 0, warm: false },
-    { radius: 2.78, tilt: [0.42, -0.55, 0.9] as [number, number, number], speed: -0.06, phase: 0.37, warm: true },
-    { radius: 3.24, tilt: [1.05, 0.9, -0.35] as [number, number, number], speed: 0.045, phase: 0.71, warm: false },
-  ], [])
 
-  const materials = useRef<THREE.ShaderMaterial[]>([])
-  const groups = useRef<(THREE.Group | null)[]>([])
-  const focus = useRef(1)
+interface ArcSpec {
+  radius: number
+  tilt: [number, number, number]
+  speed: number
+  phase: number
+}
 
-  // Args y callbacks de ref memoizados: el material no se recompila al cambiar
-  // de acto y el callback de ref ya no se desmonta/monta en cada render.
-  const arcArgs = useMemo(
+const ARMILLARY_ARCS: ArcSpec[] = [
+  {
+    radius: 2.35,
+    tilt: [1.32, 0.2, 0.1],
+    speed: 0.09,
+    phase: 0,
+  },
+  {
+    radius: 2.78,
+    tilt: [0.42, -0.55, 0.9],
+    speed: -0.06,
+    phase: 0.37,
+  },
+  {
+    radius: 3.24,
+    tilt: [1.05, 0.9, -0.35],
+    speed: 0.045,
+    phase: 0.71,
+  },
+]
+
+function ArmillaryArcs({
+  actIndex,
+  quality,
+  reducedMotion,
+  env,
+}: SceneNodeProps) {
+  const groupRefs = useRef<(THREE.Group | null)[]>([])
+  const materialRefs = useRef<(THREE.ShaderMaterial | null)[]>([])
+  const focusRef = useRef(1)
+
+  const radialSegments = ARC_RADIAL_SEGMENTS[quality]
+
+  const materialArgs = useMemo(
     () =>
-      arcs.map((arc, i): [THREE.ShaderMaterialParameters] => [
-        {
-          ...ARC_SHADER,
-          uniforms: {
-            uTime: { value: i * 5 },
-            uLevel: { value: 0 },
-            uWarp: { value: 0 },
-            uSpeed: { value: arc.speed * 2.4 },
-            uPhase: { value: arc.phase },
-            uKey: { value: colorOf(actAt(0), 'key') },
-            uWarm: { value: colorOf(actAt(0), 'ember') },
-          },
-          transparent: true,
-          depthWrite: false,
-          blending: THREE.AdditiveBlending,
-          side: THREE.DoubleSide,
+      ARMILLARY_ARCS.map((arc, index) => ({
+        ...ARC_SHADER,
+        uniforms: {
+          uTime: { value: index * 5 },
+          uLevel: { value: 0 },
+          uWarp: { value: 0 },
+          uSpeed: { value: arc.speed * 2.4 },
+          uPhase: { value: arc.phase },
+          uKey: { value: paletteColor(actAt(0), 'key') },
+          uWarm: { value: paletteColor(actAt(0), 'ember') },
         },
-      ]),
-    [arcs],
-  )
-
-  const groupRefs = useMemo(
-    () => arcs.map((_, i) => (node: THREE.Group | null) => { groups.current[i] = node }),
-    [arcs],
-  )
-  const materialRefs = useMemo(
-    () => arcs.map((_, i) => (node: THREE.ShaderMaterial | null) => { if (node) materials.current[i] = node }),
-    [arcs],
+        transparent: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+        side: THREE.DoubleSide,
+      })),
+    [],
   )
 
   useFrame((_, delta) => {
-    const step = Math.min(delta, 1 / 30)
+    const environment = env.current
+
+    if (!environment) {
+      return
+    }
+
+    const step = clampDelta(delta)
     const act = actAt(actIndex)
-    focus.current = focusValue(focus.current, act.focus.arcs, step)
-    materials.current.forEach((material, i) => {
-      if (!material) return
-      const u = material.uniforms
-      if (!reducedMotion) u.uTime.value += step
-      u.uLevel.value = THREE.MathUtils.damp(u.uLevel.value as number, env.current.level, 8, step)
-      u.uWarp.value = THREE.MathUtils.damp(u.uWarp.value as number, env.current.warp, 5, step)
-      ;(u.uKey.value as THREE.Color).lerp(linear(act.palette.key), step * 1.3)
-      ;(u.uWarm.value as THREE.Color).lerp(linear(act.palette.ember), step * 1.3)
+
+    focusRef.current = dampFocus(
+      focusRef.current,
+      act.focus.arcs,
+      step,
+    )
+
+    materialRefs.current.forEach((material) => {
+      if (!material) {
+        return
+      }
+
+      const uniforms = material.uniforms
+
+      if (!reducedMotion) {
+        uniforms.uTime.value += step
+      }
+
+      uniforms.uLevel.value = THREE.MathUtils.damp(
+        uniforms.uLevel.value,
+        environment.level,
+        8,
+        step,
+      )
+
+      uniforms.uWarp.value = THREE.MathUtils.damp(
+        uniforms.uWarp.value,
+        environment.warp,
+        5,
+        step,
+      )
+
+      uniforms.uKey.value.lerp(
+        linearColor(act.palette.key),
+        step * 1.3,
+      )
+
+      uniforms.uWarm.value.lerp(
+        linearColor(act.palette.ember),
+        step * 1.3,
+      )
     })
-    groups.current.forEach((node, i) => {
-      if (!node) return
-      // Cada filete abre o cierra su órbita según el foco, y acelera con el
-      // nivel: los anillos se apartan cuando manda el núcleo y se ciernen cuando
-      // manda la red.
-      const radius = 0.86 + focus.current * 0.2 + env.current.level * 0.03
-      node.scale.setScalar(THREE.MathUtils.damp(node.scale.x, radius, 2.6, step))
-      if (!reducedMotion) node.rotation.z += step * arcs[i].speed * (0.6 + env.current.level * 0.7)
+
+    groupRefs.current.forEach((group, index) => {
+      if (!group) {
+        return
+      }
+
+      const targetScale =
+        0.86 +
+        focusRef.current * 0.2 +
+        environment.level * 0.03
+
+      group.scale.setScalar(
+        THREE.MathUtils.damp(
+          group.scale.x,
+          targetScale,
+          2.6,
+          step,
+        ),
+      )
+
+      if (!reducedMotion) {
+        group.rotation.z +=
+          step *
+          ARMILLARY_ARCS[index].speed *
+          (0.6 + environment.level * 0.7)
+      }
     })
   })
 
-  const radial = quality === 'high' ? 160 : quality === 'medium' ? 110 : 64
-
   return (
     <group>
-      {arcs.map((arc, i) => (
-        <group key={arc.radius} ref={groupRefs[i]} rotation={arc.tilt}>
+      {ARMILLARY_ARCS.map((arc, index) => (
+        <group
+          key={arc.radius}
+          ref={(node) => {
+            groupRefs.current[index] = node
+          }}
+          rotation={arc.tilt}
+        >
           <mesh>
-            <torusGeometry args={[arc.radius, 0.0075, 6, radial]} />
-            <shaderMaterial ref={materialRefs[i]} args={arcArgs[i]} />
+            <torusGeometry
+              args={[arc.radius, 0.0075, 6, radialSegments]}
+            />
+            <shaderMaterial
+              ref={(node) => {
+                materialRefs.current[index] = node
+              }}
+              args={materialArgs[index]}
+            />
           </mesh>
         </group>
       ))}
@@ -458,53 +898,128 @@ function ArmillaryArcs({ actIndex, quality, reducedMotion, env }: SceneNodeProps
 }
 
 /* ------------------------------------------------------------------ */
-/* Destello anamórfico: plano horizontal que siempre mira a cámara      */
+/* Destello anamórfico                                                 */
 /* ------------------------------------------------------------------ */
-function AnamorphicStreak({ actIndex, reducedMotion, env }: Pick<StageProps, 'actIndex' | 'reducedMotion' | 'env'>) {
-  const mesh = useRef<THREE.Mesh>(null)
-  const focus = useRef(1)
 
-  const uniforms = useMemo(() => ({
-    uTime: { value: 0 },
-    uLevel: { value: 0 },
-    uBass: { value: 0 },
-    uOpacity: { value: 0 },
-    uKey: { value: colorOf(actAt(0), 'key') },
-    uWarm: { value: colorOf(actAt(0), 'ember') },
-  }), [])
+function AnamorphicStreak({
+  actIndex,
+  reducedMotion,
+  env,
+}: Pick<StageProps, 'actIndex' | 'reducedMotion' | 'env'>) {
+  const meshRef = useRef<THREE.Mesh>(null)
+  const focusRef = useRef(1)
+
+  const uniforms = useMemo(
+    () => ({
+      uTime: { value: 0 },
+      uLevel: { value: 0 },
+      uBass: { value: 0 },
+      uOpacity: { value: 0 },
+      uKey: { value: paletteColor(actAt(0), 'key') },
+      uWarm: { value: paletteColor(actAt(0), 'ember') },
+    }),
+    [],
+  )
 
   const materialArgs = useMemo(
-    () => [{ ...STREAK_SHADER, uniforms, transparent: true, depthWrite: false, depthTest: false, blending: THREE.AdditiveBlending }] as [THREE.ShaderMaterialParameters],
+    () => ({
+      ...STREAK_SHADER,
+      uniforms,
+      transparent: true,
+      depthWrite: false,
+      depthTest: false,
+      blending: THREE.AdditiveBlending,
+    }),
     [uniforms],
   )
 
   useFrame((state, delta) => {
-    const step = Math.min(delta, 1 / 30)
+    const environment = env.current
+
+    if (!environment) {
+      return
+    }
+
+    const step = clampDelta(delta)
     const act = actAt(actIndex)
-    if (!reducedMotion) uniforms.uTime.value += step
-    ;(uniforms.uKey.value as THREE.Color).lerp(linear(act.palette.key), step * 1.4)
-    ;(uniforms.uWarm.value as THREE.Color).lerp(linear(act.palette.ember), step * 1.4)
-    focus.current = focusValue(focus.current, act.focus.streak, step)
-    uniforms.uLevel.value = THREE.MathUtils.damp(uniforms.uLevel.value as number, env.current.level, 9, step)
-    uniforms.uBass.value = THREE.MathUtils.damp(uniforms.uBass.value as number, env.current.bass, 18, step)
-    // El destello sigue al golpe de graves: es luz de óptica, no decoración.
-    const wanted = (0.16 + env.current.bass * 0.9 + env.current.level * 0.35) * (0.35 + focus.current * 0.9)
-    uniforms.uOpacity.value = THREE.MathUtils.damp(uniforms.uOpacity.value as number, Math.min(1.35, wanted), 7, step)
-    if (mesh.current) {
-      mesh.current.quaternion.copy(state.camera.quaternion)
-      // La manga óptica se estira con el foco: en los actos de destello ocupa
-      // casi todo el ancho del encuadre, en los de niebla es apenas una raya.
-      const stretch = 0.55 + focus.current * 0.6 + env.current.bass * 0.12
-      mesh.current.scale.set(
-        THREE.MathUtils.damp(mesh.current.scale.x, stretch, 4, step),
-        THREE.MathUtils.damp(mesh.current.scale.y, 0.7 + focus.current * 0.5, 4, step),
+
+    if (!reducedMotion) {
+      uniforms.uTime.value += step
+    }
+
+    uniforms.uKey.value.lerp(
+      linearColor(act.palette.key),
+      step * 1.4,
+    )
+
+    uniforms.uWarm.value.lerp(
+      linearColor(act.palette.ember),
+      step * 1.4,
+    )
+
+    focusRef.current = dampFocus(
+      focusRef.current,
+      act.focus.streak,
+      step,
+    )
+
+    uniforms.uLevel.value = THREE.MathUtils.damp(
+      uniforms.uLevel.value,
+      environment.level,
+      9,
+      step,
+    )
+
+    uniforms.uBass.value = THREE.MathUtils.damp(
+      uniforms.uBass.value,
+      environment.bass,
+      18,
+      step,
+    )
+
+    const targetOpacity =
+      (0.16 +
+        environment.bass * 0.9 +
+        environment.level * 0.35) *
+      (0.35 + focusRef.current * 0.9)
+
+    uniforms.uOpacity.value = THREE.MathUtils.damp(
+      uniforms.uOpacity.value,
+      Math.min(1.35, targetOpacity),
+      7,
+      step,
+    )
+
+    if (meshRef.current) {
+      meshRef.current.quaternion.copy(state.camera.quaternion)
+
+      const targetStretch =
+        0.55 + focusRef.current * 0.6 + environment.bass * 0.12
+
+      meshRef.current.scale.set(
+        THREE.MathUtils.damp(
+          meshRef.current.scale.x,
+          targetStretch,
+          4,
+          step,
+        ),
+        THREE.MathUtils.damp(
+          meshRef.current.scale.y,
+          0.7 + focusRef.current * 0.5,
+          4,
+          step,
+        ),
         1,
       )
     }
   })
 
   return (
-    <mesh ref={mesh} position={[0, 0, 0]} renderOrder={4}>
+    <mesh
+      ref={meshRef}
+      position={[0, 0, 0]}
+      renderOrder={4}
+    >
       <planeGeometry args={[26, 1.1, 1, 1]} />
       <shaderMaterial args={materialArgs} />
     </mesh>
@@ -512,83 +1027,173 @@ function AnamorphicStreak({ actIndex, reducedMotion, env }: Pick<StageProps, 'ac
 }
 
 /* ------------------------------------------------------------------ */
-/* Anillos de energía: toros shaderizados (sin passes de transmisión)   */
+/* Anillos de energía                                                  */
 /* ------------------------------------------------------------------ */
-function EnergyRings({ actIndex, quality, reducedMotion, env }: SceneNodeProps) {
-  const group = useRef<THREE.Group>(null)
 
-  const specs = useMemo(() => [
-    { radius: 5.4, tube: 0.026, speed: 0.22, tilt: [0.32, 0.1, 0] as [number, number, number] },
-    { radius: 4.15, tube: 0.019, speed: -0.34, tilt: [-0.5, 0.28, 0.4] as [number, number, number] },
-    { radius: 6.7, tube: 0.014, speed: 0.14, tilt: [0.9, -0.35, 0.2] as [number, number, number] },
-  ], [])
+interface RingSpec {
+  radius: number
+  tube: number
+  speed: number
+  tilt: [number, number, number]
+}
 
-  const materials = useRef<THREE.ShaderMaterial[]>([])
-  const focus = useRef(1)
-  const clock = useRef(0)
+const ENERGY_RINGS: RingSpec[] = [
+  {
+    radius: 5.4,
+    tube: 0.026,
+    speed: 0.22,
+    tilt: [0.32, 0.1, 0],
+  },
+  {
+    radius: 4.15,
+    tube: 0.019,
+    speed: -0.34,
+    tilt: [-0.5, 0.28, 0.4],
+  },
+  {
+    radius: 6.7,
+    tube: 0.014,
+    speed: 0.14,
+    tilt: [0.9, -0.35, 0.2],
+  },
+]
 
-  const ringArgs = useMemo(
+function EnergyRings({
+  actIndex,
+  quality,
+  reducedMotion,
+  env,
+}: SceneNodeProps) {
+  const groupRef = useRef<THREE.Group>(null)
+  const materialRefs = useRef<(THREE.ShaderMaterial | null)[]>([])
+  const focusRef = useRef(1)
+  const clockRef = useRef(0)
+
+  const radialSegments = RING_RADIAL_SEGMENTS[quality]
+
+  const materialArgs = useMemo(
     () =>
-      specs.map((spec, i): [THREE.ShaderMaterialParameters] => [
-        {
-          ...RING_SHADER,
-          uniforms: {
-            uTime: { value: i * 3 },
-            uLevel: { value: 0 },
-            uBass: { value: 0 },
-            uWarp: { value: 0 },
-            uSpeed: { value: spec.speed },
-            uKey: { value: colorOf(actAt(0), 'key') },
-            uEmber: { value: colorOf(actAt(0), 'ember') },
-          },
-          transparent: true,
-          depthWrite: false,
-          blending: THREE.AdditiveBlending,
-          side: THREE.DoubleSide,
+      ENERGY_RINGS.map((ring, index) => ({
+        ...RING_SHADER,
+        uniforms: {
+          uTime: { value: index * 3 },
+          uLevel: { value: 0 },
+          uBass: { value: 0 },
+          uWarp: { value: 0 },
+          uSpeed: { value: ring.speed },
+          uKey: { value: paletteColor(actAt(0), 'key') },
+          uEmber: { value: paletteColor(actAt(0), 'ember') },
         },
-      ]),
-    [specs],
-  )
-  const materialRefs = useMemo(
-    () => specs.map((_, i) => (node: THREE.ShaderMaterial | null) => { if (node) materials.current[i] = node }),
-    [specs],
+        transparent: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+        side: THREE.DoubleSide,
+      })),
+    [],
   )
 
   useFrame((_, delta) => {
-    const step = Math.min(delta, 1 / 30)
+    const environment = env.current
+
+    if (!environment) {
+      return
+    }
+
+    const step = clampDelta(delta)
     const act = actAt(actIndex)
-    focus.current = focusValue(focus.current, act.focus.rings, step)
-    if (group.current) {
-      const size = 0.84 + focus.current * 0.24
-      group.current.scale.setScalar(THREE.MathUtils.damp(group.current.scale.x, size, 2.4, step))
+
+    focusRef.current = dampFocus(
+      focusRef.current,
+      act.focus.rings,
+      step,
+    )
+
+    if (groupRef.current) {
+      const targetScale =
+        0.84 + focusRef.current * 0.24
+
+      groupRef.current.scale.setScalar(
+        THREE.MathUtils.damp(
+          groupRef.current.scale.x,
+          targetScale,
+          2.4,
+          step,
+        ),
+      )
+
       if (!reducedMotion) {
-        clock.current += step
-        // Precesión: el conjunto gira sobre dos ejes, así los anillos nunca
-        // vuelven a la misma silueta dentro del acto.
-        group.current.rotation.y += step * (0.05 + env.current.level * 0.06)
-        group.current.rotation.x = Math.sin(clock.current * 0.07) * 0.12
+        clockRef.current += step
+
+        groupRef.current.rotation.y +=
+          step * (0.05 + environment.level * 0.06)
+
+        groupRef.current.rotation.x =
+          Math.sin(clockRef.current * 0.07) * 0.12
       }
     }
-    materials.current.forEach((material, i) => {
-      if (!material) return
-      const u = material.uniforms
-      if (!reducedMotion) u.uTime.value += step * (1 + i * 0.2)
-      u.uLevel.value = THREE.MathUtils.damp(u.uLevel.value, env.current.level, 8, step)
-      u.uBass.value = THREE.MathUtils.damp(u.uBass.value, env.current.bass, 15, step)
-      u.uWarp.value = THREE.MathUtils.damp(u.uWarp.value, env.current.warp, 5, step)
-      ;(u.uKey.value as THREE.Color).lerp(linear(act.palette.key), step * 1.2)
-      ;(u.uEmber.value as THREE.Color).lerp(linear(act.palette.ember), step * 1.2)
+
+    materialRefs.current.forEach((material, index) => {
+      if (!material) {
+        return
+      }
+
+      const uniforms = material.uniforms
+
+      if (!reducedMotion) {
+        uniforms.uTime.value += step * (1 + index * 0.2)
+      }
+
+      uniforms.uLevel.value = THREE.MathUtils.damp(
+        uniforms.uLevel.value,
+        environment.level,
+        8,
+        step,
+      )
+
+      uniforms.uBass.value = THREE.MathUtils.damp(
+        uniforms.uBass.value,
+        environment.bass,
+        15,
+        step,
+      )
+
+      uniforms.uWarp.value = THREE.MathUtils.damp(
+        uniforms.uWarp.value,
+        environment.warp,
+        5,
+        step,
+      )
+
+      uniforms.uKey.value.lerp(
+        linearColor(act.palette.key),
+        step * 1.2,
+      )
+
+      uniforms.uEmber.value.lerp(
+        linearColor(act.palette.ember),
+        step * 1.2,
+      )
     })
   })
 
-  const radial = quality === 'high' ? 200 : quality === 'medium' ? 130 : 80
-
   return (
-    <group ref={group}>
-      {specs.map((spec, i) => (
-        <mesh key={spec.radius} rotation={spec.tilt}>
-          <torusGeometry args={[spec.radius, spec.tube, quality === 'low' ? 8 : 12, radial]} />
-          <shaderMaterial ref={materialRefs[i]} args={ringArgs[i]} />
+    <group ref={groupRef}>
+      {ENERGY_RINGS.map((ring, index) => (
+        <mesh key={ring.radius} rotation={ring.tilt}>
+          <torusGeometry
+            args={[
+              ring.radius,
+              ring.tube,
+              quality === 'low' ? 8 : 12,
+              radialSegments,
+            ]}
+          />
+          <shaderMaterial
+            ref={(node) => {
+              materialRefs.current[index] = node
+            }}
+            args={materialArgs[index]}
+          />
         </mesh>
       ))}
     </group>
@@ -596,223 +1201,501 @@ function EnergyRings({ actIndex, quality, reducedMotion, env }: SceneNodeProps) 
 }
 
 /* ------------------------------------------------------------------ */
-/* Campo de partículas: un Points, una draw call, movimiento en GPU     */
+/* Campo de partículas                                                 */
 /* ------------------------------------------------------------------ */
-function ParticleField({ actIndex, quality, reducedMotion, env }: SceneNodeProps) {
+
+function createParticleGeometry(count: number): THREE.BufferGeometry {
+  const geometry = new THREE.BufferGeometry()
+
+  const seed = new Float32Array(count * 3)
+  const motion = new Float32Array(count * 3)
+  const shape = new Float32Array(count * 3)
+  const tint = new Float32Array(count)
+
+  for (let index = 0; index < count; index += 1) {
+    const theta = Math.random() * Math.PI * 2
+    const phi = Math.acos(
+      THREE.MathUtils.lerp(-1, 1, Math.random() ** 1.4),
+    )
+    const radius = 0.35 + Math.random() ** 0.6
+
+    seed[index * 3] =
+      Math.sin(phi) * Math.cos(theta) * radius
+    seed[index * 3 + 1] =
+      Math.cos(phi) * radius * 0.55
+    seed[index * 3 + 2] =
+      Math.sin(phi) * Math.sin(theta) * radius
+
+    motion[index * 3] = 0.12 + Math.random() * 0.5
+    motion[index * 3 + 1] = 0.25 + Math.random() * 1.35
+    motion[index * 3 + 2] = 0.2 + Math.random() * 1.1
+
+    shape[index * 3] = Math.random()
+    shape[index * 3 + 1] = 0.35 + Math.random() * 1.9
+    shape[index * 3 + 2] = Math.random()
+
+    tint[index] = Math.random()
+  }
+
+  geometry.setAttribute(
+    'aSeed',
+    new THREE.BufferAttribute(seed, 3),
+  )
+
+  geometry.setAttribute(
+    'aMotion',
+    new THREE.BufferAttribute(motion, 3),
+  )
+
+  geometry.setAttribute(
+    'aShape',
+    new THREE.BufferAttribute(shape, 3),
+  )
+
+  geometry.setAttribute(
+    'aTint',
+    new THREE.BufferAttribute(tint, 1),
+  )
+
+  geometry.setAttribute(
+    'position',
+    new THREE.BufferAttribute(
+      new Float32Array(count * 3),
+      3,
+    ),
+  )
+
+  geometry.boundingSphere = new THREE.Sphere(
+    new THREE.Vector3(),
+    80,
+  )
+
+  return geometry
+}
+
+function ParticleField({
+  actIndex,
+  quality,
+  reducedMotion,
+  env,
+}: SceneNodeProps) {
   const count = PARTICLE_COUNT[quality]
-  const points = useRef<THREE.Points>(null)
-  const focus = useRef(1)
-  /** Puntos dibujados amortiguados; arranca en el total para no abrir en vacío. */
-  const drawn = useRef(count)
-  const { gl } = useThree()
+  const pointsRef = useRef<THREE.Points>(null)
+  const focusRef = useRef(1)
+  const drawnRef = useRef(count)
 
-  const geometry = useMemo(() => {
-    const g = new THREE.BufferGeometry()
-    const seed = new Float32Array(count * 3)
-    const motion = new Float32Array(count * 3)
-    const shape = new Float32Array(count * 3)
-    const tint = new Float32Array(count)
-    for (let i = 0; i < count; i += 1) {
-      const theta = Math.random() * Math.PI * 2
-      const phi = Math.acos(THREE.MathUtils.lerp(-1, 1, Math.random() ** 1.4))
-      const radius = 0.35 + Math.random() ** 0.6
-      seed[i * 3] = Math.sin(phi) * Math.cos(theta) * radius
-      seed[i * 3 + 1] = Math.cos(phi) * radius * 0.55
-      seed[i * 3 + 2] = Math.sin(phi) * Math.sin(theta) * radius
-      motion[i * 3] = 0.12 + Math.random() * 0.5
-      motion[i * 3 + 1] = 0.25 + Math.random() * 1.35
-      motion[i * 3 + 2] = 0.2 + Math.random() * 1.1
-      shape[i * 3] = Math.random()
-      shape[i * 3 + 1] = 0.35 + Math.random() * 1.9
-      shape[i * 3 + 2] = Math.random()
-      tint[i] = Math.random()
-    }
-    g.setAttribute('aSeed', new THREE.BufferAttribute(seed, 3))
-    g.setAttribute('aMotion', new THREE.BufferAttribute(motion, 3))
-    g.setAttribute('aShape', new THREE.BufferAttribute(shape, 3))
-    g.setAttribute('aTint', new THREE.BufferAttribute(tint, 1))
-    // three exige el atributo "position" aunque el vértice nazca en el shader.
-    g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(count * 3), 3))
-    g.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 80)
-    return g
-  }, [count])
+  const gl = useThree((state) => state.gl)
 
-  const uniforms = useMemo(() => ({
-    uTime: { value: 0 },
-    uLevel: { value: 0 },
-    uTreble: { value: 0 },
-    uWarp: { value: 0 },
-    uSpread: { value: 18 },
-    uPixelRatio: { value: 1 },
-    uKey: { value: colorOf(actAt(0), 'key') },
-    uEmber: { value: colorOf(actAt(0), 'ember') },
-  }), [])
+  const geometry = useMemo(
+    () => createParticleGeometry(count),
+    [count],
+  )
+
+  const uniforms = useMemo(
+    () => ({
+      uTime: { value: 0 },
+      uLevel: { value: 0 },
+      uTreble: { value: 0 },
+      uWarp: { value: 0 },
+      uSpread: { value: 18 },
+      uPixelRatio: { value: 1 },
+      uKey: { value: paletteColor(actAt(0), 'key') },
+      uEmber: { value: paletteColor(actAt(0), 'ember') },
+    }),
+    [],
+  )
 
   const materialArgs = useMemo(
-    () => [{ ...FIELD_SHADER, uniforms, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }] as [THREE.ShaderMaterialParameters],
+    () => ({
+      ...FIELD_SHADER,
+      uniforms,
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+    }),
     [uniforms],
   )
 
-  // La geometría se construye fuera del reconciliador (useMemo), así que R3F no
-  // la libera: al desmontar o cambiar de tier hay que hacer dispose a mano o
-  // quedan ~600 KB de buffers huérfanos en GPU.
-  useEffect(() => () => geometry.dispose(), [geometry])
+  useEffect(() => {
+    return () => {
+      geometry.dispose()
+    }
+  }, [geometry])
 
   useFrame((_, delta) => {
-    const step = Math.min(delta, 1 / 30)
+    const environment = env.current
+
+    if (!environment) {
+      return
+    }
+
+    const step = clampDelta(delta)
     const act = actAt(actIndex)
-    focus.current = focusValue(focus.current, act.focus.field, step)
-    if (!reducedMotion) uniforms.uTime.value += step
-    ;(uniforms.uKey.value as THREE.Color).lerp(linear(act.palette.key), step * 1.4)
-    ;(uniforms.uEmber.value as THREE.Color).lerp(linear(act.palette.ember), step * 1.4)
-    uniforms.uLevel.value = THREE.MathUtils.damp(uniforms.uLevel.value as number, env.current.level, 6, step)
-    uniforms.uTreble.value = THREE.MathUtils.damp(uniforms.uTreble.value as number, env.current.treble, 16, step)
-    uniforms.uWarp.value = THREE.MathUtils.damp(uniforms.uWarp.value as number, env.current.warp, 5, step)
-    // Con el warp el campo se contrae hacia el centro antes de la transición:
-    // la pantalla se llena de partículas y luego se vacía de golpe.
+
+    focusRef.current = dampFocus(
+      focusRef.current,
+      act.focus.field,
+      step,
+    )
+
+    if (!reducedMotion) {
+      uniforms.uTime.value += step
+    }
+
+    uniforms.uKey.value.lerp(
+      linearColor(act.palette.key),
+      step * 1.4,
+    )
+
+    uniforms.uEmber.value.lerp(
+      linearColor(act.palette.ember),
+      step * 1.4,
+    )
+
+    uniforms.uLevel.value = THREE.MathUtils.damp(
+      uniforms.uLevel.value,
+      environment.level,
+      6,
+      step,
+    )
+
+    uniforms.uTreble.value = THREE.MathUtils.damp(
+      uniforms.uTreble.value,
+      environment.treble,
+      16,
+      step,
+    )
+
+    uniforms.uWarp.value = THREE.MathUtils.damp(
+      uniforms.uWarp.value,
+      environment.warp,
+      5,
+      step,
+    )
+
     uniforms.uSpread.value = THREE.MathUtils.damp(
-      uniforms.uSpread.value as number,
-      15 + act.density * 7 - env.current.warp * 6,
+      uniforms.uSpread.value,
+      15 + act.density * 7 - environment.warp * 6,
       3,
       step,
     )
-    uniforms.uPixelRatio.value = Math.min(gl.getPixelRatio(), 2)
-    if (points.current && !reducedMotion) points.current.rotation.y += step * (0.014 + env.current.level * 0.02)
 
-    // La densidad del acto y el foco cambían cuántos puntos se dibujan. Se hace
-    // por frame, con el peso amortiguado, para que la nube no aparezca ni
-    // desaparezca a saltos.
-    const wanted = Math.max(160, Math.floor(count * act.density * (0.45 + focus.current * 0.55)))
-    drawn.current = THREE.MathUtils.damp(drawn.current, wanted, 2.4, step)
-    geometry.setDrawRange(0, Math.floor(drawn.current))
+    uniforms.uPixelRatio.value = Math.min(
+      gl.getPixelRatio(),
+      2,
+    )
+
+    if (pointsRef.current && !reducedMotion) {
+      pointsRef.current.rotation.y +=
+        step * (0.014 + environment.level * 0.02)
+    }
+
+    const targetCount = Math.max(
+      160,
+      Math.floor(
+        count *
+          act.density *
+          (0.45 + focusRef.current * 0.55),
+      ),
+    )
+
+    drawnRef.current = THREE.MathUtils.damp(
+      drawnRef.current,
+      targetCount,
+      2.4,
+      step,
+    )
+
+    geometry.setDrawRange(
+      0,
+      Math.floor(drawnRef.current),
+    )
   })
 
   return (
-    <points ref={points} geometry={geometry} frustumCulled={false}>
+    <points
+      ref={pointsRef}
+      geometry={geometry}
+      frustumCulled={false}
+    >
       <shaderMaterial args={materialArgs} />
     </points>
   )
 }
 
 /* ------------------------------------------------------------------ */
-/* Portal: vórtice aditivo que solo existe durante el warp             */
+/* Portal                                                              */
 /* ------------------------------------------------------------------ */
-function Portal({ actIndex, reducedMotion, env }: Pick<StageProps, 'actIndex' | 'reducedMotion' | 'env'>) {
-  const mesh = useRef<THREE.Mesh>(null)
 
-  const uniforms = useMemo(() => ({
-    uTime: { value: 0 },
-    uWarp: { value: 0 },
-    uKey: { value: colorOf(actAt(0), 'key') },
-    uEmber: { value: colorOf(actAt(0), 'ember') },
-  }), [])
+function Portal({
+  actIndex,
+  reducedMotion,
+  env,
+}: Pick<StageProps, 'actIndex' | 'reducedMotion' | 'env'>) {
+  const meshRef = useRef<THREE.Mesh>(null)
+
+  const uniforms = useMemo(
+    () => ({
+      uTime: { value: 0 },
+      uWarp: { value: 0 },
+      uKey: { value: paletteColor(actAt(0), 'key') },
+      uEmber: { value: paletteColor(actAt(0), 'ember') },
+    }),
+    [],
+  )
 
   const materialArgs = useMemo(
-    () => [{ ...PORTAL_SHADER, uniforms, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }] as [THREE.ShaderMaterialParameters],
+    () => ({
+      ...PORTAL_SHADER,
+      uniforms,
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+    }),
     [uniforms],
   )
 
   useFrame((state, delta) => {
-    const step = Math.min(delta, 1 / 30)
+    const environment = env.current
+
+    if (!environment) {
+      return
+    }
+
+    const step = clampDelta(delta)
     const act = actAt(actIndex)
-    if (!reducedMotion) uniforms.uTime.value += step
-    ;(uniforms.uKey.value as THREE.Color).lerp(linear(act.palette.key), step * 1.6)
-    ;(uniforms.uEmber.value as THREE.Color).lerp(linear(act.palette.ember), step * 1.6)
-    uniforms.uWarp.value = THREE.MathUtils.damp(uniforms.uWarp.value as number, env.current.warp, 5, step)
-    if (mesh.current) {
-      mesh.current.quaternion.copy(state.camera.quaternion)
-      mesh.current.scale.setScalar(6 + (uniforms.uWarp.value as number) * 9)
+
+    if (!reducedMotion) {
+      uniforms.uTime.value += step
+    }
+
+    uniforms.uKey.value.lerp(
+      linearColor(act.palette.key),
+      step * 1.6,
+    )
+
+    uniforms.uEmber.value.lerp(
+      linearColor(act.palette.ember),
+      step * 1.6,
+    )
+
+    uniforms.uWarp.value = THREE.MathUtils.damp(
+      uniforms.uWarp.value,
+      environment.warp,
+      5,
+      step,
+    )
+
+    if (meshRef.current) {
+      meshRef.current.quaternion.copy(
+        state.camera.quaternion,
+      )
+
+      meshRef.current.scale.setScalar(
+        6 + uniforms.uWarp.value * 9,
+      )
     }
   })
 
   return (
-    <mesh ref={mesh} position={[0, 0, -3]} renderOrder={5}>
+    <mesh
+      ref={meshRef}
+      position={[0, 0, -3]}
+      renderOrder={5}
+    >
       <circleGeometry args={[1, 96]} />
       <shaderMaterial args={materialArgs} />
     </mesh>
   )
 }
 
-/**
- * Grade de color vivo: expone, difumina y oscurece hacia los valores del acto.
- *
- * Se hace por frame sobre las instancias de los efectos, no con props de React,
- * para que el cambio de paleta sea un fundido de dos segundos y no un salto
- * cuando el guion avanza de escena.
- */
-function Grade({ actIndex, quality, env }: Pick<StageProps, 'actIndex' | 'quality' | 'env'>) {
-  const { gl } = useThree()
-  const state = useRef({ exposure: 1.1, bloom: 0.9, veil: 0.32 })
+/* ------------------------------------------------------------------ */
+/* Gradación de color                                                  */
+/* ------------------------------------------------------------------ */
+
+function Grade({
+  actIndex,
+  quality,
+  env,
+}: Pick<StageProps, 'actIndex' | 'quality' | 'env'>) {
+  const gl = useThree((state) => state.gl)
+
+  const gradeState = useRef({
+    exposure: 1.1,
+    bloom: 0.9,
+    veil: 0.32,
+  })
 
   useFrame((_, delta) => {
-    const step = Math.min(delta, 1 / 30)
+    const environment = env.current
+
+    if (!environment) {
+      return
+    }
+
+    const step = clampDelta(delta)
     const grade = actAt(actIndex).grade
-    const warp = env.current.warp
-    const ceiling = quality === 'low' ? 0.62 : quality === 'medium' ? 0.95 : 1.25
+    const warp = environment.warp
 
-    state.current.exposure = THREE.MathUtils.damp(state.current.exposure, grade.exposure + warp * 0.22, 1.6, step)
-    state.current.bloom = THREE.MathUtils.damp(state.current.bloom, Math.min(ceiling, grade.bloom + env.current.bass * 0.3), 2.4, step)
-    state.current.veil = THREE.MathUtils.damp(state.current.veil, grade.veil, 1.6, step)
+    const bloomCeiling =
+      quality === 'low'
+        ? 0.62
+        : quality === 'medium'
+          ? 0.95
+          : 1.25
 
-    // Solo exposición por frame. El postprocesado (Bloom/Vignette/DoF) vive en
-    // un único EffectComposer en `CinematicPost` de cinematic-intro.tsx:
-    // montar aquí un segundo composer escribía dos veces al mismo plano, con
-    // doble bloom y doble costo de GPU.
-    gl.toneMappingExposure = state.current.exposure
+    gradeState.current.exposure = THREE.MathUtils.damp(
+      gradeState.current.exposure,
+      grade.exposure + warp * 0.22,
+      1.6,
+      step,
+    )
+
+    gradeState.current.bloom = THREE.MathUtils.damp(
+      gradeState.current.bloom,
+      Math.min(
+        bloomCeiling,
+        grade.bloom + environment.bass * 0.3,
+      ),
+      2.4,
+      step,
+    )
+
+    gradeState.current.veil = THREE.MathUtils.damp(
+      gradeState.current.veil,
+      grade.veil,
+      1.6,
+      step,
+    )
+
+    gl.toneMappingExposure =
+      gradeState.current.exposure
   })
 
   return null
 }
 
-export default function CinematicStage({ actIndex, quality, reducedMotion, env, onQualityDecline }: StageProps) {
-  const invalidate = useThree((state) => state.invalidate)
-  const performance = useThree((state) => state.performance)
+/* ------------------------------------------------------------------ */
+/* Escenario principal                                                 */
+/* ------------------------------------------------------------------ */
 
-  /* `AdaptiveDpr` sólo reacciona a `performance.current`, y `current` sólo baja
-     si alguien llama a `performance.regress()`. Sin esto el pixel ratio era un
-     no-op: se pedía el tier abajo pero la resolución nunca se ajustaba. Se pide
-     el regress (baja el DPR ~50% durante ~200 ms) al caer de tier y en cada
-     frame del warp, que es cuando la GPU está más cargada. */
-  const handleDecline = useCallback(() => {
+export default function CinematicStage({
+  actIndex,
+  quality,
+  reducedMotion,
+  env,
+  onQualityDecline,
+}: StageProps) {
+  const invalidate = useThree((state) => state.invalidate)
+  const performance = useThree(
+    (state) => state.performance,
+  )
+
+  const handleQualityDecline = useCallback(() => {
     performance.regress()
     onQualityDecline()
   }, [performance, onQualityDecline])
 
   useFrame(() => {
-    if (env.current.warp > 0.05) performance.regress()
+    const environment = env.current
+
+    if (environment && environment.warp > 0.05) {
+      performance.regress()
+    }
   })
 
-  /* Con `frameloop="demand"` nadie pide frames, y casi todo el estado visual se
-     mueve por amortiguación dentro de useFrame. En modo de movimiento reducido
-     hay que solicitar una ráfaga corta al cambiar de acto: si no, el fundido de
-     color y el encuadre nuevo se quedan en el primer paso del muelle. Una ráfaga
-     de 90 frames (~1.5 s) converge y para; no hay animación continua. */
   useEffect(() => {
-    if (!reducedMotion) return
-    let frames = 0
-    let handle = 0
-    const burst = () => {
-      invalidate()
-      if ((frames += 1) < 90) handle = requestAnimationFrame(burst)
+    if (!reducedMotion) {
+      return
     }
-    burst()
-    return () => cancelAnimationFrame(handle)
+
+    let frame = 0
+    let animationFrame = 0
+
+    const renderBurst = () => {
+      invalidate()
+
+      frame += 1
+
+      if (frame < 90) {
+        animationFrame = requestAnimationFrame(renderBurst)
+      }
+    }
+
+    renderBurst()
+
+    return () => {
+      cancelAnimationFrame(animationFrame)
+    }
   }, [actIndex, invalidate, reducedMotion])
 
   return (
     <>
-      <PerformanceMonitor onDecline={handleDecline} flipflops={3} />
+      <PerformanceMonitor
+        onDecline={handleQualityDecline}
+        flipflops={3}
+      />
+
       <AdaptiveDpr />
       <EnvSync env={env} />
-      <CameraRig actIndex={actIndex} reducedMotion={reducedMotion} env={env} />
-      <Nebula actIndex={actIndex} reducedMotion={reducedMotion} env={env} />
-      <HolographicCore actIndex={actIndex} quality={quality} reducedMotion={reducedMotion} env={env} />
-      <ArmillaryArcs actIndex={actIndex} quality={quality} reducedMotion={reducedMotion} env={env} />
-      <EnergyRings actIndex={actIndex} quality={quality} reducedMotion={reducedMotion} env={env} />
-      <ParticleField actIndex={actIndex} quality={quality} reducedMotion={reducedMotion} env={env} />
-      <Portal actIndex={actIndex} reducedMotion={reducedMotion} env={env} />
-      <AnamorphicStreak actIndex={actIndex} reducedMotion={reducedMotion} env={env} />
-      <Grade actIndex={actIndex} quality={quality} env={env} />
+
+      <CameraRig
+        actIndex={actIndex}
+        reducedMotion={reducedMotion}
+        env={env}
+      />
+
+      <Nebula
+        actIndex={actIndex}
+        reducedMotion={reducedMotion}
+        env={env}
+      />
+
+      <HolographicCore
+        actIndex={actIndex}
+        quality={quality}
+        reducedMotion={reducedMotion}
+        env={env}
+      />
+
+      <ArmillaryArcs
+        actIndex={actIndex}
+        quality={quality}
+        reducedMotion={reducedMotion}
+        env={env}
+      />
+
+      <EnergyRings
+        actIndex={actIndex}
+        quality={quality}
+        reducedMotion={reducedMotion}
+        env={env}
+      />
+
+      <ParticleField
+        actIndex={actIndex}
+        quality={quality}
+        reducedMotion={reducedMotion}
+        env={env}
+      />
+
+      <Portal
+        actIndex={actIndex}
+        reducedMotion={reducedMotion}
+        env={env}
+      />
+
+      <AnamorphicStreak
+        actIndex={actIndex}
+        reducedMotion={reducedMotion}
+        env={env}
+      />
+
+      <Grade
+        actIndex={actIndex}
+        quality={quality}
+        env={env}
+      />
     </>
   )
 }
