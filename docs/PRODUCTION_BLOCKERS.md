@@ -50,7 +50,7 @@ Required staging checks:
 
 ## Automated validation
 
-The GitHub workflow `.github/workflows/preview-readiness.yml` runs with intentionally unconfigured service variables. Its API smoke tests expect sensitive routes to fail closed with 503 when their required credentials are absent and verify the local music-planner and course-assistant fallback contracts.
+The GitHub workflow `.github/workflows/ci.yml` runs with intentionally unconfigured service variables. Its API smoke tests expect sensitive routes to fail closed with 503 when their required credentials are absent and verify the local music-planner and course-assistant fallback contracts.
 
 A passing workflow validates build and basic HTTP/API contracts only. It does not certify Supabase, RLS, payment processing, provider accounts or production security.
 
