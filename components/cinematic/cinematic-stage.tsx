@@ -533,12 +533,12 @@ function Nebula({
   )
 
   const materialArgs = useMemo(
-    () => ({
+    () => [{
       ...NEBULA_SHADER,
       uniforms,
       side: THREE.BackSide,
       depthWrite: false,
-    }),
+    }] as [THREE.ShaderMaterialParameters],
     [uniforms],
   )
 
@@ -605,13 +605,13 @@ function HolographicCore({
   )
 
   const materialArgs = useMemo(
-    () => ({
+    () => [{
       ...CORE_SHADER,
       uniforms,
       transparent: true,
       depthWrite: false,
       blending: THREE.AdditiveBlending,
-    }),
+    }] as [THREE.ShaderMaterialParameters],
     [uniforms],
   )
 
@@ -771,7 +771,7 @@ function ArmillaryArcs({
 
   const materialArgs = useMemo(
     () =>
-      ARMILLARY_ARCS.map((arc, index) => ({
+      ARMILLARY_ARCS.map((arc, index): [THREE.ShaderMaterialParameters] => [{
         ...ARC_SHADER,
         uniforms: {
           uTime: { value: index * 5 },
@@ -786,7 +786,7 @@ function ArmillaryArcs({
         depthWrite: false,
         blending: THREE.AdditiveBlending,
         side: THREE.DoubleSide,
-      })),
+      }]),
     [],
   )
 
@@ -922,14 +922,14 @@ function AnamorphicStreak({
   )
 
   const materialArgs = useMemo(
-    () => ({
+    () => [{
       ...STREAK_SHADER,
       uniforms,
       transparent: true,
       depthWrite: false,
       depthTest: false,
       blending: THREE.AdditiveBlending,
-    }),
+    }] as [THREE.ShaderMaterialParameters],
     [uniforms],
   )
 
@@ -1073,7 +1073,7 @@ function EnergyRings({
 
   const materialArgs = useMemo(
     () =>
-      ENERGY_RINGS.map((ring, index) => ({
+      ENERGY_RINGS.map((ring, index): [THREE.ShaderMaterialParameters] => [{
         ...RING_SHADER,
         uniforms: {
           uTime: { value: index * 3 },
@@ -1088,7 +1088,7 @@ function EnergyRings({
         depthWrite: false,
         blending: THREE.AdditiveBlending,
         side: THREE.DoubleSide,
-      })),
+      }]),
     [],
   )
 
@@ -1306,13 +1306,13 @@ function ParticleField({
   )
 
   const materialArgs = useMemo(
-    () => ({
+    () => [{
       ...FIELD_SHADER,
       uniforms,
       transparent: true,
       depthWrite: false,
       blending: THREE.AdditiveBlending,
-    }),
+    }] as [THREE.ShaderMaterialParameters],
     [uniforms],
   )
 
@@ -1445,13 +1445,13 @@ function Portal({
   )
 
   const materialArgs = useMemo(
-    () => ({
+    () => [{
       ...PORTAL_SHADER,
       uniforms,
       transparent: true,
       depthWrite: false,
       blending: THREE.AdditiveBlending,
-    }),
+    }] as [THREE.ShaderMaterialParameters],
     [uniforms],
   )
 

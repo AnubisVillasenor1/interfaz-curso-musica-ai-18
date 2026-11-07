@@ -11,13 +11,10 @@ import {
   shouldRunIntro,
 } from '@/lib/cinematic/gate'
 
-const CinematicIntro = dynamic(
-  () => import('./cinematic-intro').then((mod) => mod.CinematicIntro),
-  {
-    ssr: false,
-    loading: () => null,
-  },
-)
+const CinematicIntro = dynamic(() => import('./cinematic-intro'), {
+  ssr: false,
+  loading: () => null,
+})
 
 export function IntroGate() {
   const [isIntroVisible, setIsIntroVisible] = useState(false)
