@@ -180,7 +180,6 @@ export async function POST(request: Request) {
       author: ADVANCED_AUDIO_AUTHOR,
       brand: ADVANCED_AUDIO_BRAND,
       provisionalScore,
-      decision: evaluation.decision,
       ...evaluation,
       model: payload?.model ?? model,
       assessedAt: new Date().toISOString(),
