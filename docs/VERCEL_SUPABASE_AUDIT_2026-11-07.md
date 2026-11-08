@@ -140,3 +140,10 @@ Para una instalación existente, primero se compara el historial remoto con los 
 - Revisión y remediación de los 14 readable-secret reportados por Vercel.
 
 **Conclusión:** el proyecto Vercel existe, tiene un deployment de producción en estado READY y está conectado a AnubisVillasenor1/interfaz-curso-musica-ai-18. La presencia de variables y del deployment no equivale a una base de datos validada. La remediación debe cerrarse con evidencia del historial remoto, staging, RLS, Stripe y permisos; no con una suposición basada en archivos Git.
+
+
+## 7. Riesgo adicional en la conciliación de derechos
+
+El campo entitlement_reconciliation_required es un marcador de revisión, no un bloqueo de acceso. En el SQL inspeccionado, sync_entitlement_effective_state, consume_generation_quota y read_entitlement no consultan ese marcador; derivan Pro con subscription_id, subscription_status y current_period_end. Por tanto, una fila histórica marcada aún puede mostrar o conservar acceso efectivo en función de esos otros valores.
+
+La migración de ciclo de vida no debe promoverse a producción mientras existan filas ambiguas sin conciliación. La revisión debe probar cada derecho con evidencia de Stripe, ajustar los campos base/extension/subscription y limpiar el marcador solo después de verificar esa cuenta. El webhook de actualización refresca estado y periodo, pero no sustituye la reconciliación histórica.
