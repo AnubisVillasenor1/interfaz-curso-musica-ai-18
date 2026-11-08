@@ -11,6 +11,29 @@ begin;
 alter table public.exam_attempts enable row level security;
 alter table public.certificates enable row level security;
 
+-- Remove every pre-existing policy on these two tables. This also closes
+-- unexpected permissive policies whose names are not present in the old
+-- migration history. Only the owner SELECT policies below are recreated.
+do $
+declare
+  policy_row record;
+begin
+  for policy_row in
+    select schemaname, tablename, policyname
+      from pg_policies
+     where schemaname = 'public'
+       and tablename in ('exam_attempts', 'certificates')
+  loop
+    execute format(
+      'drop policy %I on %I.%I',
+      policy_row.policyname,
+      policy_row.schemaname,
+      policy_row.tablename
+    );
+  end loop;
+end;
+$;
+
 drop policy if exists "exam_attempts_owner" on public.exam_attempts;
 drop policy if exists "exam_attempts_owner_read" on public.exam_attempts;
 create policy "exam_attempts_owner_read"
