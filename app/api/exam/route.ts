@@ -45,15 +45,55 @@ export async function POST(request: Request) {
     )
   }
 
-  const contentLength = Number(request.headers.get('content-length') ?? 0)
-  if (contentLength > 16_384) {
+  const contentLengthHeader = request.headers.get('content-length')
+  const declaredLength = contentLengthHeader ? Number(contentLengthHeader) : 0
+  if (Number.isFinite(declaredLength) && declaredLength > 16_384) {
     return NextResponse.json(
       { error: 'El envío del examen excede el tamaño permitido.', code: 'payload_too_large' },
       { status: 413, headers: PRIVATE_HEADERS },
     )
   }
 
-  const body = (await request.json().catch(() => null)) as { answers?: unknown } | null
+  // Cap the streamed body too; Content-Length can be absent or untrusted.
+  if (!request.body) {
+    return NextResponse.json(
+      { error: 'Envía las respuestas del examen.', code: 'invalid_request' },
+      { status: 400, headers: PRIVATE_HEADERS },
+    )
+  }
+  const reader = request.body.getReader()
+  const decoder = new TextDecoder()
+  let bodyText = ''
+  let receivedBytes = 0
+  try {
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      receivedBytes += value.byteLength
+      if (receivedBytes > 16_384) {
+        await reader.cancel()
+        return NextResponse.json(
+          { error: 'El envío del examen excede el tamaño permitido.', code: 'payload_too_large' },
+          { status: 413, headers: PRIVATE_HEADERS },
+        )
+      }
+      bodyText += decoder.decode(value, { stream: true })
+    }
+    bodyText += decoder.decode()
+  } catch {
+    return NextResponse.json(
+      { error: 'No pudimos leer el envío del examen.', code: 'invalid_request' },
+      { status: 400, headers: PRIVATE_HEADERS },
+    )
+  }
+
+  const body = (() => {
+    try {
+      return JSON.parse(bodyText) as { answers?: unknown } | null
+    } catch {
+      return null
+    }
+  })()
   const raw = body?.answers
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
     return NextResponse.json(
