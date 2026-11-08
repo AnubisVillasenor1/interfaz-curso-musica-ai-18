@@ -59,3 +59,12 @@ Las filas Pro antiguas que no tienen subscription_id no se consideran una suscri
 ## Límites de la evidencia
 
 El workflow de GitHub comprueba compilación y contratos HTTP sin credenciales reales. No comprueba las tablas, RLS, ni webhooks reales. Estos casos requieren una base de datos y claves Stripe de staging, nunca credenciales compartidas con producción.
+
+
+### Control operativo de entitlement_reconciliation_required
+
+La marca es un indicador de conciliación, **no un bloqueo de acceso**. Las funciones sync_entitlement_effective_state, consume_generation_quota y read_entitlement derivan el estado con subscription_id, subscription_status, current_period_end, base_plan y extension_expires_at; no consultan entitlement_reconciliation_required. Por eso una fila marcada todavía puede recibir derechos efectivos según esos otros campos.
+
+No promover esta migración a producción mientras existan filas marcadas sin revisión. Para cada fila, verificar el derecho de curso, extensión y suscripción contra evidencia de Stripe; ajustar base_plan, extension_expires_at y los campos de suscripción; después limpiar la marca únicamente para esa fila revisada. El webhook de actualización puede refrescar status y period_end, pero no sustituye la revisión del derecho histórico ni limpia la marca automáticamente.
+
+La consulta de auditoría anterior y la matriz de aceptación son el procedimiento de liberación. Una prueba de build o un deployment READY no satisface esta puerta.

@@ -90,3 +90,26 @@ El nuevo trayecto de laboratorio dispone de dos exámenes de 20 reactivos correg
 La ruta de IA recibe únicamente un resumen de texto. No escucha archivos, no ejecuta código y no verifica licencias. La respuesta tiene una puntuación ponderada provisional; el frontend y la documentación advierten que el dictamen final exige revisión humana. Si el proveedor devuelve una estructura no válida, la ruta no crea una calificación y responde con error.
 
 Los exámenes técnicos guardan intentos en la tabla existente solo cuando la sesión y la base están disponibles. La ausencia de registro se informa al usuario; el examen complementario no emite certificados ni grado académico. Para validación real en staging, prueba auth, intentos duplicados y aislamiento de usuario con datos de prueba; no uses credenciales de producción para verificar entregas.
+
+
+### P1 — El examen permitía manipular intentos y exponía la tabla de constancias
+
+La migración histórica 20261105190500_exam.sql definía exam_attempts_owner como FOR ALL. Un usuario autenticado podía insertar, modificar o borrar su propio intento desde la API REST de Supabase, incluyendo los campos score y passed. También definía certificates_verify_public con USING (true), lo que habilitaba la lectura pública directa de filas de constancias. La ruta de verificación pública ya usa createAdminClient() y devuelve una proyección limitada, por lo que ese permiso general no era necesario.
+
+El endpoint del examen guardaba tanto el intento como la constancia usando el cliente de sesión. La política de la tabla de constancias solo concedía SELECT al dueño; el INSERT podía fallar después de guardar el examen.
+
+**Corrección en fix/exam-rls-certificate-hardening:**
+- La sesión autentica al estudiante; el ID del usuario siempre procede de auth.getUser(), no del cuerpo.
+- El backend valida IDs de pregunta e índices de opción contra EXAM_QUESTIONS y calcula la nota con la clave privada del servidor.
+- Los INSERT de exam_attempts y certificates se realizan con el cliente administrativo solo desde la ruta Node.js.
+- La migración nueva 20261108190000_exam_security_hardening.sql sustituye el permiso FOR ALL por SELECT del propietario, elimina la lectura pública directa de la tabla de constancias y reserva las escrituras a service_role.
+- scripts/verify-exam-security.mjs se integra a CI para comprobar estos contratos estáticos.
+
+**Validación aún necesaria:** aplicar la migración en staging, verificar las operaciones con dos usuarios, comprobar que REST no permite insertar ni alterar intentos como usuario normal, confirmar que el endpoint público verifica un código sin exponer la tabla y realizar una prueba negativa con un código inexistente. Esta migración no está declarada aplicada en producción por este cambio de Git.
+
+
+### P0 — La marca de conciliación de derechos no bloquea el estado efectivo
+
+El campo entitlement_reconciliation_required documenta filas que necesitan contraste con Stripe, pero la derivación de acceso en sync_entitlement_effective_state, consume_generation_quota y read_entitlement no consulta ese campo. Una fila marcada puede seguir activando Pro si subscription_id, subscription_status y current_period_end satisfacen la condición de vigencia. Esto evita tratar la marca como una protección técnica automática.
+
+La puerta de liberación es operativa: no aplicar la migración 20261107190000_entitlement_lifecycle.sql a producción mientras existan filas ambiguas sin reconciliar y revisar. Consultar docs/ENTITLEMENT_LIFECYCLE.md, contrastar cada cuenta con Checkout/Subscriptions en Stripe y limpiar la marca solo después de verificar los tres derechos independientes. No modificar a ciegas las cuotas ni revocar acceso de clientes históricos.

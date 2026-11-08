@@ -1,0 +1,8 @@
+# Optional dependencies for the Módulo 3 MIDI/harmony/generation toolkit.
+# Install after laboratorio-audio-ia/requirements.txt.
+pretty-midi==0.2.11
+music21>=9.7,<12
+torch>=2.4,<3
+diffusers>=0.35,<1
+transformers>=4.44,<6
+accelerate>=0.34,<2
