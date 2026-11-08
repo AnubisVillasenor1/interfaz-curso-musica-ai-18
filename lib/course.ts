@@ -1445,7 +1445,14 @@ export const COURSE_FRAMEWORK = {
   technicalPathway: {
     title: 'Laboratorio técnico de audio e IA musical',
     route: '/curso/laboratorio-audio',
-    modules: ['Fundamentos acústicos, DSP y extracción espectral', 'Diagnóstico de mezcla y masterización'],
+    modules: [
+      'Fundamentos acústicos, DSP y extracción espectral',
+      'Diagnóstico de mezcla y masterización',
+      'IA generativa musical y control de modelos',
+      'Plugins de audio y sistemas multiagente',
+      'Trazabilidad, derechos y gobernanza de IA',
+      'Sistema integrador de producción musical',
+    ],
     note: 'Trayecto complementario; no renumera las 16 sesiones principales ni modifica el progreso persistido.',
   },
   philosophy: 'La IA no reemplaza al creador: amplifica su criterio, acelera sus ideas y le devuelve el control sobre su obra.',

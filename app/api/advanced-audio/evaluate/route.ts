@@ -1,7 +1,14 @@
 import { NextResponse } from 'next/server'
 
-import { ADVANCED_AUDIO_AI_NOTE, ADVANCED_AUDIO_AUTHOR, ADVANCED_AUDIO_BRAND, getAdvancedAudioModule } from '@/lib/advanced-audio-curriculum'
-import type { AdvancedAudioModuleId } from '@/lib/advanced-audio-curriculum'
+import {
+  ADVANCED_AUDIO_AI_NOTE,
+  ADVANCED_AUDIO_AUTHOR,
+  ADVANCED_AUDIO_BRAND,
+  ADVANCED_AUDIO_MODULE_IDS,
+  getAdvancedAudioModule,
+  isAdvancedAudioModuleId,
+  type AdvancedAudioModuleId,
+} from '@/lib/advanced-audio-curriculum'
 import { createClient } from '@/lib/supabase/server'
 import { readBoundedJson } from '@/lib/http/read-body'
 import { ipOf, rateLimitPublic } from '@/lib/rate-limit'
@@ -21,9 +28,6 @@ type EvaluationResult = {
 const PRIVATE_HEADERS = { 'Cache-Control': 'private, no-store' } as const
 const MAX_EVIDENCE_CHARS = 16_000
 
-function moduleIdOf(value: unknown): value is AdvancedAudioModuleId {
-  return value === 'dsp' || value === 'mastering'
-}
 function cleanStringArray(value: unknown, maxItems: number, maxChars: number): string[] | null {
   if (!Array.isArray(value) || value.length > maxItems) return null
   const out: string[] = []
@@ -101,8 +105,8 @@ export async function POST(request: Request) {
   if (!body || typeof body !== 'object' || Array.isArray(body)) {
     return NextResponse.json({ error: 'Envía un objeto JSON con módulo y evidencia.', code: 'invalid_request' }, { status: 400, headers: PRIVATE_HEADERS })
   }
-  if (!moduleIdOf(body.moduleId)) {
-    return NextResponse.json({ error: 'Elige el laboratorio dsp o mastering.', code: 'invalid_module' }, { status: 400, headers: PRIVATE_HEADERS })
+  if (!isAdvancedAudioModuleId(body.moduleId)) {
+    return NextResponse.json({ error: `Elige uno de los laboratorios disponibles: ${ADVANCED_AUDIO_MODULE_IDS.join(', ')}.`, code: 'invalid_module' }, { status: 400, headers: PRIVATE_HEADERS })
   }
   const moduleId = body.moduleId
   const evidence = typeof body.evidenceSummary === 'string' ? body.evidenceSummary.trim() : ''

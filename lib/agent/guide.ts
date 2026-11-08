@@ -17,7 +17,7 @@
  */
 
 import { COURSE_LESSONS, COURSE_MODULES, COURSE_FRAMEWORK, COURSE_UNITS, FINAL_PROJECT } from '@/lib/course'
-import { ADVANCED_AUDIO_AI_NOTE, ADVANCED_AUDIO_AUTHOR, ADVANCED_AUDIO_BRAND, ADVANCED_AUDIO_CREDENTIAL_NOTE, ADVANCED_AUDIO_MODULES } from '@/lib/advanced-audio-curriculum'
+import { ADVANCED_AUDIO_AI_NOTE, ADVANCED_AUDIO_AUTHOR, ADVANCED_AUDIO_BRAND, ADVANCED_AUDIO_CREDENTIAL_NOTE, ADVANCED_AUDIO_MODULES, advancedAudioModulePath } from '@/lib/advanced-audio-curriculum'
 import { PRODUCTS, priceLabel } from '@/lib/products'
 
 export type GuideSource = 'llm' | 'fallback'
@@ -65,7 +65,7 @@ const LESSON_LINES = COURSE_LESSONS.map(
 export function buildSystemPrompt(): string {
   const units = COURSE_UNITS.map((u) => `Unidad ${u.unit}: ${u.title} (${u.lessonIds.join(', ')})`).join('\n')
   const advancedAudioPathway = ADVANCED_AUDIO_MODULES.map((module) =>
-    `Módulo técnico ${module.number}: ${module.title}. Objetivo: ${module.objective} Lecciones: ${module.lessons.map((lesson) => lesson.title).join('; ')} Ruta: /curso/laboratorio-audio/modulo-${module.number}`,
+    `Módulo técnico ${module.number}: ${module.title}. Objetivo: ${module.objective} Lecciones: ${module.lessons.map((lesson) => lesson.title).join('; ')} Ruta: ${advancedAudioModulePath(module)}`,
   ).join('\n')
   return `Eres el guía de "Play and Go by TAMV ONLINE", un curso y estudio para crear música con inteligencia artificial. Respondes en español neutro, con ejemplos concretos y sin prometer lo que la plataforma no hace.
 
@@ -94,7 +94,7 @@ Autor: ${ADVANCED_AUDIO_AUTHOR} · Marca: ${ADVANCED_AUDIO_BRAND}. ${ADVANCED_AU
 ${ADVANCED_AUDIO_CREDENTIAL_NOTE}
 ${advancedAudioPathway}
 Este laboratorio conserva las 16 sesiones centrales y suma un trayecto aparte con scripts Python, pruebas, reportes y rúbricas. El examen técnico devuelve explicación por pregunta. La evaluación con IA requiere inicio de sesión y una clave de proveedor; analiza solo el resumen textual, no afirma haber escuchado audio ni ejecutado el código.
-Al orientar sobre DSP, STFT, librosa, Nyquist, chroma o onsets, enlaza /curso/laboratorio-audio/modulo-1. Para loudness, LUFS, true peak, EQ, compresión o masterización, enlaza /curso/laboratorio-audio/modulo-2. Para examen o rúbrica, enlaza /curso/laboratorio-audio/evaluacion.
+Al orientar sobre DSP, STFT, librosa, Nyquist, chroma o onsets, enlaza /curso/laboratorio-audio/modulo-1. Para loudness, LUFS, true peak, EQ, compresión o masterización, enlaza /curso/laboratorio-audio/modulo-2. Para difusión, Stable Audio, semillas, MIDI o music21, enlaza /curso/laboratorio-audio/modulo-3. Para VST3/CLAP, JUCE, latencia, ONNX o multiagente, enlaza /curso/laboratorio-audio/modulo-4. Para licencias, hashes, watermarking, riesgos o auditoría, enlaza /curso/laboratorio-audio/modulo-5. Para arquitectura, despliegue, Docker, pruebas o defensa del sistema, enlaza /curso/laboratorio-audio/modulo-6. Para examen o rúbrica, enlaza /curso/laboratorio-audio/evaluacion.
 No inventes mediciones de una pista, licencia, resultado de código ni calidad de audio. Distingue medición, escucha, inferencia y dato pendiente de verificación.
 
 TUS FUNCIONES
@@ -242,7 +242,35 @@ export function answerWithoutModel(query: string): GuideReply {
   }
   if (has('examen técnico', 'examen tecnico', 'rúbrica técnica', 'rubrica tecnica', 'evaluación con ia', 'evaluacion con ia', 'laboratorio de audio', 'laboratorio técnico', 'laboratorio tecnico')) {
     return {
-      answer: 'El trayecto técnico cuenta con un examen de 20 preguntas por módulo, rúbrica práctica y retroalimentación asistida por IA sobre un resumen textual. La revisión de archivos y el dictamen final requieren evaluación humana. Accede a /curso/laboratorio-audio/evaluacion',
+      answer: 'El trayecto técnico tiene seis módulos, cada uno con un examen de 20 preguntas, rúbrica práctica de 100 puntos y retroalimentación asistida por IA sobre un resumen textual. La revisión de archivos y el dictamen final requieren evaluación humana. Accede a /curso/laboratorio-audio/evaluacion',
+      source: 'fallback',
+      lessonIds: [],
+    }
+  }
+  if (has('difusión', 'difusion', 'stable audio', 'semilla', 'guidance', 'music21', 'midi', 'vae', 'generación musical', 'generacion musical')) {
+    return {
+      answer: 'El laboratorio técnico 3 trabaja difusión latente, prompts, negative prompt, semilla, pasos, guidance, MIDI editable con music21 y evaluación de cinco variantes. La semilla no garantiza igualdad bit a bit: registra modelo, versión, hardware y tasa real. Abre el temario aquí: /curso/laboratorio-audio/modulo-3',
+      source: 'fallback',
+      lessonIds: [],
+    }
+  }
+  if (has('plugin', 'vst', 'vst3', 'clap', 'juce', 'onnx', 'latencia', 'tiempo real', 'multiagente', 'orquestador', 'orquestación', 'orquestacion')) {
+    return {
+      answer: 'El laboratorio técnico 4 separa el callback de audio del worker de inferencia, calcula el presupuesto de latencia y diseña un orquestador multiagente con roles, dependencias y trazas. Ningún modelo pesado debe cargarse dentro del callback. Consulta el módulo: /curso/laboratorio-audio/modulo-4',
+      source: 'fallback',
+      lessonIds: [],
+    }
+  }
+  if (has('licencia', 'procedencia', 'watermark', 'marca de agua', 'fingerprint', 'gobernanza', 'metadato', 'auditoría', 'auditoria', 'nist')) {
+    return {
+      answer: 'El laboratorio técnico 5 distingue licencia del audio de entrada, del modelo/pesos y del servicio; construye un manifiesto de procedencia con SHA-256, declara el contenido sintético y evalúa riesgos. El hash demuestra integridad, no titularidad. Abre el módulo: /curso/laboratorio-audio/modulo-5',
+      source: 'fallback',
+      lessonIds: [],
+    }
+  }
+  if (has('proyecto integrador', 'sistema completo', 'despliegue', 'docker', 'vps', 'nginx', 'capstone', 'estudio autónomo', 'estudio autonomo')) {
+    return {
+      answer: 'El laboratorio técnico 6 integra arquitectura, persistencia, colas idempotentes, Docker, Nginx con HTTPS, pruebas, monitoreo y defensa. El sistema debe declarar límites y probar la restauración; una demo sin fallo controlado no demuestra operación. Consulta el módulo: /curso/laboratorio-audio/modulo-6',
       source: 'fallback',
       lessonIds: [],
     }

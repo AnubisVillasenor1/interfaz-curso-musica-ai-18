@@ -22,7 +22,7 @@ documento mide, no supone: cada afirmación trae la prueba y el comando.
 | Motor de audio local (síntesis con Tone.js) | `lib/music/engine.ts`, `components/music-studio.tsx` | funciona sin backend ni pago |
 | Voz y canción pagada (proveedor externo) | `app/api/music/` | requiere claves; sin ellas responde 503 |
 | Asistente con IA | `app/api/agent/` | con `AI_AGENT_API_KEY` usa un LLM real; sin ella responde con el temario y lo dice |
-| Laboratorio técnico de audio e IA musical | `app/curso/laboratorio-audio/`, `lib/advanced-audio-curriculum.ts` | dos módulos complementarios con ocho lecciones, código, rúbricas y fuentes técnicas |
+| Laboratorio técnico de audio e IA musical | `app/curso/laboratorio-audio/`, `lib/advanced-audio-curriculum.ts` | seis módulos complementarios con 24 lecciones, código, rúbricas y fuentes técnicas |
 | Exámenes y revisión formativa | `app/api/advanced-audio/`, `lib/advanced-audio-exam.ts` | 20 preguntas por módulo; claves solo en servidor; IA revisa texto aportado y requiere login/proveedor |
 | Pagos | `app/api/checkout/`, `app/api/stripe/` | flujo escrito, pendiente de claves y de montar el webhook |
 | Base de datos | `supabase/migrations/` | ocho archivos SQL versionados en la rama de hardening; el historial aplicado en Supabase debe verificarse antes de ejecutar o reparar migraciones |
@@ -49,7 +49,7 @@ Vercel utiliza el proyecto prj_ogAIlFJ2Vs9Sll0NIT0h0YKricG4 y la URL pública de
 
 ## Laboratorio técnico complementario
 
-El núcleo didáctico conserva sus **16 sesiones en 5 módulos** y sus identificadores de progreso. El laboratorio técnico se encuentra en la ruta [/curso/laboratorio-audio](./app/curso/laboratorio-audio/page.tsx) y añade dos módulos: fundamentos acústicos/DSP/extracción espectral y diagnóstico de mezcla/masterización. Su evaluación no renumera las lecciones originales ni emite un grado académico oficial.
+El núcleo didáctico conserva sus **16 sesiones en 5 módulos** y sus identificadores de progreso. El laboratorio técnico se encuentra en la ruta [/curso/laboratorio-audio](./app/curso/laboratorio-audio/page.tsx) y añade seis módulos: fundamentos acústicos/DSP/extracción espectral, mezcla/masterización, IA generativa musical, plugins y sistemas multiagente, trazabilidad/gobernanza y sistema integrador. Su evaluación no renumera las lecciones originales ni emite un grado académico oficial.
 
 Código, instrucciones y pruebas Python viven en `laboratorio-audio-ia/`. Desde esa carpeta, en Python 3.11 o 3.12:
 

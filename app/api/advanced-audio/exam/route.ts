@@ -6,23 +6,20 @@ import {
   publicQuestions,
   validateAdvancedAudioAnswers,
 } from '@/lib/advanced-audio-exam'
-import { ADVANCED_AUDIO_ASSESSMENT } from '@/lib/advanced-audio-curriculum'
+import { ADVANCED_AUDIO_ASSESSMENT, ADVANCED_AUDIO_MODULE_IDS, isAdvancedAudioModuleId } from '@/lib/advanced-audio-curriculum'
 import { ipOf, rateLimitPublic } from '@/lib/rate-limit'
 import { readBoundedJson } from '@/lib/http/read-body'
 import { createClient } from '@/lib/supabase/server'
 
 export const runtime = 'nodejs'
 const PRIVATE_HEADERS = { 'Cache-Control': 'private, no-store' } as const
-
-function isModuleId(value: unknown): value is 'dsp' | 'mastering' {
-  return value === 'dsp' || value === 'mastering'
-}
+const VALID_MODULES = ADVANCED_AUDIO_MODULE_IDS.join(', ')
 
 /** Public exam GET never sends answer keys. Correct options appear only after a submission. */
 export async function GET(request: Request) {
   const moduleId = new URL(request.url).searchParams.get('module')
-  if (!isModuleId(moduleId)) {
-    return NextResponse.json({ error: 'Indica module=dsp o module=mastering.', code: 'invalid_module' }, { status: 400, headers: PRIVATE_HEADERS })
+  if (!isAdvancedAudioModuleId(moduleId)) {
+    return NextResponse.json({ error: `Indica module=${VALID_MODULES}.`, code: 'invalid_module' }, { status: 400, headers: PRIVATE_HEADERS })
   }
   const exam = getAdvancedAudioExam(moduleId)
   if (!exam) return NextResponse.json({ error: 'Examen no disponible.', code: 'not_found' }, { status: 404, headers: PRIVATE_HEADERS })
@@ -59,8 +56,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Envía un objeto JSON con módulo y respuestas.', code: 'invalid_request' }, { status: 400, headers: PRIVATE_HEADERS })
   }
   const moduleId = body.moduleId
-  if (!isModuleId(moduleId)) {
-    return NextResponse.json({ error: 'Indica moduleId=dsp o moduleId=mastering.', code: 'invalid_module' }, { status: 400, headers: PRIVATE_HEADERS })
+  if (!isAdvancedAudioModuleId(moduleId)) {
+    return NextResponse.json({ error: `Indica moduleId=${VALID_MODULES}.`, code: 'invalid_module' }, { status: 400, headers: PRIVATE_HEADERS })
   }
   const exam = getAdvancedAudioExam(moduleId)
   const answers = body.answers

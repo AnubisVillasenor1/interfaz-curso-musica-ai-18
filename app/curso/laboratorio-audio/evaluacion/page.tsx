@@ -2,11 +2,11 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ArrowLeft, ArrowRight, ClipboardCheck, ShieldCheck } from 'lucide-react'
 import { AdvancedAudioEvaluator } from '@/components/course/advanced-audio-evaluator'
-import { ADVANCED_AUDIO_ASSESSMENT, ADVANCED_AUDIO_BRAND, ADVANCED_AUDIO_CREDENTIAL_NOTE } from '@/lib/advanced-audio-curriculum'
+import { ADVANCED_AUDIO_ASSESSMENT, ADVANCED_AUDIO_BRAND, ADVANCED_AUDIO_CREDENTIAL_NOTE, ADVANCED_AUDIO_MODULES, advancedAudioExamPath } from '@/lib/advanced-audio-curriculum'
 
 export const metadata: Metadata = {
   title: 'Evaluación técnica y tutoría con IA',
-  description: 'Exámenes de DSP y masterización, rúbricas prácticas y revisión provisional de evidencia con IA.',
+  description: 'Seis exámenes técnicos, rúbricas prácticas y revisión provisional de evidencia con IA.',
 }
 
 export default function AdvancedAudioEvaluationPage() {
@@ -20,25 +20,21 @@ export default function AdvancedAudioEvaluationPage() {
       </header>
       <div className="pg-container pb-20">
         <section className="pg-section max-w-4xl">
-          <p className="pg-eyebrow">Evaluación formativa · 20 preguntas por examen</p>
+          <p className="pg-eyebrow">Evaluación formativa · un examen de 20 preguntas por módulo</p>
           <h1 className="pg-title pg-title-display">Examen, rúbrica y revisión de evidencia</h1>
           <p className="pg-lede mt-4">La evaluación teórica y la práctica tienen funciones distintas. El examen mide comprensión conceptual; la rúbrica examina código, resultados, escucha, toma de decisiones y trazabilidad.</p>
           <p className="pg-note mt-4">Aprobación teórica: {ADVANCED_AUDIO_ASSESSMENT.passPercent}/100 · Dominio teórico sólido: {ADVANCED_AUDIO_ASSESSMENT.masteryPercent}/100 · Tiempo estimado: {ADVANCED_AUDIO_ASSESSMENT.estimateMinutes} minutos por examen.</p>
         </section>
 
         <section className="mt-10 grid gap-4 md:grid-cols-2">
-          <article className="pg-card p-5">
-            <p className="pg-eyebrow">Examen técnico 01</p>
-            <h2 className="pg-block-title mt-2">DSP y extracción espectral</h2>
-            <p className="pg-prose mt-3">Muestreo, aliasing, STFT, escalas, características, chroma, tempo, separación y reproducibilidad.</p>
-            <Link href="/curso/laboratorio-audio/evaluacion/dsp" className="pg-btn pg-btn-primary mt-5">Presentar examen <ArrowRight size={15} aria-hidden="true" /></Link>
-          </article>
-          <article className="pg-card p-5">
-            <p className="pg-eyebrow">Examen técnico 02</p>
-            <h2 className="pg-block-title mt-2">Mezcla y masterización</h2>
-            <p className="pg-prose mt-3">Peak, RMS, LUFS, true peak, correlación, enmascaramiento, EQ, compresión, destino y comparación A/B.</p>
-            <Link href="/curso/laboratorio-audio/evaluacion/mastering" className="pg-btn pg-btn-primary mt-5">Presentar examen <ArrowRight size={15} aria-hidden="true" /></Link>
-          </article>
+          {ADVANCED_AUDIO_MODULES.map((module) => (
+            <article key={module.id} className="pg-card p-5">
+              <p className="pg-eyebrow">Examen técnico {String(module.number).padStart(2, '0')}</p>
+              <h2 className="pg-block-title mt-2">{module.title}</h2>
+              <p className="pg-prose mt-3">{module.subtitle}. {module.lessons.length} lecciones y {ADVANCED_AUDIO_ASSESSMENT.questionCount} preguntas.</p>
+              <Link href={advancedAudioExamPath(module)} className="pg-btn pg-btn-primary mt-5">Presentar examen <ArrowRight size={15} aria-hidden="true" /></Link>
+            </article>
+          ))}
         </section>
 
         <section className="mt-12">

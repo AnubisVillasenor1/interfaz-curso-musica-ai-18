@@ -92,7 +92,7 @@ export const PRODUCTS: Record<ProductId, Product> = {
     features: [
       'El cupo diario más alto de la plataforma',
       'Incluye el curso y la biblioteca completa de prompts',
-      'Se cobra cada mes hasta que lo des suscripciones',
+      'Se cobra cada mes hasta que canceles la suscripción',
       'Al dejar de pagar, la cuenta vuelve al plan gratuito',
     ],
   },

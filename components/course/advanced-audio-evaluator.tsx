@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { CheckCircle2, LoaderCircle, ShieldAlert, Sparkles } from 'lucide-react'
 
-import { ADVANCED_AUDIO_MODULES, type AdvancedAudioModuleId } from '@/lib/advanced-audio-curriculum'
+import { ADVANCED_AUDIO_MODULE_IDS, ADVANCED_AUDIO_MODULES, type AdvancedAudioModuleId } from '@/lib/advanced-audio-curriculum'
 
 interface Evaluation {
   moduleId: AdvancedAudioModuleId
@@ -22,7 +22,7 @@ interface Evaluation {
 }
 
 const exampleEvidence = [
-  'Módulo: [dsp o mastering]',
+  `Módulo: [${ADVANCED_AUDIO_MODULE_IDS.join(' | ')}]`,
   'Archivo y procedencia/licencia:',
   'Hash SHA-256:',
   'Comando exacto ejecutado:',

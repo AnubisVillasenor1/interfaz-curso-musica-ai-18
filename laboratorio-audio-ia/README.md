@@ -62,6 +62,46 @@ python -m src.comparar_versiones audio/mezcla_sin_master.wav audio/master.wav --
 
 El informe incluye loudness integrada si el material permite medirla, pico sample-based, RMS, crest factor, correlación L/R, clipping sample-based, estimación de true peak por sobremuestreo y gráficos de diagnóstico. La estimación 4x es didáctica: para entregas de distribución utiliza una herramienta de medición conforme y verifica el archivo final codificado.
 
+## Módulo técnico 3 — IA generativa musical
+
+El kit `modulo_3_ia/` genera MIDI editable, analiza armonía, ejecuta variantes con Stable Audio Open, mide propiedades de audio y construye metadatos con SHA-256. Requiere aceptar la licencia del modelo y hardware suficiente; los tests sintéticos no descargan pesos.
+
+\`\`\`bash
+pip install -r requirements-module3.txt
+python -m unittest discover -s modulo_3_ia/tests -v
+\`\`\`
+
+La semilla no garantiza igualdad bit a bit entre hardware o versiones. Registra modelo, revisión, entorno, prompt, negative prompt, pasos, guidance y tasa real del pipeline. Consulta `docs/laboratorio-avanzado/MODULO-03.md`.
+
+## Módulo técnico 4 — plugins y sistemas multiagente
+
+Herramientas de diseño para decidir qué cabe en el callback de audio y qué debe ejecutarse en un worker o servicio externo.
+
+\`\`\`bash
+python -m src.presupuesto_latencia --sample-rate 48000 --block-size 128 --buffers 2 --processing-ms 1.5
+python -m src.orquestador_agentes
+\`\`\`
+
+El cálculo es un presupuesto de diseño; la latencia real se mide en el hardware de destino. Ningún modelo pesado debe cargarse dentro del callback. Consulta `docs/laboratorio-avanzado/MODULO-04.md`.
+
+## Módulo técnico 5 — trazabilidad y gobernanza
+
+\`\`\`bash
+python -m src.manifiesto_procedencia --file audio/demo.wav --title "Mi obra" --author "Nombre" \
+  --license "CC BY-NC 4.0" --model "Stable Audio Open" --model-version "1.0" \
+  --prompt "Cinematic ambient pad" --output output/manifiesto.json
+\`\`\`
+
+El hash demuestra integridad, no titularidad. Las licencias del audio de entrada, del modelo/pesos y del servicio se revisan por separado. Consulta `docs/laboratorio-avanzado/MODULO-05.md`.
+
+## Módulo técnico 6 — sistema integrador
+
+\`\`\`bash
+python -m src.checklist_entrega --root proyecto_modulo_3
+\`\`\`
+
+El checklist verifica presencia y tamaño de artefactos, no calidad musical ni seguridad completa. Consulta `docs/laboratorio-avanzado/MODULO-06.md`.
+
 ## Ejecutar pruebas
 
 \`\`\`bash

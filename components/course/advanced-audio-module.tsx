@@ -5,13 +5,17 @@ import {
   ADVANCED_AUDIO_AI_NOTE,
   ADVANCED_AUDIO_AUTHOR,
   ADVANCED_AUDIO_BRAND,
+  ADVANCED_AUDIO_MODULES,
+  advancedAudioModulePath,
   type AdvancedAudioModule,
 } from '@/lib/advanced-audio-curriculum'
 
-const GITHUB_ROOT = 'https://github.com/AnubisVillasenor1/interfaz-curso-musica-ai-18/blob/feat/unified-preview-functional-qa/'
+const GITHUB_ROOT = 'https://github.com/AnubisVillasenor1/interfaz-curso-musica-ai-18/blob/main/'
 
 export function AdvancedAudioModulePage({ module }: { module: AdvancedAudioModule }) {
-  const nextLabel = module.id === 'dsp' ? 'Diagnóstico de mezcla y masterización' : 'Volver al análisis acústico y DSP'
+  const index = ADVANCED_AUDIO_MODULES.findIndex((item) => item.id === module.id)
+  const previous = index > 0 ? ADVANCED_AUDIO_MODULES[index - 1] : undefined
+  const next = index >= 0 ? ADVANCED_AUDIO_MODULES[index + 1] : undefined
 
   return (
     <main className="pg-shell relative min-h-screen overflow-x-clip" style={{ background: 'var(--pg-bg)' }}>
@@ -161,7 +165,7 @@ export function AdvancedAudioModulePage({ module }: { module: AdvancedAudioModul
         <section className="mt-14">
           <div className="flex items-center gap-3">
             <Code2 size={19} aria-hidden="true" />
-            <h2 className="pg-section-title">Código reproducible</h2>
+            <h2 className="pg-section-title">Código y documentos reproducibles</h2>
           </div>
           <div className="mt-5 grid gap-3">
             {module.codeFiles.map((file) => (
@@ -197,12 +201,26 @@ export function AdvancedAudioModulePage({ module }: { module: AdvancedAudioModul
           </ul>
         </section>
 
-        <div className="mt-14">
-          <Link href={module.id === 'dsp' ? '/curso/laboratorio-audio/modulo-2' : '/curso/laboratorio-audio/modulo-1'} className="pg-card pg-card-hover flex items-center gap-4 p-5">
-            <span className="pg-mark" aria-hidden="true">{module.id === 'dsp' ? '02' : '↗'}</span>
-            <span className="min-w-0 flex-1"><span className="pg-eyebrow">Siguiente paso</span><strong className="mt-1 block text-sm">{nextLabel}</strong></span>
-            <ArrowRight size={18} aria-hidden="true" />
-          </Link>
+        <div className="mt-14 grid gap-4 md:grid-cols-2">
+          {previous && (
+            <Link href={advancedAudioModulePath(previous)} className="pg-card pg-card-hover flex items-center gap-4 p-5">
+              <ArrowLeft size={18} aria-hidden="true" />
+              <span className="min-w-0 flex-1"><span className="pg-eyebrow">Módulo anterior</span><strong className="mt-1 block text-sm">{String(previous.number).padStart(2, '0')} · {previous.title}</strong></span>
+            </Link>
+          )}
+          {next ? (
+            <Link href={advancedAudioModulePath(next)} className="pg-card pg-card-hover flex items-center gap-4 p-5 md:col-start-2">
+              <span className="pg-mark" aria-hidden="true">{String(next.number).padStart(2, '0')}</span>
+              <span className="min-w-0 flex-1"><span className="pg-eyebrow">Siguiente módulo</span><strong className="mt-1 block text-sm">{next.title}</strong></span>
+              <ArrowRight size={18} aria-hidden="true" />
+            </Link>
+          ) : (
+            <Link href="/curso/laboratorio-audio/evaluacion" className="pg-card pg-card-hover flex items-center gap-4 p-5 md:col-start-2">
+              <span className="pg-mark" aria-hidden="true">✓</span>
+              <span className="min-w-0 flex-1"><span className="pg-eyebrow">Cierre del trayecto</span><strong className="mt-1 block text-sm">Evaluación, expediente y defensa</strong></span>
+              <ArrowRight size={18} aria-hidden="true" />
+            </Link>
+          )}
         </div>
 
         <footer className="mt-16 border-t border-white/10 pt-5">

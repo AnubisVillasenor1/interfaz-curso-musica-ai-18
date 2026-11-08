@@ -1,12 +1,21 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { ArrowLeft, ArrowRight, AudioLines, BookOpen, ClipboardCheck, FileAudio, ShieldCheck } from 'lucide-react'
+import { ArrowLeft, ArrowRight, AudioLines, BookOpen, Boxes, ClipboardCheck, Cpu, FileAudio, ShieldCheck, Sparkles } from 'lucide-react'
 
-import { ADVANCED_AUDIO_AI_NOTE, ADVANCED_AUDIO_AUTHOR, ADVANCED_AUDIO_BRAND, ADVANCED_AUDIO_CREDENTIAL_NOTE, ADVANCED_AUDIO_MODULES, ADVANCED_AUDIO_PROGRAM } from '@/lib/advanced-audio-curriculum'
+import { ADVANCED_AUDIO_AI_NOTE, ADVANCED_AUDIO_AUTHOR, ADVANCED_AUDIO_BRAND, ADVANCED_AUDIO_CREDENTIAL_NOTE, ADVANCED_AUDIO_MODULES, ADVANCED_AUDIO_PROGRAM, advancedAudioModulePath, type AdvancedAudioModuleId } from '@/lib/advanced-audio-curriculum'
+
+const MODULE_ICONS: Record<AdvancedAudioModuleId, typeof AudioLines> = {
+  dsp: AudioLines,
+  mastering: FileAudio,
+  generative: Sparkles,
+  plugins: Cpu,
+  governance: ShieldCheck,
+  capstone: Boxes,
+}
 
 export const metadata: Metadata = {
   title: 'Laboratorio técnico de audio e IA musical',
-  description: 'Trayecto complementario en DSP, análisis espectral, mezcla y masterización con código Python reproducible y evaluación basada en evidencia.',
+  description: 'Trayecto complementario de seis módulos: DSP, mezcla y masterización, IA generativa, plugins, gobernanza y sistema integrador, con código reproducible y evaluación basada en evidencia.',
 }
 
 export default function AdvancedAudioLabIndexPage() {
@@ -23,7 +32,7 @@ export default function AdvancedAudioLabIndexPage() {
         <section className="pg-section max-w-4xl">
           <p className="pg-eyebrow">Trayecto técnico complementario · Python + DSP + escucha crítica</p>
           <h1 className="pg-title pg-title-display">{ADVANCED_AUDIO_PROGRAM}</h1>
-          <p className="pg-lede mt-4">Del análisis reproducible de una señal al diagnóstico de mezcla y masterización. El laboratorio conecta mediciones, escucha crítica, código y trazabilidad para que una decisión técnica pueda explicarse y volver a ejecutarse.</p>
+          <p className="pg-lede mt-4">Del análisis reproducible de una señal al sistema de producción desplegado. Seis módulos conectan DSP, mezcla y masterización, generación controlada, plugins y agentes, gobernanza y un proyecto integrador para que cada decisión técnica pueda explicarse y volver a ejecutarse.</p>
           <p className="pg-prose mt-4">{ADVANCED_AUDIO_AI_NOTE}</p>
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
             <div className="pg-card p-4"><p className="pg-label">Autor del curso</p><p className="pg-item-title mt-2">{ADVANCED_AUDIO_AUTHOR}</p><p className="pg-note mt-2">{ADVANCED_AUDIO_BRAND}</p></div>
@@ -43,7 +52,10 @@ export default function AdvancedAudioLabIndexPage() {
                     <p className="pg-eyebrow">Módulo técnico {String(module.number).padStart(2, '0')}</p>
                     <h3 className="pg-block-title mt-2">{module.title}</h3>
                   </div>
-                  {module.id === 'dsp' ? <AudioLines size={22} aria-hidden="true" /> : <FileAudio size={22} aria-hidden="true" />}
+                  {(() => {
+                    const Icon = MODULE_ICONS[module.id]
+                    return <Icon size={22} aria-hidden="true" />
+                  })()}
                 </div>
                 <p className="pg-note mt-3">{module.subtitle}</p>
                 <p className="pg-prose mt-4">{module.objective}</p>
@@ -55,7 +67,7 @@ export default function AdvancedAudioLabIndexPage() {
                 <ul className="pg-list mt-5">
                   {module.outcomes.slice(0, 3).map((outcome) => <li key={outcome}>{outcome}</li>)}
                 </ul>
-                <Link href={module.id === 'dsp' ? '/curso/laboratorio-audio/modulo-1' : '/curso/laboratorio-audio/modulo-2'} className="pg-btn pg-btn-primary mt-6">
+                <Link href={advancedAudioModulePath(module)} className="pg-btn pg-btn-primary mt-6">
                   Abrir módulo <ArrowRight size={16} aria-hidden="true" />
                 </Link>
               </article>
@@ -67,11 +79,11 @@ export default function AdvancedAudioLabIndexPage() {
           <article className="pg-card p-5">
             <div className="flex items-center gap-3"><BookOpen size={18} aria-hidden="true" /><h2 className="pg-item-title">Código y entregables reproducibles</h2></div>
             <p className="pg-prose mt-3">El repositorio incluye scripts Python, dependencias, reportes CSV/JSON, gráficos y pruebas con señales sintéticas. Demucs es opcional, puede requerir descargar pesos y no concede derechos comerciales sobre el audio procesado.</p>
-            <a href="https://github.com/AnubisVillasenor1/interfaz-curso-musica-ai-18/tree/feat/unified-preview-functional-qa/laboratorio-audio-ia" target="_blank" rel="noreferrer" className="pg-minilink mt-4 inline-flex items-center gap-2">Ver laboratorio en GitHub <ArrowRight size={14} aria-hidden="true" /></a>
+            <a href="https://github.com/AnubisVillasenor1/interfaz-curso-musica-ai-18/tree/main/laboratorio-audio-ia" target="_blank" rel="noreferrer" className="pg-minilink mt-4 inline-flex items-center gap-2">Ver laboratorio en GitHub <ArrowRight size={14} aria-hidden="true" /></a>
           </article>
           <article className="pg-card p-5">
             <div className="flex items-center gap-3"><ClipboardCheck size={18} aria-hidden="true" /><h2 className="pg-item-title">Evaluación y retroalimentación</h2></div>
-            <p className="pg-prose mt-3">Cada módulo tiene un examen de 20 preguntas y una rúbrica práctica de 100 puntos. La revisión asistida por IA produce retroalimentación provisional sobre el resumen textual que aportes; la práctica requiere verificación humana.</p>
+            <p className="pg-prose mt-3">Cada uno de los seis módulos tiene un examen de 20 preguntas y una rúbrica práctica de 100 puntos. La revisión asistida por IA produce retroalimentación provisional sobre el resumen textual que aportes; la práctica y el proyecto integrador requieren verificación humana.</p>
             <Link href="/curso/laboratorio-audio/evaluacion" className="pg-btn pg-btn-ghost mt-4">Abrir evaluación <ArrowRight size={15} aria-hidden="true" /></Link>
           </article>
         </section>

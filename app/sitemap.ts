@@ -1,5 +1,6 @@
 import type { MetadataRoute } from 'next'
 import { COURSE_MODULES } from '@/lib/course'
+import { ADVANCED_AUDIO_MODULES, advancedAudioExamPath, advancedAudioModulePath } from '@/lib/advanced-audio-curriculum'
 import { getSeoOrigin } from '@/lib/app-url'
 
 /**
@@ -37,6 +38,15 @@ export default function sitemap(): MetadataRoute.Sitemap {
     }
   }
 
+  const advancedLabPages: MetadataRoute.Sitemap = [
+    entry('/curso/laboratorio-audio', 0.7, 'monthly'),
+    entry('/curso/laboratorio-audio/evaluacion', 0.6, 'monthly'),
+  ]
+  for (const module of ADVANCED_AUDIO_MODULES) {
+    advancedLabPages.push(entry(advancedAudioModulePath(module), 0.6, 'monthly'))
+    advancedLabPages.push(entry(advancedAudioExamPath(module), 0.4, 'monthly'))
+  }
+
   return [
     entry('/', 1),
     entry('/precios', 0.9),
@@ -46,5 +56,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     entry('/terminos', 0.3, 'yearly'),
     entry('/privacidad', 0.3, 'yearly'),
     ...coursePages,
+    ...advancedLabPages,
   ]
 }

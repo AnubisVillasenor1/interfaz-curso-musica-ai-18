@@ -80,7 +80,14 @@ export function AuthForm({ initialMode, next }: { initialMode: Mode; next: strin
         pideConfirmar ? 'pending' : 'error',
       )
     } else if (mode === 'signup') {
-      say('Cuenta creada. Revisa tu correo para confirmar el acceso.')
+      // Con la confirmación por correo desactivada, Supabase devuelve sesión en
+      // el propio alta. Antes se le pedía a la persona revisar un correo que
+      // nunca iba a llegar, aunque ya estaba dentro.
+      if (result.data.session) {
+        window.location.href = next
+      } else {
+        say('Cuenta creada. Revisa tu correo para confirmar el acceso.')
+      }
     } else if (mode === 'login') {
       // `next` ya viene saneado desde el servidor: sólo rutas internas.
       window.location.href = next
