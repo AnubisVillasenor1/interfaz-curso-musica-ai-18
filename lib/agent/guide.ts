@@ -17,6 +17,7 @@
  */
 
 import { COURSE_LESSONS, COURSE_MODULES, COURSE_FRAMEWORK, COURSE_UNITS, FINAL_PROJECT } from '@/lib/course'
+import { ADVANCED_AUDIO_AI_NOTE, ADVANCED_AUDIO_AUTHOR, ADVANCED_AUDIO_BRAND, ADVANCED_AUDIO_CREDENTIAL_NOTE, ADVANCED_AUDIO_MODULES } from '@/lib/advanced-audio-curriculum'
 import { PRODUCTS, priceLabel } from '@/lib/products'
 
 export type GuideSource = 'llm' | 'fallback'
@@ -63,11 +64,14 @@ const LESSON_LINES = COURSE_LESSONS.map(
  */
 export function buildSystemPrompt(): string {
   const units = COURSE_UNITS.map((u) => `Unidad ${u.unit}: ${u.title} (${u.lessonIds.join(', ')})`).join('\n')
+  const advancedAudioPathway = ADVANCED_AUDIO_MODULES.map((module) =>
+    `Módulo técnico ${module.number}: ${module.title}. Objetivo: ${module.objective} Lecciones: ${module.lessons.map((lesson) => lesson.title).join('; ')} Ruta: /curso/laboratorio-audio/modulo-${module.number}`,
+  ).join('\n')
   return `Eres el guía de "Play and Go by TAMV ONLINE", un curso y estudio para crear música con inteligencia artificial. Respondes en español neutro, con ejemplos concretos y sin prometer lo que la plataforma no hace.
 
 FILOSOFÍA TAMV: ${COURSE_FRAMEWORK.philosophy}
 PROYECTO FINAL: «${FINAL_PROJECT.title}» — ${FINAL_PROJECT.description} Entregables: ${FINAL_PROJECT.deliverables.join(', ')}.
-EVALUACIÓN: al completar las lecciones y entregar «Mi Nodo Cero» recibes constancia por participación emitida por TAMV Online Network con código verificable. El examen automático y los 7 idiomas están en desarrollo: no prometas equivalencia oficial.
+EVALUACIÓN: el examen principal tiene un endpoint de 20 preguntas; guardar intentos y emitir una constancia interna depende de Supabase y sus migraciones. No prometas un PDF ni siete idiomas completos sin comprobar esos flujos. Ninguna constancia equivale a un grado o acreditación oficial externa.
 
 CÓMO FUNCIONA LA PLATAFORMA
 - Hay dos motores. "local": composición instrumental generada en el navegador con el motor propio, sin costo; sirve para practicar estructura, groove y comparación de prompts. "provider": generación con voces a través del servicio de pago; requiere una inscripción activa.
@@ -84,6 +88,14 @@ Unidades:
 ${units}
 Lecciones:
 ${LESSON_LINES.join('\n')}
+
+TRAYECTO TÉCNICO COMPLEMENTARIO
+Autor: ${ADVANCED_AUDIO_AUTHOR} · Marca: ${ADVANCED_AUDIO_BRAND}. ${ADVANCED_AUDIO_AI_NOTE}
+${ADVANCED_AUDIO_CREDENTIAL_NOTE}
+${advancedAudioPathway}
+Este laboratorio conserva las 16 sesiones centrales y suma un trayecto aparte con scripts Python, pruebas, reportes y rúbricas. El examen técnico devuelve explicación por pregunta. La evaluación con IA requiere inicio de sesión y una clave de proveedor; analiza solo el resumen textual, no afirma haber escuchado audio ni ejecutado el código.
+Al orientar sobre DSP, STFT, librosa, Nyquist, chroma o onsets, enlaza /curso/laboratorio-audio/modulo-1. Para loudness, LUFS, true peak, EQ, compresión o masterización, enlaza /curso/laboratorio-audio/modulo-2. Para examen o rúbrica, enlaza /curso/laboratorio-audio/evaluacion.
+No inventes mediciones de una pista, licencia, resultado de código ni calidad de audio. Distingue medición, escucha, inferencia y dato pendiente de verificación.
 
 TUS FUNCIONES
 1. Responder dudas sobre el curso, el precio y cómo usar la plataforma.
@@ -214,6 +226,28 @@ export function answerWithoutModel(query: string): GuideReply {
   if (has('precio', 'cuesta', 'costo', 'vale', 'cuánto', 'cuanto', 'descuento', 'plan', 'mensual', 'suscri')) {
     return { answer: PRICE_ANSWER(), source: 'fallback', lessonIds: [] }
   }
+  if (has('stft', 'librosa', 'espectrograma', 'cromagrama', 'centroide espectral', 'onset', 'nyquist', 'aliasing', 'zcr', 'spectral flatness', 'dsp', 'tasa de muestreo')) {
+    return {
+      answer: 'El laboratorio técnico 1 cubre muestreo, Nyquist, STFT, espectrograma mel, chroma, RMS, centroide, rolloff, ZCR, flatness y onsets. Son características de señal, no etiquetas infalibles de instrumento o acorde. Abre el temario y ejecuta el análisis con un audio autorizado: /curso/laboratorio-audio/modulo-1',
+      source: 'fallback',
+      lessonIds: [],
+    }
+  }
+  if (has('masterizar', 'masterización', 'masterizacion', 'lufs', 'true peak', 'dbtp', 'crest factor', 'pyloudnorm', 'compresión', 'compresion', 'ecualización', 'ecualizacion', 'enmascaramiento', 'loudness', 'headroom')) {
+    return {
+      answer: 'El laboratorio técnico 2 distingue peak sample-based, RMS, LUFS integrados, true peak estimado, correlación estéreo, EQ, dinámica y comparación A/B. No hay un objetivo LUFS universal; define el destino, conserva el original y compara a volumen igualado. Consulta el temario y los scripts aquí: /curso/laboratorio-audio/modulo-2',
+      source: 'fallback',
+      lessonIds: [],
+    }
+  }
+  if (has('examen técnico', 'examen tecnico', 'rúbrica técnica', 'rubrica tecnica', 'evaluación con ia', 'evaluacion con ia', 'laboratorio de audio', 'laboratorio técnico', 'laboratorio tecnico')) {
+    return {
+      answer: 'El trayecto técnico cuenta con un examen de 20 preguntas por módulo, rúbrica práctica y retroalimentación asistida por IA sobre un resumen textual. La revisión de archivos y el dictamen final requieren evaluación humana. Accede a /curso/laboratorio-audio/evaluacion',
+      source: 'fallback',
+      lessonIds: [],
+    }
+  }
+
   if (has('letra', 'verso', 'coro', 'rima', 'métrica', 'metrica', 'puente', 'escrib')) {
     return { answer: LYRICS_ANSWER(), source: 'fallback', lessonIds: ['m03-l09'] }
   }

@@ -2,18 +2,110 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 
 import type { Product } from '@/lib/products'
 
-/** Precedencia de plan: una compra nueva nunca puede bajar lo ya pagado. */
-const PLAN_RANK: Record<string, number> = { free: 0, enrolled: 1, extension: 2, pro: 3 }
-
 export interface DeliveryResult {
   status: 'granted' | 'queued' | 'error'
   userId?: string
   detail?: string
 }
 
+/** Snapshot verificado desde la API de Stripe; currentPeriodEnd usa epoch seconds. */
+export interface SubscriptionSnapshot {
+  id: string
+  status: string
+  currentPeriodEnd: number | null
+}
+
+type EntitlementSnapshot = {
+  plan?: string | null
+  base_plan?: string | null
+  extension_expires_at?: string | null
+  access_expires_at?: string | null
+  active?: boolean | null
+  subscription_id?: string | null
+  subscription_status?: string | null
+  current_period_end?: string | null
+}
+
+type EffectiveState = {
+  plan: 'free' | 'enrolled' | 'extension' | 'pro'
+  active: boolean
+  dailyLimit: number
+  localDailyLimit: number
+  extensionExpiresAt: string | null
+}
+
+const PRO_ACTIVE_STATUSES = new Set(['active', 'trialing', 'past_due'])
+
+function isFutureDate(value: string | null | undefined, now = Date.now()): boolean {
+  if (!value) return false
+  const timestamp = Date.parse(value)
+  return Number.isFinite(timestamp) && timestamp > now
+}
+
+function periodEndIso(seconds: number | null | undefined): string | null {
+  if (typeof seconds !== 'number' || !Number.isFinite(seconds) || seconds <= 0) return null
+  return new Date(seconds * 1000).toISOString()
+}
+
 /**
- * Encuentra al comprador. Primero por `client_reference_id` y, si falta,
- * recorre la lista paginada de usuarios.
+ * El curso permanente, la extensión temporal y la suscripción son derechos
+ * independientes. Nunca inferimos una compra permanente desde una extensión.
+ */
+function deriveEffectiveState(snapshot: EntitlementSnapshot, now = Date.now()): EffectiveState {
+  const basePlan = snapshot.base_plan === 'enrolled'
+    || (snapshot.base_plan == null && snapshot.plan === 'enrolled')
+    ? 'enrolled'
+    : 'free'
+  const extensionExpiresAt = snapshot.extension_expires_at ?? snapshot.access_expires_at ?? null
+  const extensionActive = isFutureDate(extensionExpiresAt, now)
+  const rawStatus = snapshot.subscription_status
+    ?? (snapshot.plan === 'pro' && snapshot.subscription_id ? 'active' : '')
+  const periodEndIsFuture = !snapshot.current_period_end || isFutureDate(snapshot.current_period_end, now)
+  const proActive = Boolean(
+    snapshot.subscription_id
+    && PRO_ACTIVE_STATUSES.has(rawStatus)
+    && periodEndIsFuture,
+  )
+
+  const plan: EffectiveState['plan'] = proActive
+    ? 'pro'
+    : basePlan === 'enrolled'
+      ? 'enrolled'
+      : extensionActive
+        ? 'extension'
+        : 'free'
+
+  const dailyLimit = proActive
+    ? 20
+    : basePlan === 'enrolled' && extensionActive
+      ? 10
+      : basePlan === 'enrolled'
+        ? 2
+        : extensionActive
+          ? 10
+          : 0
+  const localDailyLimit = proActive
+    ? 100
+    : basePlan === 'enrolled' && extensionActive
+      ? 40
+      : basePlan === 'enrolled'
+        ? 20
+        : extensionActive
+          ? 40
+          : 10
+
+  return {
+    plan,
+    active: proActive || basePlan === 'enrolled' || extensionActive,
+    dailyLimit,
+    localDailyLimit,
+    extensionExpiresAt,
+  }
+}
+
+/**
+ * Encuentra al comprador. Primero por client_reference_id y, si falta,
+ * recorre las páginas de usuarios de Supabase Auth.
  */
 export async function resolveUserId(
   admin: SupabaseClient,
@@ -29,9 +121,6 @@ export async function resolveUserId(
   if (!email) return null
 
   const target = email.toLowerCase()
-  // Supabase Auth Admin limita perPage a 50: pedir 1000 devuelve como máximo
-  // 50 y `users.length < 1000` cortaba tras la primera página, dejando sin
-  // entregar a todo usuario más allá de los ~50 primeros.
   for (let page = 1; page <= 20; page += 1) {
     const { data, error } = await admin.auth.admin.listUsers({ page, perPage: 50 })
     if (error) return null
@@ -43,49 +132,74 @@ export async function resolveUserId(
   return null
 }
 
-/** Concede el producto y mantiene los accesos/cupos que aún son válidos. */
+/** Concede el producto actual sin borrar derechos independientes ya adquiridos. */
 export async function grantProduct(
   admin: SupabaseClient,
   userId: string,
   product: Product,
   sessionId: string,
   customerId?: string | null,
-  subscriptionId?: string | null,
+  subscription?: SubscriptionSnapshot | null,
 ): Promise<DeliveryResult> {
   const { data: current, error: readError } = await admin
     .from('entitlements')
-    .select('plan, daily_limit, local_daily_limit, active, stripe_customer_id, subscription_id, access_expires_at')
+    .select('plan, base_plan, extension_expires_at, daily_limit, local_daily_limit, active, stripe_customer_id, subscription_id, subscription_status, current_period_end, access_expires_at, entitlement_reconciliation_required')
     .eq('user_id', userId)
     .maybeSingle()
 
   if (readError) return { status: 'error', detail: readError.message }
 
-  const grant = product.grant
-  const currentPlan = current?.plan ?? 'free'
-  const keepPlan = PLAN_RANK[currentPlan] > PLAN_RANK[grant.plan] ? currentPlan : grant.plan
-  const hadPermanentAccess =
-    Boolean(current?.active) &&
-    current?.access_expires_at === null &&
-    PLAN_RANK[currentPlan] > PLAN_RANK.free
+  let basePlan = current?.base_plan ?? (current?.plan === 'enrolled' ? 'enrolled' : 'free')
+  let extensionExpiresAt: string | null = current?.extension_expires_at ?? current?.access_expires_at ?? null
+  let subscriptionId: string | null = current?.subscription_id ?? null
+  let subscriptionStatus: string | null = current?.subscription_status ?? null
+  let currentPeriodEnd: string | null = current?.current_period_end ?? null
 
-  // Una extensión se suma al vencimiento vigente, no lo reemplaza por una fecha
-  // calculada desde hoy que pudiera acortar días ya comprados.
-  const currentExpiry = current?.access_expires_at ? Date.parse(current.access_expires_at) : 0
-  const accessExpiresAt =
-    grant.accessDays === null || hadPermanentAccess
-      ? null
-      : new Date(Math.max(Date.now(), currentExpiry) + grant.accessDays * 86_400_000).toISOString()
+  if (product.id === 'play-and-go-course') {
+    basePlan = 'enrolled'
+  } else if (product.id === 'play-and-go-extension') {
+    const days = product.grant.accessDays
+    if (days === null || days <= 0) {
+      return { status: 'error', detail: 'La extensión debe tener una duración temporal válida.' }
+    }
+    const priorTimestamp = extensionExpiresAt ? Date.parse(extensionExpiresAt) : 0
+    extensionExpiresAt = new Date(Math.max(Date.now(), Number.isFinite(priorTimestamp) ? priorTimestamp : 0) + days * 86_400_000).toISOString()
+  } else if (product.id === 'play-and-go-pro') {
+    if (!subscription || !subscription.id || !PRO_ACTIVE_STATUSES.has(subscription.status)) {
+      return { status: 'error', detail: 'No existe un snapshot activo y verificado de la suscripción.' }
+    }
+    subscriptionId = subscription.id
+    subscriptionStatus = subscription.status
+    currentPeriodEnd = periodEndIso(subscription.currentPeriodEnd)
+  } else {
+    return { status: 'error', detail: 'El producto no tiene una regla de entrega reconocida.' }
+  }
+
+  const state = deriveEffectiveState({
+    plan: product.mode === 'subscription' ? 'pro' : current?.plan,
+    base_plan: basePlan,
+    extension_expires_at: extensionExpiresAt,
+    access_expires_at: current?.access_expires_at,
+    subscription_id: subscriptionId,
+    subscription_status: subscriptionStatus,
+    current_period_end: currentPeriodEnd,
+  })
 
   const payload = {
     user_id: userId,
-    plan: keepPlan,
-    active: true,
-    daily_limit: Math.max(current?.daily_limit ?? 0, grant.dailyLimit),
-    local_daily_limit: Math.max(current?.local_daily_limit ?? 0, grant.localDailyLimit),
+    base_plan: basePlan,
+    extension_expires_at: extensionExpiresAt,
+    plan: state.plan,
+    active: state.active,
+    daily_limit: state.dailyLimit,
+    local_daily_limit: state.localDailyLimit,
+    access_expires_at: state.plan === 'extension' ? extensionExpiresAt : null,
     last_stripe_session_id: sessionId,
     stripe_customer_id: customerId ?? current?.stripe_customer_id ?? null,
-    subscription_id: subscriptionId ?? current?.subscription_id ?? null,
-    access_expires_at: accessExpiresAt,
+    subscription_id: subscriptionId,
+    subscription_status: subscriptionStatus,
+    current_period_end: currentPeriodEnd,
+    entitlement_reconciliation_required: Boolean(current?.entitlement_reconciliation_required),
   }
 
   const { error } = await admin.from('entitlements').upsert(payload, { onConflict: 'user_id' })
@@ -94,16 +208,30 @@ export async function grantProduct(
   return { status: 'granted', userId }
 }
 
-/** El dinero entró y la cuenta todavía no existe: queda debiendo, no perdido. */
+/** El pago se guarda con todos los datos de suscripción, incluso si no hay cuenta. */
 export async function queuePendingPayment(
   admin: SupabaseClient,
-  input: { sessionId: string; email: string; productId: string },
+  input: {
+    sessionId: string
+    email: string
+    productId: string
+    stripeCustomerId?: string | null
+    subscription?: SubscriptionSnapshot | null
+  },
 ): Promise<DeliveryResult> {
+  if (input.productId === 'play-and-go-pro' && !input.subscription?.id) {
+    return { status: 'error', detail: 'No se puede encolar una suscripción sin su identificador de Stripe.' }
+  }
+
   const { error } = await admin.from('pending_fulfilments').upsert(
     {
       stripe_session_id: input.sessionId,
       email: input.email,
       product_id: input.productId,
+      stripe_customer_id: input.stripeCustomerId ?? null,
+      subscription_id: input.subscription?.id ?? null,
+      subscription_status: input.subscription?.status ?? null,
+      current_period_end: periodEndIso(input.subscription?.currentPeriodEnd),
     },
     { onConflict: 'stripe_session_id' },
   )
@@ -132,44 +260,43 @@ export async function releaseEventClaim(admin: SupabaseClient, id: string): Prom
   return true
 }
 
-/** Revoca la suscripción que terminó, sin tocar compras permanentes. */
-export async function deactivateSubscription(admin: SupabaseClient, userId: string): Promise<DeliveryResult> {
+/**
+ * Revoca únicamente la suscripción indicada. Un webhook retrasado de una
+ * suscripción anterior nunca puede revocar la suscripción que la reemplazó.
+ */
+export async function deactivateSubscription(
+  admin: SupabaseClient,
+  userId: string,
+  subscriptionId: string,
+): Promise<DeliveryResult> {
   const { data: current, error: readError } = await admin
     .from('entitlements')
-    .select('plan, active, access_expires_at')
+    .select('subscription_id')
     .eq('user_id', userId)
     .maybeSingle()
-  if (readError) return { status: 'error', detail: readError.message }
-  if (!current) return { status: 'granted', userId }
 
-  // Quien compró el curso (enrolled, acceso permanente sin vencimiento) no
-  // pierde ese acceso si además tenía una suscripción mensual que termina.
-  // `grantProduct` preserva el rango; aquí se hacía lo contrario: se pisaba
-  // todo a free/daily 0 y se borraba un pago único ya cobrado.
-  const permanent = Boolean(current.active) && current.access_expires_at === null && current.plan !== 'free'
-  if (permanent && current.plan !== 'pro') {
-    const { error } = await admin
-      .from('entitlements')
-      .update({
-        subscription_id: null,
-        current_period_end: null,
-      })
-      .eq('user_id', userId)
-    if (error) return { status: 'error', detail: error.message }
-    return { status: 'granted', userId }
+  if (readError) return { status: 'error', detail: readError.message }
+  if (!current || current.subscription_id !== subscriptionId) {
+    return { status: 'granted', userId, detail: 'stale_subscription' }
   }
 
-  const { error } = await admin
+  const { data: updated, error: updateError } = await admin
     .from('entitlements')
     .update({
-      active: false,
-      plan: 'free',
-      daily_limit: 0,
-      local_daily_limit: 10,
       subscription_id: null,
+      subscription_status: 'canceled',
       current_period_end: null,
     })
     .eq('user_id', userId)
-  if (error) return { status: 'error', detail: error.message }
+    .eq('subscription_id', subscriptionId)
+    .select('user_id')
+    .maybeSingle()
+
+  if (updateError) return { status: 'error', detail: updateError.message }
+  if (!updated) return { status: 'granted', userId, detail: 'stale_subscription' }
+
+  const { error: syncError } = await admin.rpc('sync_entitlement_effective_state', { p_owner: userId })
+  if (syncError) return { status: 'error', detail: syncError.message }
+
   return { status: 'granted', userId }
 }

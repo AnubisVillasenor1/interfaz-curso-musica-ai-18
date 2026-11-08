@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { ArrowLeft, Music2, ArrowRight } from 'lucide-react'
+import { ArrowLeft, Music2, ArrowRight, AudioLines } from 'lucide-react'
 
 import { AccountTabs } from '@/components/account/account-tabs'
 import { CourseModulesIndex } from '@/components/course/module-index'
@@ -60,6 +60,7 @@ export default function CursoPage() {
           <p className="pg-note mt-3">
             {COURSE_FRAMEWORK.manifesto.map((line) => <span key={line} className="block">{line}</span>)}
           </p>
+          <p className="pg-note mt-4">Autor del curso: <strong>{COURSE_FRAMEWORK.author}</strong> · {COURSE_FRAMEWORK.aiSupport}</p>
         </section>
 
         <div className="mt-12">
@@ -99,6 +100,21 @@ export default function CursoPage() {
           <Link href="/curso/proyecto-final" className="pg-btn pg-btn-primary mt-5">
             Ver requisitos y entregables <ArrowRight size={16} aria-hidden="true" />
           </Link>
+        </section>
+
+        <section className="pg-card mt-12 p-6 sm:p-8">
+          <div className="flex items-start gap-4">
+            <AudioLines size={22} className="mt-1 shrink-0" aria-hidden="true" />
+            <div className="min-w-0 flex-1">
+              <p className="pg-eyebrow">Trayecto complementario</p>
+              <h2 className="pg-section-title mt-2">{COURSE_FRAMEWORK.technicalPathway.title}</h2>
+              <p className="pg-prose mt-3">Amplía el programa creativo con prácticas reproducibles de DSP, análisis espectral, mezcla y masterización. Incluye código Python, rúbricas y una revisión de evidencia asistida por IA, sin alterar tus 16 sesiones ni tu progreso guardado.</p>
+              <p className="pg-note mt-3">{COURSE_FRAMEWORK.academicStatus}</p>
+              <Link href={COURSE_FRAMEWORK.technicalPathway.route} className="pg-btn pg-btn-primary mt-5">
+                Abrir laboratorio técnico <ArrowRight size={16} aria-hidden="true" />
+              </Link>
+            </div>
+          </div>
         </section>
 
         <div className="mt-16">

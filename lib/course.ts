@@ -1375,6 +1375,15 @@ export const COURSE_FRAMEWORK = {
   title: 'Creación Musical con IA',
   subtitle: 'Composición híbrida, producción y lanzamiento',
   brand: 'TAMV Online Network · Play & Go',
+  author: 'Edwin Oswaldo Castillo Trejo',
+  aiSupport: 'Apoyo técnico y editorial de IA declarado; la responsabilidad académica y la validación humana corresponden al autor del curso.',
+  academicStatus: 'Formación complementaria. Este programa no equivale por sí mismo a un grado académico ni a una acreditación oficial externa.',
+  technicalPathway: {
+    title: 'Laboratorio técnico de audio e IA musical',
+    route: '/curso/laboratorio-audio',
+    modules: ['Fundamentos acústicos, DSP y extracción espectral', 'Diagnóstico de mezcla y masterización'],
+    note: 'Trayecto complementario; no renumera las 16 sesiones principales ni modifica el progreso persistido.',
+  },
   philosophy: 'La IA no reemplaza al creador: amplifica su criterio, acelera sus ideas y le devuelve el control sobre su obra.',
   manifesto: [
     'TAMV Online Network — Donde la ciencia abierta no pide permiso.',
@@ -1422,6 +1431,7 @@ export const COURSE_FRAMEWORK = {
     'Plantilla de ficha de lanzamiento',
     'Banco de ideas creativas',
     'Rúbrica de evaluación del proyecto final',
+    'Laboratorio técnico de audio e IA musical: DSP, análisis espectral, mezcla y masterización',
   ],
   exam: {
     questions: 20,

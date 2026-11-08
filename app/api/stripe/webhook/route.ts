@@ -8,6 +8,7 @@ import {
   queuePendingPayment,
   releaseEventClaim,
   resolveUserId,
+  type SubscriptionSnapshot,
 } from '@/lib/fulfilment'
 import { findProduct } from '@/lib/products'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -51,7 +52,9 @@ export async function POST(request: Request) {
     let response: Response
 
     if (event.type === 'checkout.session.completed' || event.type === 'checkout.session.async_payment_succeeded') {
-      response = await handleCheckoutCompleted(admin, event.data.object as Stripe.Checkout.Session, event.type)
+      response = await handleCheckoutCompleted(admin, event.data.object as Stripe.Checkout.Session, event.type, secretKey)
+    } else if (event.type === 'customer.subscription.updated') {
+      response = await handleSubscriptionUpdated(admin, event.data.object as Stripe.Subscription)
     } else if (event.type === 'customer.subscription.deleted') {
       response = await handleSubscriptionDeleted(admin, event.data.object as Stripe.Subscription)
     } else if (event.type === 'invoice.payment_failed') {
@@ -75,10 +78,20 @@ export async function POST(request: Request) {
   }
 }
 
+function subscriptionPeriodEnd(subscription: Stripe.Subscription): number | null {
+  const periods = subscription.items.data
+    .map((item) => item.current_period_end)
+    .filter((value): value is number => Number.isFinite(value) && value > 0)
+  // El curso Pro usa un solo precio recurrente. Si una suscripción futura tiene
+  // varios periodos, se falla de forma conservadora al más próximo a vencer.
+  return periods.length > 0 ? Math.min(...periods) : null
+}
+
 async function handleCheckoutCompleted(
   admin: NonNullable<ReturnType<typeof createAdminClient>>,
   session: Stripe.Checkout.Session,
   eventType: string,
+  stripeSecretKey: string,
 ) {
   // `async_payment_succeeded` ya implica pago confirmado: exigir además
   // `payment_status === 'paid'` descartaba la entrega en variantes de cobro
@@ -137,6 +150,41 @@ async function handleCheckoutCompleted(
     clientReferenceId: session.client_reference_id ?? session.metadata?.userId ?? null,
     email,
   })
+  const customerId = typeof session.customer === 'string' ? session.customer : session.customer?.id ?? null
+
+  let subscription: SubscriptionSnapshot | null = null
+  if (product.mode === 'subscription') {
+    const reference = session.subscription
+    const subscriptionId = typeof reference === 'string' ? reference : reference?.id
+    if (!subscriptionId) {
+      console.error('[webhook] checkout de suscripción sin subscription id', { sessionId: session.id })
+      return NextResponse.json({ error: 'No pudimos verificar la suscripción.' }, { status: 503 })
+    }
+
+    try {
+      const currentSubscription = await new Stripe(stripeSecretKey).subscriptions.retrieve(subscriptionId)
+      const supportedStatuses: string[] = ['active', 'trialing', 'past_due']
+      if (!supportedStatuses.includes(currentSubscription.status)) {
+        console.error('[webhook] suscripción sin estado concedible', {
+          sessionId: session.id,
+          subscriptionId: currentSubscription.id,
+          status: currentSubscription.status,
+        })
+        return NextResponse.json({ error: 'La suscripción aún no está activa.' }, { status: 503 })
+      }
+      subscription = {
+        id: currentSubscription.id,
+        status: currentSubscription.status,
+        currentPeriodEnd: subscriptionPeriodEnd(currentSubscription),
+      }
+    } catch (error) {
+      console.error('[webhook] no se pudo verificar la suscripción en Stripe', {
+        sessionId: session.id,
+        message: error instanceof Error ? error.message : String(error),
+      })
+      return NextResponse.json({ error: 'No pudimos verificar la suscripción.' }, { status: 503 })
+    }
+  }
 
   if (!userId) {
     if (!email) {
@@ -151,6 +199,8 @@ async function handleCheckoutCompleted(
       sessionId: session.id,
       email,
       productId: product.id,
+      stripeCustomerId: customerId,
+      subscription,
     })
     if (queued.status === 'error') {
       console.error('[webhook] no se pudo encolar la entrega', queued.detail)
@@ -159,14 +209,13 @@ async function handleCheckoutCompleted(
     return NextResponse.json({ received: true, queued: true })
   }
 
-  const subscriptionId = typeof session.subscription === 'string' ? session.subscription : session.subscription?.id
   const delivered = await grantProduct(
     admin,
     userId,
     product,
     session.id,
-    typeof session.customer === 'string' ? session.customer : session.customer?.id,
-    subscriptionId,
+    customerId,
+    subscription,
   )
   if (delivered.status === 'error') {
     console.error('[webhook] la entrega falló, Stripe debe reintentar', delivered.detail)
@@ -174,6 +223,67 @@ async function handleCheckoutCompleted(
   }
 
   return NextResponse.json({ received: true, granted: delivered.status, plan: product.grant.plan })
+}
+
+async function handleSubscriptionUpdated(
+  admin: NonNullable<ReturnType<typeof createAdminClient>>,
+  subscription: Stripe.Subscription,
+): Promise<Response> {
+  const periodEndSeconds = subscriptionPeriodEnd(subscription)
+  const periodEnd = periodEndSeconds === null
+    ? null
+    : new Date(periodEndSeconds * 1000).toISOString()
+
+  const { data: row, error } = await admin
+    .from('entitlements')
+    .select('user_id')
+    .eq('subscription_id', subscription.id)
+    .maybeSingle()
+
+  if (error) {
+    console.error('[webhook] no se pudo localizar la suscripción actualizada', {
+      subscriptionId: subscription.id,
+      message: error.message,
+    })
+    return NextResponse.json({ error: 'No se pudo actualizar la suscripción.' }, { status: 500 })
+  }
+  if (!row?.user_id) return NextResponse.json({ received: true, skipped: 'stale-subscription' })
+
+  const { data: updated, error: updateError } = await admin
+    .from('entitlements')
+    .update({
+      subscription_status: subscription.status,
+      current_period_end: periodEnd,
+    })
+    .eq('user_id', row.user_id)
+    .eq('subscription_id', subscription.id)
+    .select('user_id')
+    .maybeSingle()
+
+  if (updateError) {
+    console.error('[webhook] no se pudo persistir el estado de suscripción', {
+      subscriptionId: subscription.id,
+      message: updateError.message,
+    })
+    return NextResponse.json({ error: 'No se pudo actualizar la suscripción.' }, { status: 500 })
+  }
+  if (!updated) return NextResponse.json({ received: true, skipped: 'stale-subscription' })
+
+  const { error: syncError } = await admin.rpc('sync_entitlement_effective_state', { p_owner: row.user_id })
+  if (syncError) {
+    console.error('[webhook] no se pudo sincronizar el acceso después del evento de Stripe', {
+      subscriptionId: subscription.id,
+      message: syncError.message,
+    })
+    return NextResponse.json({ error: 'No se pudo sincronizar el acceso.' }, { status: 500 })
+  }
+
+  return NextResponse.json({
+    received: true,
+    updated: true,
+    status: subscription.status,
+    currentPeriodEnd: periodEnd,
+  })
 }
 
 async function handleSubscriptionDeleted(
@@ -189,11 +299,14 @@ async function handleSubscriptionDeleted(
   if (error) return NextResponse.json({ error: 'No se pudo localizar la suscripción.' }, { status: 500 })
   if (!row?.user_id) return NextResponse.json({ received: true, skipped: 'unknown-subscription' })
 
-  const result = await deactivateSubscription(admin, row.user_id)
+  const result = await deactivateSubscription(admin, row.user_id, subscription.id)
   if (result.status === 'error') {
     console.error('[webhook] no se pudo revocar la suscripción', result.detail)
     return NextResponse.json({ error: 'No se pudo revocar el acceso.' }, { status: 500 })
   }
 
+  if (result.detail === 'stale_subscription') {
+    return NextResponse.json({ received: true, skipped: 'stale-subscription' })
+  }
   return NextResponse.json({ received: true, revoked: true })
 }

@@ -12,9 +12,10 @@ roto badges (`productor_ia` exige 16) y dejado rutas `/curso/[modulo]/[leccion]`
 
 Por eso la evolución es aditiva:
 
-- `COURSE_FRAMEWORK`: título, filosofía, manifiesto TAMV, audiencias, 14 objetivos,
-  metodología 4 pasos, 10 recursos, examen (20 q / 30 min / 70% / 7 idiomas / PDF + código)
-  y nota híbrida (reciclar progresiones, intercambio modal, MIDI/stems, DAW).
+- `COURSE_FRAMEWORK`: título, filosofía, manifiesto TAMV, audiencias, objetivos,
+  metodología de cuatro pasos, recursos, examen principal y nota híbrida.
+- Atribución curricular: Edwin Oswaldo Castillo Trejo como autor del curso; apoyo técnico/editorial de IA declarado.
+- Nuevo trayecto técnico complementario: `/curso/laboratorio-audio`, dos módulos de cuatro lecciones cada uno, laboratorio Python y evaluación separada. No cambia `COURSE_TOTAL_LESSONS = 16`, las rutas de las 16 sesiones ni los requisitos de las insignias.
 - `COURSE_UNITS`: las 14 unidades mapeadas a las sesiones reales (una unidad puede
   corresponder a 1–2 sesiones; la 14ª es el proyecto final).
 - `FINAL_PROJECT`: «Mi Nodo Cero» con requisitos y la estructura de 8 entregables.
@@ -45,8 +46,15 @@ Por eso la evolución es aditiva:
 
 - Duraciones: el marco dice ≈14 h totales con práctica; los minutos de sesiones
   suman ≈4 h 50 de contenido. Ambas cifras conviven (práctica incluida ≠ minutos lectivos).
-- Certificado/examen: el marco los describe, pero el examen automático y el PDF con
-  código verificable **todavía no existen** como endpoint — la página de proyecto final
-  los presenta como parte del programa; construirlos es el siguiente paso.
+- Examen/constancia: el examen principal de 20 preguntas y el endpoint de evaluación existen. Su registro/constancia depende de Supabase, tablas y migraciones configuradas. No se afirma un PDF descargable ni equivalencia con título oficial; la disponibilidad completa de siete idiomas no se considera verificada.
+- Exámenes técnicos complementarios: `/api/advanced-audio/exam` entrega opciones públicas sin la clave, corrige en servidor y explica las respuestas al terminar. Guarda el intento si hay sesión y base disponible; no emite certificado académico.
+- Evaluación asistida: `/api/advanced-audio/evaluate` requiere una sesión autenticada y clave de proveedor de IA. Analiza solo el resumen textual enviado, aplica una rúbrica fija y devuelve retroalimentación provisional; no escucha audio, ejecuta código ni decide un grado.
 - Inspiración: el temario original cita un curso de Domestika; este contenido es
   original (16 sesiones propias), no una copia.
+
+## Integridad académica del trayecto técnico
+
+- Los módulos técnicos viven en `lib/advanced-audio-curriculum.ts`; los exámenes están aislados en un módulo de servidor para no enviar respuestas correctas al navegador antes de entregar.
+- Los scripts Python, dependencias y pruebas de señal sintética están en `laboratorio-audio-ia/`. La CI instala Python en un trabajo paralelo y ejecuta compileall y unittest; la separación Demucs no descarga pesos en CI.
+- Para mezcla/masterización: LUFS se mide preservando canales; true peak 4x se rotula como estimación; correlación estéreo no se usa como métrica única de anchura; no existe un LUFS universal para todos los destinos.
+- La procedencia/licencia del audio y los modelos es requisito de evaluación. Un hash identifica el archivo, pero no demuestra por sí solo los derechos.
