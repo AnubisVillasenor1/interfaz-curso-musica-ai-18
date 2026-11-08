@@ -64,6 +64,7 @@ function fromCompleted(completed: string[], badges: string[], total: number): Co
  */
 export function useCourseProgress(enabled = true) {
   const [progress, setProgress] = useState<CourseProgress>(EMPTY)
+  const [checkpoints, setCheckpoints] = useState<Record<string, Record<number, boolean>>>({})
 
   const load = useCallback(() => {
     let active = true
@@ -84,6 +85,7 @@ export function useCourseProgress(enabled = true) {
         const data = (await response.json().catch(() => null)) as {
           completed?: { lessonId?: unknown }[]
           badges?: { code?: unknown }[]
+          checkpoints?: { lessonId?: unknown; checkpoint?: unknown }[]
           total?: number
         } | null
 
@@ -94,6 +96,12 @@ export function useCourseProgress(enabled = true) {
           .map((row) => (typeof row?.code === 'string' ? row.code : ''))
           .filter(Boolean)
 
+        const savedCheckpoints = Object.fromEntries(
+          (data?.checkpoints ?? [])
+            .filter((row) => typeof row?.lessonId === 'string' && row.checkpoint && typeof row.checkpoint === 'object')
+            .map((row) => [row.lessonId as string, row.checkpoint as Record<number, boolean>]),
+        )
+        setCheckpoints(savedCheckpoints)
         setProgress(fromCompleted(completed, badges, data?.total ?? COURSE_TOTAL_LESSONS))
       })
       .catch(() => {
@@ -135,7 +143,7 @@ export function useCourseProgress(enabled = true) {
     [],
   )
 
-  return { progress, reload: load, applyCompletion }
+  return { progress, checkpoints, reload: load, applyCompletion }
 }
 
 /**

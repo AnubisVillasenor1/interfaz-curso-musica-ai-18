@@ -9,8 +9,9 @@
 
 import { FREE_TIER, PRODUCTS, formatPrice } from '@/lib/products'
 
-export const TERMS_VERSION = '1.0'
-export const TERMS_EFFECTIVE_DATE = '1 de noviembre de 2026'
+export const TERMS_VERSION = '1.1'
+export const TERMS_EFFECTIVE_DATE = '8 de noviembre de 2026'
+export const TERMS_RIGHTSHOLDER = 'Edwin Oswaldo Castillo Trejo'
 
 /** Contacto único: la tabla del artículo 17 y el pie de la página leen de aquí. */
 export const TERMS_CONTACT = {

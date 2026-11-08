@@ -4,6 +4,7 @@ import type { Metadata, Viewport } from 'next'
 import Link from 'next/link'
 import { PRODUCTS } from '@/lib/products'
 import { getSeoOrigin } from '@/lib/app-url'
+import { TAMV_BRAND, TAMV_LEGAL_NOTICE, TAMV_RIGHTS_NOTICE } from '@/lib/tamv-identity'
 import './globals.css'
 
 /**
@@ -145,12 +146,14 @@ export default function RootLayout({
             <Link href="/biblioteca" className="pg-navlink">Mi música</Link>
             <Link href="/perfil" className="pg-navlink">Mi perfil</Link>
             <Link href="/precios" className="pg-navlink">Planes y pago</Link>
+            <Link href="/arquitectura" className="pg-navlink">Arquitectura AudioCore</Link>
           </nav>
           <div className="mt-8 flex items-center justify-center gap-4" aria-label="Marcas oficiales">
             <img src="/brand/play-go-official.png" alt="Play & Go" width="112" height="112" className="size-14 rounded-xl object-cover object-center ring-1 ring-[#d8c99d]/40" />
             <img src="/brand/tamv-official.jpg" alt="TAMV Online Network" width="112" height="112" className="size-14 rounded-xl object-cover object-top ring-1 ring-[#d8c99d]/40" />
           </div>
-          <p className="pg-note mt-4 text-center">Play &amp; Go · Crea. Aprende. Hazlo tuyo. Una plataforma de TAMV Online Network.</p>
+          <p className="pg-note mt-4 text-center">{TAMV_BRAND} · Play &amp; Go · Crea. Aprende. Hazlo tuyo.</p>
+          <p className="mx-auto mt-2 max-w-3xl text-center text-[11px] leading-5 text-white/45">{TAMV_LEGAL_NOTICE} {TAMV_RIGHTS_NOTICE}</p>
         </footer>
         {schema && (
           <script
