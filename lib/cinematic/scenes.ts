@@ -109,7 +109,7 @@ export const CINEMATIC_ACTS: CinematicAct[] = [
     id: 'origenes',
     kicker: 'ORÍGENES · REAL DEL MONTE',
     title: ['Entre montaña', 'y neblina'],
-    body: 'Oculto entre mitos y leyendas, nace una nueva forma de transmitir ideas.',
+    body: 'Desde la niebla mineral de Real del Monte, una nueva escena creativa convierte memoria, tecnología y sonido en una experiencia propia.',
     chip: 'Orígenes',
     palette: {
       key: '#8ef2ff',
@@ -142,7 +142,7 @@ export const CINEMATIC_ACTS: CinematicAct[] = [
     id: 'infraestructura',
     kicker: 'INFRAESTRUCTURA SOBERANA',
     title: ['TAMV ONLINE', 'NETWORK'],
-    body: 'Tecnología Avanzada Mexicana Versátil. Libertad y arquitectura de sistemas.',
+    body: 'Una infraestructura creativa nacida en Latinoamérica: abierta al conocimiento, diseñada para conectar personas, herramientas y posibilidades.',
     chip: 'Red',
     palette: {
       key: '#7ff0d6',
@@ -175,7 +175,7 @@ export const CINEMATIC_ACTS: CinematicAct[] = [
     id: 'método',
     kicker: 'MÉTODO · APRENDER HACIENDO',
     title: ['Del oído', 'al instrumento'],
-    body: 'Escucha, desarma y reconstruye. Cada lección se practica en el mismo estudio donde se compone.',
+    body: 'Aprende con intención. Comprende el lenguaje musical, prueba cada decisión y transforma la práctica en criterio creativo.',
     chip: 'Método',
     palette: {
       key: '#ffd489',
@@ -208,7 +208,7 @@ export const CINEMATIC_ACTS: CinematicAct[] = [
     id: 'manifiesto',
     kicker: 'MANIFIESTO DIGITAL',
     title: ['Ritmo latino', 'y memoria', 'perpetua'],
-    body: 'Para dar vida y sentimiento a todo aquello que merece ser grabado para siempre.',
+    body: 'La tecnología amplifica las posibilidades; la sensibilidad humana decide qué merece ser escuchado, compartido y recordado.',
     chip: 'Manifiesto',
     palette: {
       key: '#ff9ecb',
@@ -241,7 +241,7 @@ export const CINEMATIC_ACTS: CinematicAct[] = [
     id: 'agentes',
     kicker: 'ORQUESTA DE AGENTES',
     title: ['Muchas manos,', 'una sola', 'canción'],
-    body: 'Composición, mezcla, master y publicación trabajando en paralelo, bajo tu dirección.',
+    body: 'Del primer boceto a la entrega final: composición, producción y publicación reunidas en un flujo que mantiene tus decisiones en el centro.',
     chip: 'Agentes',
     palette: {
       key: '#a9b8ff',
@@ -274,7 +274,7 @@ export const CINEMATIC_ACTS: CinematicAct[] = [
     id: 'estudio',
     kicker: 'ESTUDIO · IA MUSICAL',
     title: ['Tu primera canción', 'empieza aquí'],
-    body: 'Compón, aprende y publica. El motor trabaja en tu navegador, sin licencias ajenas.',
+    body: 'Tu próxima canción empieza con una idea. Aprende, experimenta y construye una obra propia con herramientas accesibles y decisiones conscientes.',
     chip: 'Estudio',
     palette: {
       key: '#8ceafc',

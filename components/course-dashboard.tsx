@@ -44,9 +44,9 @@ import { COURSE_PRODUCT } from '@/lib/products'
  * los mismos colores que el resto de la interfaz. El lockup de TAMV vuelve a
  * ser tipografía real, no una JPG con el fondo recortado.
  */
-const logoMark = 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/tamvlogo1-4wSYHNlhlHSVNIwFL7gOVmGkBaCeqA.jpg'
-const playAndGoLogo = 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logoplayandgo-EAG8du0GfFdQZUWxVmQQa5plKJDFSr.jpg'
-const heroImage = 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-ggBlgonDJDNHatg1hRwzx1TFsT0h7C.png'
+const logoMark = '/brand/logo.svg'
+const playAndGoLogo = '/brand/logo.svg'
+const heroImage = '/brand/hero-studio.svg'
 const sampleAudio = '/audio/pista2.mp3'
 
 /**
