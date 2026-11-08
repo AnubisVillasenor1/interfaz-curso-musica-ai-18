@@ -27,6 +27,22 @@ export function IntroGate() {
 
   const closeIntro = useCallback(() => {
     markIntroSeen()
+
+    // /presentacion forces this intro through ?intro=on. Remove only that
+    // control parameter when the intro closes so refreshing the dashboard
+    // does not force the presentation to replay indefinitely.
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href)
+      if (url.searchParams.get('intro') === 'on') {
+        url.searchParams.delete('intro')
+        window.history.replaceState(
+          window.history.state,
+          '',
+          `${url.pathname}${url.search}${url.hash}`,
+        )
+      }
+    }
+
     setIsIntroVisible(false)
   }, [])
 
