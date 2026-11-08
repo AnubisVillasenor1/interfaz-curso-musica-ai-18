@@ -38,7 +38,7 @@ export async function POST(request: Request) {
   } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Inicia sesión para guardar tu avance.', code: 'unauthorized' }, { status: 401 })
 
-  const body = (await request.json().catch(() => null)) as { lessonId?: unknown } | null
+  const body = (await request.json().catch(() => null)) as { lessonId?: unknown; checkpoint?: unknown } | null
   const lessonId = typeof body?.lessonId === 'string' ? body.lessonId.trim() : ''
 
   if (!COURSE_LESSONS.some((lesson) => lesson.id === lessonId)) {
@@ -67,6 +67,23 @@ export async function POST(request: Request) {
  * Devuelve solo identificadores: el contenido se sirve desde `lib/course.ts`
  * y la lista la controla el propio usuario bajo RLS.
  */
+export async function PATCH(request: Request) {
+  const supabase = await createClient()
+  if (!supabase) return NextResponse.json({ error: SUPABASE_NOT_CONFIGURED, code: 'not_configured' }, { status: 503 })
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'Inicia sesión para guardar tu práctica.', code: 'unauthorized' }, { status: 401 })
+  const body = (await request.json().catch(() => null)) as { lessonId?: unknown; checkpoint?: unknown } | null
+  const lessonId = typeof body?.lessonId === 'string' ? body.lessonId.trim() : ''
+  if (!COURSE_LESSONS.some((lesson) => lesson.id === lessonId)) return NextResponse.json({ error: 'Esa lección no existe en el programa.', code: 'unknown_lesson' }, { status: 400 })
+  const checkpoint = body?.checkpoint && typeof body.checkpoint === 'object' && !Array.isArray(body.checkpoint) ? body.checkpoint : {}
+  const { data, error } = await supabase.rpc('save_lesson_checkpoint', { p_lesson_id: lessonId, p_checkpoint: checkpoint })
+  if (error) {
+    console.error('[progress] checkpoint falló', error.message)
+    return NextResponse.json({ error: 'No pudimos guardar tu práctica.', code: 'write_failed' }, { status: 500 })
+  }
+  return NextResponse.json({ lessonId, checkpoint: data ?? {} }, { headers: PRIVATE_HEADERS })
+}
+
 export async function GET() {
   const supabase = await createClient()
   if (!supabase) return NextResponse.json({ error: SUPABASE_NOT_CONFIGURED, code: 'not_configured' }, { status: 503 })
@@ -76,7 +93,7 @@ export async function GET() {
   } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Inicia sesión para ver tu ruta.', code: 'unauthorized' }, { status: 401 })
 
-  const { data, error } = await supabase.from('lesson_progress').select('lesson_id, completed_at').eq('user_id', user.id).order('completed_at')
+  const { data, error } = await supabase.from('lesson_progress').select('lesson_id, completed_at, checkpoint').eq('user_id', user.id).order('completed_at')
 
   if (error) {
     console.error('[progress] lectura falló', error.message)
@@ -94,6 +111,7 @@ export async function GET() {
   return NextResponse.json(
     {
       completed: (data ?? []).map((row) => ({ lessonId: row.lesson_id, at: row.completed_at })),
+      checkpoints: (data ?? []).map((row) => ({ lessonId: row.lesson_id, checkpoint: row.checkpoint ?? {} })),
       badges: (badges ?? []).map((row) => ({ code: row.code, earnedAt: row.earned_at })),
       total: COURSE_LESSONS.length,
     },
