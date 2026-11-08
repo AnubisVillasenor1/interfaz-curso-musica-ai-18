@@ -106,3 +106,10 @@ El endpoint del examen guardaba tanto el intento como la constancia usando el cl
 - scripts/verify-exam-security.mjs se integra a CI para comprobar estos contratos estáticos.
 
 **Validación aún necesaria:** aplicar la migración en staging, verificar las operaciones con dos usuarios, comprobar que REST no permite insertar ni alterar intentos como usuario normal, confirmar que el endpoint público verifica un código sin exponer la tabla y realizar una prueba negativa con un código inexistente. Esta migración no está declarada aplicada en producción por este cambio de Git.
+
+
+### P0 — La marca de conciliación de derechos no bloquea el estado efectivo
+
+El campo entitlement_reconciliation_required documenta filas que necesitan contraste con Stripe, pero la derivación de acceso en sync_entitlement_effective_state, consume_generation_quota y read_entitlement no consulta ese campo. Una fila marcada puede seguir activando Pro si subscription_id, subscription_status y current_period_end satisfacen la condición de vigencia. Esto evita tratar la marca como una protección técnica automática.
+
+La puerta de liberación es operativa: no aplicar la migración 20261107190000_entitlement_lifecycle.sql a producción mientras existan filas ambiguas sin reconciliar y revisar. Consultar docs/ENTITLEMENT_LIFECYCLE.md, contrastar cada cuenta con Checkout/Subscriptions en Stripe y limpiar la marca solo después de verificar los tres derechos independientes. No modificar a ciegas las cuotas ni revocar acceso de clientes históricos.
