@@ -23,7 +23,7 @@ documento mide, no supone: cada afirmación trae la prueba y el comando.
 |---|---|---|
 | Programa del curso (16 sesiones, 5 módulos) | `lib/course.ts` | completo, tipado, servido desde `app/curso/…` |
 | Páginas de curso, precios, perfil y biblioteca | `app/`, `components/account/`, `components/course/` | renderizan y degradan honesto sin claves |
-| Intro cinemática 3D (Three.js + React Three Fiber) | `components/cinematic/` | seis actos de 60 s, eco 0.12 s, materiales estables |
+| Intro cinemática 3D (Three.js + React Three Fiber) | `components/cinematic/` | cinco actos de 12 s (60 s totales), alineados con la presentación oficial, eco 0.12 s y materiales estables |
 | Motor de audio local (síntesis con Tone.js) | `lib/music/engine.ts`, `components/music-studio.tsx` | funciona sin backend ni pago |
 | Voz y canción pagada (proveedor externo) | `app/api/music/` | requiere claves; sin ellas responde 503 |
 | Asistente con IA | `app/api/agent/` | con `AI_AGENT_API_KEY` usa un LLM real; sin ella responde con el temario y lo dice |

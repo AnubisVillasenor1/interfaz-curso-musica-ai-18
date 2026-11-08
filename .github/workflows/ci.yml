@@ -80,6 +80,9 @@ jobs:
       - name: Verify exam and certificate security
         run: node scripts/verify-exam-security.mjs
 
+      - name: Verify cinematic presentation alignment
+        run: node scripts/verify-cinematic-presentation.mjs
+
       - name: Verify advanced audio curriculum contracts
         run: node scripts/verify-advanced-audio-curriculum.mjs
 

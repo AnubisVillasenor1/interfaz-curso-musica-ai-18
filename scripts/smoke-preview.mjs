@@ -1,6 +1,7 @@
 const baseUrl = (process.env.BASE_URL || 'http://127.0.0.1:3000').replace(/\/$/, '')
 const checks = [
   { path: '/', label: 'home', method: 'GET', expected: [200] },
+  { path: '/presentacion', label: 'direct cinematic presentation entry', method: 'GET', expected: [307, 308] },
   { path: '/curso', label: 'course catalog', method: 'GET', expected: [200] },
   { path: '/precios', label: 'pricing', method: 'GET', expected: [200] },
   { path: '/perfil', label: 'profile route', method: 'GET', expected: [200, 307, 308] },
@@ -49,6 +50,18 @@ for (const check of checks) {
     if (!ok) {
       failures += 1
       continue
+    }
+
+    if (check.path === '/presentacion') {
+      const location = response.headers.get('location')
+      const target = location ? new URL(location, baseUrl) : null
+      const redirectOk = target?.pathname === '/' && target.searchParams.get('intro') === 'on'
+      if (!redirectOk) {
+        failures += 1
+        console.error('FAIL presentation entry: expected redirect to /?intro=on, got ' + (location || 'no Location header'))
+      } else {
+        console.log('PASS presentation entry: redirects to /?intro=on')
+      }
     }
 
     if (check.path === '/api/music/plan' && response.status === 200) {
