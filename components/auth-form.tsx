@@ -27,6 +27,25 @@ export function AuthForm({ initialMode, next }: { initialMode: Mode; next: strin
   // color obliga a leer para saber en qué caso se está uno.
   const [tone, setTone] = useState<Tone>('pending')
   const [busy, setBusy] = useState(false)
+  const [socialBusy, setSocialBusy] = useState<'github' | null>(null)
+
+  async function signInWithGitHub() {
+    setSocialBusy('github')
+    const supabase = createClient()
+    if (!supabase) {
+      say('El acceso social no está configurado en este entorno.', 'error')
+      setSocialBusy(null)
+      return
+    }
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'github',
+      options: {
+        redirectTo: process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL || `${window.location.origin}/auth/callback`,
+      },
+    })
+    if (error) say('No pudimos iniciar el acceso con GitHub. Intenta de nuevo.', 'error')
+    setSocialBusy(null)
+  }
 
   function say(text: string, as: Tone = 'pending') {
     setMessage(text)
@@ -123,7 +142,17 @@ export function AuthForm({ initialMode, next }: { initialMode: Mode; next: strin
             : 'Si es tu primera vez, cambia a «Crear cuenta» aquí abajo.'}
         </p>
 
-        <form onSubmit={submit} className="mt-7 flex flex-col gap-4">
+        <div className="mt-7 grid gap-3 sm:grid-cols-2">
+          <button type="button" onClick={signInWithGitHub} disabled={busy || socialBusy !== null} className="pg-btn pg-btn-secondary w-full">
+            {socialBusy === 'github' ? 'Conectando...' : 'Continuar con GitHub'}
+          </button>
+          <a href="https://orcid.org/signin" target="_blank" rel="noreferrer" className="pg-btn pg-btn-secondary w-full">
+            Continuar con ORCID
+          </a>
+        </div>
+        <div className="my-5 flex items-center gap-3" aria-hidden="true"><span className="h-px flex-1 bg-white/15" /><span className="pg-label" data-tone="muted">o con email</span><span className="h-px flex-1 bg-white/15" /></div>
+
+        <form onSubmit={submit} className="flex flex-col gap-4">
           {/* Etiqueta + campo, no solo placeholder: un placeholder desaparece en
               cuanto se escribe y deja el campo sin nombre para el lector de
               pantalla. `htmlFor`/`id` es lo que hace que el aviso de «este campo

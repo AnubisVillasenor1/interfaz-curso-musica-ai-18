@@ -17,7 +17,7 @@ import CinematicStage from './cinematic-stage'
 import { actAt, CINEMATIC_ACTS, gradeFilter, withAlpha } from '@/lib/cinematic/scenes'
 import { markIntroSeen } from '@/lib/cinematic/gate'
 import { INTRO_TRACK, SoundBed, type BedState } from '@/lib/cinematic/soundbed'
-const TAMV_LOGO_URL = '/brand/logo.svg'
+const TAMV_LOGO_URL = '/brand/tamv-official.jpg'
 
 import {
   createEnv,
@@ -490,8 +490,9 @@ export default function CinematicIntro({
 
         <header className="flex items-start justify-between gap-6">
           <div className="intro-monogram intro-fade flex items-center gap-3" style={cssVars({ animationDelay: '120ms' })}>
-            <img src={TAMV_LOGO_URL} alt="TAMV Online Network" width={38} height={38} className="size-9 rounded-full object-cover ring-1 ring-cyan-100/50" />
-            <span><i aria-hidden="true">TAMV</i><small>Play and Go · Online Network</small></span>
+            <img src="/brand/play-go-official.png" alt="Play & Go" width={42} height={42} className="size-10 rounded-xl object-cover ring-1 ring-[#d8c99d]/50" />
+            <img src={TAMV_LOGO_URL} alt="TAMV Online Network" width={42} height={42} className="size-10 rounded-xl object-cover object-top ring-1 ring-[#d8c99d]/60" />
+            <span><i aria-hidden="true">TAMV</i><small>Play &amp; Go · Online Network</small></span>
           </div>
 
           <div className="intro-fade flex items-center gap-2.5" style={cssVars({ animationDelay: '260ms' })}>

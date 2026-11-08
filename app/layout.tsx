@@ -140,11 +140,16 @@ export default function RootLayout({
               o los términos siempre hay un camino de vuelta al área personal. */}
           <nav aria-label="Área personal y planes" className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-3">
             <Link href="/curso" className="pg-navlink">Curso</Link>
+            <Link href="/vision" className="pg-navlink">Visión</Link>
             <Link href="/studio" className="pg-navlink">Estudio</Link>
             <Link href="/biblioteca" className="pg-navlink">Mi música</Link>
             <Link href="/perfil" className="pg-navlink">Mi perfil</Link>
             <Link href="/precios" className="pg-navlink">Planes y pago</Link>
           </nav>
+          <div className="mt-8 flex items-center justify-center gap-4" aria-label="Marcas oficiales">
+            <img src="/brand/play-go-official.png" alt="Play & Go" width="112" height="112" className="size-14 rounded-xl object-cover object-center ring-1 ring-[#d8c99d]/40" />
+            <img src="/brand/tamv-official.jpg" alt="TAMV Online Network" width="112" height="112" className="size-14 rounded-xl object-cover object-top ring-1 ring-[#d8c99d]/40" />
+          </div>
           <p className="pg-note mt-4 text-center">Play &amp; Go · Crea. Aprende. Hazlo tuyo. Una plataforma de TAMV Online Network.</p>
         </footer>
         {schema && (
