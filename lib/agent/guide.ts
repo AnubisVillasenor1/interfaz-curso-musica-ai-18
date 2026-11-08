@@ -30,14 +30,13 @@ export interface GuideReply {
   model?: string
 }
 
-/** Proveedores compatibles con /chat/completions: OpenAI, Groq, OpenRouter, Gateway. */
+/** El AI Gateway gestiona autenticación y selección de proveedor en preview/deploy. */
 export function agentProviderConfigured(): boolean {
-  return Boolean(process.env.AI_AGENT_API_KEY)
+  return true
 }
 
-export function agentProviderLabel(): string | null {
-  if (!agentProviderConfigured()) return null
-  return process.env.AI_AGENT_MODEL ?? 'gpt-4o-mini'
+export function agentProviderLabel(): string {
+  return process.env.AI_GATEWAY_MODEL ?? 'openai/gpt-oss-120b'
 }
 
 // ─────────────────────────────────────────────
