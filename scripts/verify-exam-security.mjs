@@ -19,6 +19,7 @@ const checks = [
   ['exam route rejects arrays and malformed answers', route.includes('Array.isArray(raw)') && route.includes('Number.isInteger(value)') && route.includes('QUESTION_IDS.has(id)')],
   ['exam route limits streamed request size', route.includes('Content-Length can be absent or untrusted') && route.includes('receivedBytes > 16_384')],
   ['server computes score from private answer key', route.includes('gradeExam(answers)') && route.includes('EXAM_QUESTIONS.length')],
+  ['all residual policies on both tables are removed', migration.includes('from pg_policies') && migration.includes("tablename in ('exam_attempts', 'certificates')") && migration.includes('drop policy %I on %I.%I')],
   ['old all-operations exam policy is removed', migration.includes('drop policy if exists "exam_attempts_owner"')],
   ['exam attempts become owner-select only', /create policy "exam_attempts_owner_read"[\s\S]*?for select[\s\S]*?auth\.uid\(\)[\s\S]*?user_id/.test(migration)],
   ['public certificate table policy is removed', migration.includes('drop policy if exists "certificates_verify_public"') && !/on public\.certificates[\s\S]*?using\s*\(true\)/i.test(migration)],
