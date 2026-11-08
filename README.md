@@ -1,5 +1,10 @@
 # Play and Go by TAMV ONLINE
 
+# **Orgullosamente Realmontenses**
+
+# Cuando tengas un sueño, lucha por el con todas tus fuerzas, sin importar que el mundo entero este en tu contra. El mundo sobrevive y avanza gracias a aquellos que jamas se rindieron, aun cuando el mundo estaba en su contra. 
+- Edwin O. Castillo Trejo CEO & Founder TAMV ONLINE 
+
 Curso y estudio de producción musical con IA: 16 sesiones originales en 5 módulos, motor de audio local en el navegador, asistente basado en el currículo y un trayecto técnico complementario con análisis DSP, mezcla y masterización reproducibles.
 El autor del curso es Edwin Oswaldo Castillo Trejo; el diseño y la documentación del trayecto técnico declaran apoyo de IA, sin atribuirle autoría humana ni acreditación académica.
 
