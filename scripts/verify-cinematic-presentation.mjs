@@ -27,6 +27,7 @@ const checks = [
   ['keyboard navigation and skip remain present', intro.includes("event.key === 'Escape'") && intro.includes("event.key === 'ArrowRight'") && intro.includes('Saltar')],
   ['presentation can be replayed on small screens', gate.includes('inline-flex max-sm:right-3') && gate.includes('Ver presentación') && !gate.includes('hidden items-center gap-2 font-mono text-[9.5px]')],
   ['direct route forces the cinematic intro', route.includes("redirect('/?intro=on')")],
+  ['forced intro query is removed when the presentation closes', gate.includes("url.searchParams.delete('intro')") && gate.includes('window.history.replaceState')],
   ['global navigation links to the presentation', layout.includes('href="/presentacion"')],
   ['preview smoke test validates the redirect target', smoke.includes("path: '/presentacion'") && smoke.includes("target.searchParams.get('intro') === 'on'")],
   ['cinematic styles use cyan and terracotta accents', css.includes('#00E5FF') && css.includes('#E05A47')],
