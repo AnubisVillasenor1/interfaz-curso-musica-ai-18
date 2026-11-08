@@ -141,6 +141,7 @@ export default function RootLayout({
               o los términos siempre hay un camino de vuelta al área personal. */}
           <nav aria-label="Área personal y planes" className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-3">
             <Link href="/curso" className="pg-navlink">Curso</Link>
+            <Link href="/presentacion" className="pg-navlink">Presentación</Link>
             <Link href="/vision" className="pg-navlink">Visión</Link>
             <Link href="/studio" className="pg-navlink">Estudio</Link>
             <Link href="/biblioteca" className="pg-navlink">Mi música</Link>
