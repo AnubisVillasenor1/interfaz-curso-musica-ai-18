@@ -7,9 +7,9 @@ import type { ModeName } from '@/lib/music/theory'
  * puntuarse solo con el motor musical local (Tone.js) sin llamadas de red,
  * así que el color visual y el color sonoro salen del mismo dato.
  *
- * Seis actos de diez segundos exactos = 60 s, la duración del bed recortado.
- * El arco no es decorativo: niebla → red → oficio → memoria → agentes → canción,
- * con la cámara, la paleta y la densidad subiendo juntas hacia el final.
+ * Cinco actos de doce segundos exactos = 60 s, alineados con las cinco diapositivas Play & Go.
+ * El arco narrativo es bienvenida → diagnóstico → dependencia → propuesta → declaración;
+ * la cámara, la paleta y la densidad siguen el relato, no sustituyen el contenido.
  */
 
 /** Trayectoria continua de la cámara dentro del acto (ver CameraRig). */
@@ -109,7 +109,7 @@ export const CINEMATIC_ACTS: CinematicAct[] = [
     id: 'bienvenida',
     kicker: 'SISTEMA NERVIOSO TECNOLÓGICO · REAL DEL MONTE',
     title: ['PLAY & GO', 'by TAMV ONLINE NETWORK'],
-    body: 'Orgullosamente Realmontenses te damos la bienvenida. Desde Mineral del Monte, Hidalgo, nace una experiencia para aprender, crear y compartir tecnología y música con IA.',
+    body: 'Orgullosamente Realmontenses te da la bienvenida.',
     chip: 'Bienvenida',
     palette: { key: '#00E5FF', core: '#0052FF', fog: '#020408', ember: '#E05A47' },
     camera: {
@@ -163,7 +163,7 @@ export const CINEMATIC_ACTS: CinematicAct[] = [
     id: 'dependencia',
     kicker: 'PERSPECTIVA CRÍTICA · COGNITIVE OVERLOAD',
     title: ['Desorientación', 'y dependencia'],
-    body: 'Se nos condicionó a vivir en un estado de actualización permanente y acelerada, obligándonos a medio aprender herramientas que cambian antes de dominar una sola de ellas. El resultado es la desorientación sistemática y la dependencia tecnológica.',
+    body: 'Se nos condicionó a vivir en un estado de actualización permanente y acelerada, obligándonos a medio aprender herramientas que cambian antes de dominar una sola de ellas. El resultado es la desorientación sistemática y la absoluta dependencia tecnológica del usuario.',
     chip: 'Análisis',
     palette: { key: '#00E5FF', core: '#0052FF', fog: '#020408', ember: '#E05A47' },
     camera: {
@@ -217,7 +217,7 @@ export const CINEMATIC_ACTS: CinematicAct[] = [
     id: 'declaracion',
     kicker: 'DECLARACIÓN DE EXISTENCIA · TAMV ONLINE NETWORK & PLAY & GO',
     title: ['TAMV ONLINE NETWORK', '& PLAY & GO'],
-    body: 'Orgullosamente Realmontenses. Esto es tecnología latinoamericana: conocimiento, creatividad y autonomía para convertir ideas en obras propias.',
+    body: 'Orgullosamente Realmontenses. ESTO ES TECNOLOGÍA LATINOAMERICANA.',
     chip: 'Declaración',
     palette: { key: '#00E5FF', core: '#0052FF', fog: '#000000', ember: '#E05A47' },
     camera: {
