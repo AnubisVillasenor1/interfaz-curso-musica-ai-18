@@ -39,6 +39,10 @@ interface Props {
 const FOCUSABLE =
   'button:not([disabled]), [href], input, [tabindex]:not([tabindex="-1"])'
 
+// Keep animated chapter transitions inside the declared 60-second timeline.
+const ACT_TRANSITION_MS = 520
+const ACT_SETTLE_MS = 320
+
 const cssVars = (vars: Record<string, string>): CSSProperties =>
   vars as unknown as CSSProperties
 
@@ -260,9 +264,9 @@ export default function CinematicIntro({
           env.current.warp = 0.09
 
           transitionTimers.current.push(
-            window.setTimeout(() => setWarping(false), 320),
+            window.setTimeout(() => setWarping(false), ACT_SETTLE_MS),
           )
-        }, 520),
+        }, ACT_TRANSITION_MS),
       )
     },
     [act, warping],
@@ -286,7 +290,17 @@ export default function CinematicIntro({
       return
     }
 
-    const id = window.setTimeout(advance, actAt(act).duration * 1000)
+    const durationMs = actAt(act).duration * 1000
+    const lastAct = act === CINEMATIC_ACTS.length - 1
+    // Act 0 starts immediately; later acts begin 520 ms into a transition
+    // and their clock starts 320 ms after the new scene is mounted.
+    const leadInMs =
+      act === 0
+        ? ACT_TRANSITION_MS
+        : lastAct
+          ? ACT_SETTLE_MS
+          : ACT_TRANSITION_MS + ACT_SETTLE_MS
+    const id = window.setTimeout(advance, Math.max(0, durationMs - leadInMs))
 
     return () => window.clearTimeout(id)
   }, [act, advance, autoAdvance, capabilities, frozen, progressKey, warping])
