@@ -85,7 +85,7 @@ The GitHub workflow includes source-contract checks, but those checks do not rep
 
 ### P1 — Evaluación técnica asistida por IA y evidencia académica
 
-El nuevo trayecto de laboratorio dispone de dos exámenes de 20 reactivos corregidos en servidor y una ruta opcional de retroalimentación con IA. La evaluación asistida exige una sesión autenticada, SUPABASE configurado y AI_AGENT_API_KEY; limita el cuerpo textual y el número de intentos por usuario en cada instancia. El limitador en memoria no es global ni un control de gasto distribuido, así que deben configurarse límites de gasto en el proveedor.
+El nuevo trayecto de laboratorio dispone de seis exámenes de 20 reactivos corregidos en servidor y una ruta opcional de retroalimentación con IA. La evaluación asistida exige una sesión autenticada, SUPABASE configurado y AI_AGENT_API_KEY; limita el cuerpo textual y el número de intentos por usuario en cada instancia. El limitador en memoria no es global ni un control de gasto distribuido, así que deben configurarse límites de gasto en el proveedor.
 
 La ruta de IA recibe únicamente un resumen de texto. No escucha archivos, no ejecuta código y no verifica licencias. La respuesta tiene una puntuación ponderada provisional; el frontend y la documentación advierten que el dictamen final exige revisión humana. Si el proveedor devuelve una estructura no válida, la ruta no crea una calificación y responde con error.
 
