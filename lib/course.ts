@@ -89,8 +89,8 @@ export const COURSE_MODULES: CourseModule[] = [
   {
     index: 3, id: 'm03', title: 'Voz, letra y emoción',
     subtitle: 'Interpretación vocal y métrica que funciona cantada',
-    summary: 'Diriges la voz en sus cuatro ejes (registro, textura, articulación y acento), escribes letras con métrica funcional por sección y anotas la interpretación para que el motor reciba instrucciones, no intenciones. Includes las restricciones reales de suplantación de voz.',
-    outcome: 'Entregas una letra completa con anotaciones de interpretación y dinámica, y tres perfiles vocales distintos cantando el mismo material.',
+    summary: 'Diriges la voz en sus cuatro ejes (registro, textura, articulación y acento), escribes letras con métrica funcional por sección y anotas la interpretación para que el motor reciba instrucciones, no intenciones. El módulo culmina con una obra musical controlada por IA: intención artística, MIDI editable, coherencia armónica, cinco generaciones comparables, producción, trazabilidad y defensa oral.',
+    outcome: 'Entregas una ficha creativa y una letra dirigida; MIDI base y revisado; análisis armónico; cinco versiones generadas con prompt, negative prompt, semilla y parámetros; demo final, stems, mediciones, licencias, metadatos SHA-256, informe y defensa oral. La obra se califica con una rúbrica de 100 puntos y evidencia verificable.',
     lessonIds: ['m03-l08', 'm03-l09', 'm03-l10'],
   },
   {
@@ -802,8 +802,8 @@ export const COURSE_LESSONS: Lesson[] = [
   },
   {
     id: 'm03-l10', moduleIndex: 3, lessonNumber: 10,
-    title: 'Ejercicio: dirección vocal para una interpretación real', kicker: 'Sesión 10 · Práctica de módulo', minutes: 16,
-    objective: 'Entregar una letra anotada con dirección vocal y dinámica por sección, y verificarla en dos generaciones.',
+    title: 'Proyecto final: obra musical controlada por IA', kicker: 'Sesión 10 · Proyecto final', minutes: 25,
+    objective: 'Diseñar, producir y defender una obra musical en la que la IA aporte material bajo dirección humana, con composición editable, control generativo, escucha crítica, trazabilidad y evidencia reproducible.',
     blocks: [
       { heading: 'Anotar la interpretación: un lenguaje mínimo', body: [
           'Una letra anotada es una partitura de intención. Usa seis marcas y no inventes más: [baja] para registro o volumen menor, [sube] para rango o energía, [aire] para textura susurrada, [seco] para voz sin reverberación y sin doblaje, [doblaje] para capa doble en el coro, [pausa] para silencio antes de la línea siguiente. Al lado de cada sección escribes qué pasa en los cuatro ejes vocales. Con eso, cualquier colaborador puede entender tu dirección sin leer tu mente.',
@@ -817,11 +817,44 @@ export const COURSE_LESSONS: Lesson[] = [
           'Tres pruebas rápidas sobre la toma generada. Primera, el primer verso: ¿se canta en el registro y con el aire que pediste? Si suena igual que el coro, tu dirección de dinámica no se aplicó: reescríbela con qué capas se retiran, no con adjetivos. Segunda, inteligibilidad: ¿entiendes la frase clave del coro sin ver la letra? Si no, falló el eje de articulación o la densidad del arreglo. Tercera, contraste: señala tres segundos del puente y tres del último coro; si suenan parecido, no hay curva.',
           'Registra los resultados en la bitácora con marcas de tiempo, y cierra con una sola corrección para la versión siguiente. Este ejercicio entrena el hábito que más vale en el curso: escribir qué querías, oír qué obtuviste, y nombrar la distancia con una palabra técnica.',
         ] },
+      { heading: 'La obra, no la colección de audios', body: [
+          'El proyecto final se evalúa como una obra musical controlada por IA, no como una carpeta con varios renders. Antes de generar, el estudiante define intención, emoción, narrativa, tonalidad tentativa, tempo, métrica, instrumentación y estructura. Después demuestra qué material produjo el modelo, qué decisiones tomó la persona y qué archivos permiten comprobar cada afirmación.',
+          'La voz sigue siendo una parte del arreglo y se conserva la dirección trabajada en las sesiones anteriores: registro, textura, articulación y acento. El proyecto amplía ese control al MIDI, la armonía, la estructura, las variaciones generativas, la edición, la mezcla y la trazabilidad. La IA no sustituye el criterio artístico ni firma las decisiones del estudiante.',
+        ] },
+      { heading: 'Rúbrica ponderada del proyecto — 100 puntos', body: [
+          'Intención musical: 20 puntos. Coherencia armónica: 15. Control generativo: 20. Calidad de producción: 15. Originalidad: 10. Reproducibilidad: 10. Ética y trazabilidad: 10. La nota se calcula sumando la calificación de 0 a 100 de cada criterio multiplicada por su peso. Se aprueba con 70; el dominio sólido comienza en 85; la excelencia requiere 95 o más, evidencia completa y defensa oral satisfactoria.',
+          'Intención musical exige concepto original, emoción reconocible, estructura con contraste e instrumentos con función. Coherencia armónica exige tonalidad contrastada, progresión con propósito, tensión, resolución y análisis revisable. Control generativo exige prompt, negative prompt, semillas, pasos, guidance y cinco versiones comparables. Producción evalúa balance, dinámica, estéreo, clipping, mediciones y escucha. Originalidad exige aporte humano visible. Reproducibilidad exige código, versiones y comandos. Ética documenta licencias, materiales, autoría y procedencia.',
+          'Una nota alta no se asigna por adjetivos ni por la cantidad de archivos. Cada observación debe apuntar a una evidencia: un MIDI, un prompt, una versión WAV, un reporte de medición, una licencia o una marca temporal de escucha. Si el archivo o permiso no existe, se registra como pendiente y no se presume.',
+        ] },
+      { heading: 'MIDI editable y coherencia armónica', body: [
+          'Construye una composición base en MIDI antes de aceptar texturas generadas. Separa como mínimo acordes, bajo, melodía o motivo, arpegio y percusión; conserva tempo, métrica, alturas, duraciones y velocidades. Guarda una copia sin editar como composicion_base.mid y otra como composicion_revisada.mid. El MIDI es una representación editable de eventos musicales, no una grabación de audio.',
+          'Analiza el centro tonal y los acordes con music21 y contrasta el resultado con el oído y el DAW. Una progresión de ejemplo para estudiar en Re menor es Dm–Bb–F–C, que puede leerse i–VI–III–VII en ese contexto. Es una hipótesis didáctica: inversiones, notas de paso, melodía y cadencias pueden cambiar la lectura. El estudiante explica dónde aparece tensión y por qué la resolución apoya la narrativa.',
+        ] },
+      { heading: 'Control experimental de cinco generaciones', body: [
+          'Genera al menos cinco versiones A–E. Mantén constantes modelo y revisión, prompt base, negative prompt, semilla, inference steps, guidance_scale y duración; cambia una sola variable por comparación. A es la línea base. B cambia solamente guidance_scale. C modifica solo la duración. D modifica solo la instrumentación descrita en el prompt. E modifica únicamente la atmósfera descrita. Registra también dispositivo, versiones de librerías, sample rate y hash de cada archivo.',
+          'No llames reproducible a una salida solo porque guardaste una semilla. La semilla controla la inicialización, pero la igualdad bit a bit puede variar con hardware, kernels, versiones del modelo o librerías. Registra el entorno completo. Las decisiones de selección deben quedar como por evaluar hasta que el estudiante escuche las versiones; no inventes que A es cálida, B es oscura o D tiene artefactos sin haberlo comprobado.',
+          'En Diffusers, StableAudioPipeline utiliza los argumentos prompt, negative_prompt, num_inference_steps, guidance_scale, audio_start_in_s, audio_end_in_s y generator. El argumento documentado es guidance_scale, no guidance. Exporta usando pipeline.vae.sampling_rate, no un sample rate fijado manualmente. Stable Audio Open 1.0 genera clips de hasta aproximadamente 47 segundos; una obra de 60–120 segundos necesita arreglo, edición y continuidad entre fragmentos, no una llamada que exceda el límite del modelo.',
+        ] },
+      { heading: 'Producción, mediciones y escucha crítica', body: [
+          'Integra las texturas elegidas con el MIDI y una producción propia. Documenta edición, sincronización, cortes, EQ, compresión, automatización, reverberación, panorama y exportación de stems. Mide loudness integrada, sample peak, true peak con una herramienta apropiada, RMS, espectro y compatibilidad mono. El código puede generar indicadores y gráficas, pero no puede certificar por sí solo que la mezcla suena profesional.',
+          'No existe un valor LUFS universal que garantice excelencia. Un master puede cumplir una cifra y seguir aplastado, enmascarado o artificial. Escucha la obra completa y compara A/B con volumen igualado. Registra marcas de tiempo para clipping, artefactos metálicos, consonantes defectuosas, transiciones abruptas, graves enfrentados y fatiga en agudos. Un fallo grave requiere revisión antes de otorgar excelencia.',
+        ] },
+      { heading: 'Paquete obligatorio y procedencia', body: [
+          'La entrega se organiza en proyecto_modulo_3/: README.md, ficha_creativa.md, midi/composicion_base.mid y composicion_revisada.mid; generacion/prompts.csv y cinco WAV; analisis/analisis_armonia.txt, reportes_generacion.json y comparacion_versiones.csv; produccion/demo_final.wav, stems/ y capturas_cadena.png; etica/licencias.md, fuentes.md y metadatos.json; informe_final.md. La plantilla de la carpeta y del informe está en la documentación del proyecto.',
+          'El JSON de metadatos registra título, autor humano, asistencia IA, modelo y revisión, prompt, negative prompt, semilla, parámetros, fecha UTC, sample rate, fuentes externas, licencia aplicable y SHA-256 del archivo. El hash identifica el archivo y permite comprobar integridad; no demuestra autoría, titularidad ni permiso de distribución. La licencia del modelo, el servicio de inferencia, los samples, las voces y los demás materiales se verifican por separado.',
+        ] },
+      { heading: 'Defensa oral con evidencia', body: [
+          'La presentación estándar dura entre ocho y diez minutos: apertura y objetivo; intención, emoción y narrativa; MIDI, armonía y decisiones humanas; modelo, prompts, semillas y cinco versiones; producción y mediciones; escucha de un fragmento de 20–30 segundos; limitaciones, ética y siguiente iteración. El estudiante presenta los archivos y señala marcas temporales, no lee un texto generado por IA.',
+          'El jurado pregunta qué emoción se buscó, por qué se eligieron tonalidad y tempo, qué parte es humana y cuál generada, qué parámetros se controlaron, por qué se descartaron versiones, qué artefactos se corrigieron, qué licencias aplican y cómo se reproduce el proceso. El evaluador no debe inventar cualidades auditivas ni declarar que escuchó archivos que no recibió.',
+        ] },
     ],
     examples: [
       'Guion de interpretación anotado: [Verso 1] [aire][baja] «me quedé mirando / la cocina vacía»; [Pre-coro] [sube][seco] dos líneas; [Coro] [doblaje] «ya no hay luz / ya no hay voz»; [Puente] [aire][pausa][baja] cuatro líneas; [Coro final] [doblaje][armonía de tercera]; [Outro] [seco][pausa]. Cada marca corresponde a una instrucción concreta del prompt de estilo.',
       'Traducción de una emoción: quiero «renuncia». Registro: desciende una quinta en la última línea del coro. Ritmo: fraseo atrasado, la frase termina antes del tiempo fuerte. Textura: más aire, menos borde. Arreglo: sale la percusión y queda pad. Resultado buscado: que el oyente perciba que se suelta, sin que la letra lo diga.',
       'Ficha de una toma evaluada: «Prueba 1 verso: cumple (registro medio, aire audible en 0:14). Prueba 2 inteligibilidad: falla en el coro (0:52, la palabra luz se cierra por densidad de agudos). Prueba 3 contraste: cumple (puente 1:58 solo voz y pad). Corrección única para v2: bajo una capa aguda del coro y pido consonantes nítidas; no toco nada más.»',
+      'Experimento A–E de referencia: A = línea base con semilla 42, 50 pasos, guidance_scale 7.0 y 10 segundos; B cambia solo guidance_scale a 6.0; C cambia solo duración a 12 segundos; D cambia solo la instrumentación del prompt; E cambia solo la atmósfera. Las columnas de resultado, artefactos y decisión quedan como por evaluar hasta que se generen y escuchen los WAV.',
+      'Ejemplo armónico para análisis: Dm–Bb–F–C en Re menor, posible lectura i–VI–III–VII. El estudiante contrasta tonalidad estimada, inversiones, melodía, notas ajenas y cadencia antes de explicar su función; el ejemplo no sustituye un análisis del MIDI que se entrega.',
+      'Ejemplo de autoría trazable: Stable Audio aporta una textura de pad; el estudiante decide en qué compás entra, la recorta, la sincroniza con el MIDI, la filtra, automatiza el espacio y la integra con el bajo y la melodía. La decisión humana se demuestra con MIDI, sesiones del DAW, stems y comparación A/B.',
     ],
     techniques: [
       'Seis marcas nada más: [baja], [sube], [aire], [seco], [doblaje], [pausa]. Un lenguaje pequeño y constante se puede auditar; un lenguaje rico, no.',
@@ -829,6 +862,13 @@ export const COURSE_LESSONS: Lesson[] = [
       'Prueba de los tres segundos: compara tres segundos del puente con tres del último coro. Si suenan parecidos, no hay dirección de dinámica.',
       'Corrección única por versión: de las tres pruebas, arregla primero la que más duele y regenera. Arreglar todo a la vez borra el aprendizaje.',
       'Guía vocal propia: cuando el matiz fino no se puede pedir, graba una guía cantada aunque sea tarareada y genera sobre esa referencia si la plataforma lo permite; si no, usa la guía para elegir toma.',
+      'Matriz de responsabilidades: registra cada elemento como humano, generado por IA o procesado; no confundas el origen del sonido con la decisión de arreglo.',
+      'A/B de una variable: mantén iguales modelo, semilla y parámetros; cambia una sola variable y documenta el efecto audible después de escuchar.',
+      'MIDI antes de render: conserva una composición editable que permita corregir notas, registro, duración, dinámica y estructura sin depender del generador.',
+      'Análisis no concluyente: combina music21, cromagrama, acordes y escucha; toda estimación de tonalidad se revisa manualmente.',
+      'Control de clipping y true peak: diferencia pico sample-based de true peak medido; etiqueta como estimación cualquier sobremuestreo aproximado.',
+      'Procedencia por archivo: registra prompt íntegro, revisión del modelo, semilla, parámetros, fecha, licencia, sample rate y SHA-256.',
+      'Criterio de descarte: documenta qué no funcionó, dónde se escucha y por qué el defecto se corrige editando, regenerando o cambiando el arreglo.',
     ],
     prompts: [
       { name: 'Prompt de dirección vocal por sección', outcome: 'Alinear cada sección de la letra con una instrucción vocal ejecutable.',
@@ -837,9 +877,12 @@ export const COURSE_LESSONS: Lesson[] = [
       { name: 'Ficha de evaluación de interpretación', outcome: 'Convertir la escucha en tres veredictos y una corrección.',
         variables: ['título', 'v', 'mm:ss', 'cumple o falla', 'qué se oye', 'qué palabra se pierde y por qué', 'un solo eje de los cuatro', 'campos conservados'],
         text: 'Canción: {título} · versión {v}. Prueba 1, primer verso ({mm:ss}): {cumple o falla}, evidencia {qué se oye}. Prueba 2, inteligibilidad de la frase clave ({mm:ss}): {cumple o falla}, evidencia {qué palabra se pierde y por qué}. Prueba 3, contraste puente/último coro ({mm:ss} vs {mm:ss}): {cumple o falla}. Corrección única para la siguiente versión: {un solo eje de los cuatro}. Lo que dejo de tocar: {campos conservados}.' },
+      { name: 'Experimento reproducible A–E', outcome: 'Preparar cinco generaciones comparables con una variable modificada por versión.', variables: ['modelo y revisión', 'prompt base', 'negative prompt', 'semilla', 'num_inference_steps', 'guidance_scale', 'duración', 'variable única de B', 'variable única de C', 'instrumentación de D', 'atmósfera de E'], text: 'Modelo y revisión: {modelo y revisión}. Prompt base: {prompt base}. Negative prompt: {negative prompt}. Semilla: {semilla}. Pasos: {num_inference_steps}. Guidance: {guidance_scale}. Duración: {duración}. A es la línea base. B cambia solo {variable única de B}. C cambia solo {variable única de C}. D cambia únicamente {instrumentación de D}. E cambia únicamente {atmósfera de E}. Registra el WAV, sample rate, versión de librerías, hash, observación audible y decisión después de escuchar.' },
+      { name: 'Jurado del proyecto final con evidencia', outcome: 'Solicitar una evaluación rigurosa sin inventar observaciones auditivas.', variables: ['título', 'intención artística', 'emoción y narrativa', 'tonalidad y BPM', 'instrumentación', 'modelo y versión', 'fuentes y licencias', 'archivos entregados', 'marcas temporales de escucha'], text: 'Actúa como jurado de composición, producción, IA generativa, armonía, ingeniería de audio y ética. Evalúa la obra titulada {título}, con intención {intención artística}, emoción {emoción y narrativa}, tonalidad y tempo {tonalidad y BPM}, instrumentación {instrumentación}, modelo {modelo y versión}, fuentes y licencias {fuentes y licencias}. Revisa estos archivos {archivos entregados}. Asigna 0–100 a intención 20%, armonía 15%, control generativo 20%, producción 15%, originalidad 10%, reproducibilidad 10% y ética/trazabilidad 10%. Para cada nota cita evidencia y propone corrección. Solo describe cualidades auditivas que hayas podido escuchar; usa estas marcas temporales {marcas temporales de escucha}. Si falta un archivo, licencia o registro, declara la ausencia y no inventes el resultado.' },
+      { name: 'Ficha de procedencia del render', outcome: 'Registrar la identidad técnica y de licencia de un archivo sin presumir derechos.', variables: ['título', 'autor humano', 'modelo', 'revisión', 'prompt', 'negative prompt', 'semilla', 'pasos', 'guidance_scale', 'duración', 'sample rate real', 'licencia verificada', 'hash SHA-256'], text: 'Crea un registro JSON para {título}, autor humano {autor humano}, modelo {modelo} revisión {revisión}, prompt {prompt}, negative prompt {negative prompt}, semilla {semilla}, pasos {pasos}, guidance_scale {guidance_scale}, duración {duración}, sample rate real {sample rate real}, licencia comprobada {licencia verificada} y hash SHA-256 {hash SHA-256}. No declares una licencia o titularidad que no esté respaldada por una fuente.' },
     ],
     exercise: {
-      title: 'Letra anotada, dirección ejecutada y evaluación con tres pruebas', deliverable: 'Entregable del módulo: letra completa con anotaciones de interpretación y dinámica, el prompt de dirección correspondiente y la ficha de evaluación con tres veredictos.',
+      title: 'Obra musical controlada por IA: entrega y defensa', deliverable: 'Paquete de proyecto_modulo_3 completo: ficha creativa, MIDI base y revisado, cinco versiones WAV con prompts y parámetros, análisis armónico, reportes JSON/CSV, demo final, stems, evidencia de mezcla, licencias, fuentes, metadatos SHA-256, informe final y defensa oral. Incluye la letra y dirección vocal trabajadas en las sesiones 08 y 09.',
       steps: [
         'Toma la letra de la Sesión 09 y anótala con las seis marcas, al menos una por sección.',
         'Escribe la tabla emoción→instrucción para las dos emociones centrales de la canción, cuatro traducciones técnicos por emoción.',
@@ -847,12 +890,28 @@ export const COURSE_LESSONS: Lesson[] = [
         'Genera dos tomas en el estudio con voces, o dos en el estudio local si trabajas instrumental con una melodía silbada como referencia.',
         'Aplica las tres pruebas con marcas de tiempo y elige UNA sola corrección; ejecuta v2 cambiando únicamente ese eje.',
         'Cierra con tres líneas: qué pidió tu dirección, qué devolvió el motor y qué aprendiste sobre qué se puede dirigir.',
+        'Completa la ficha creativa con concepto, emoción, narrativa, tonalidad tentativa, BPM, métrica, instrumentación y estructura.',
+        'Construye el MIDI base con acordes, bajo, melodía o motivo, arpegio y percusión; conserva también la exportación revisada y explica cada cambio.',
+        'Analiza centro tonal, acordes y función armónica con music21; contrasta la estimación con la partitura y la escucha.',
+        'Genera cinco versiones A–E con una sola variable cambiada por comparación; guarda prompts, negative prompt, semilla, pasos, guidance_scale y duración.',
+        'Escucha las cinco versiones completas, documenta artefactos y decisiones de selección; no asignes adjetivos a un audio que no has escuchado.',
+        'Integra el material en el DAW, exporta la demo y stems alineados, mide loudness, pico y true peak y realiza una escucha crítica con marcas de tiempo.',
+        'Completa licencias, fuentes, metadata JSON y SHA-256; separa el aporte humano de lo generado y de lo procesado.',
+        'Prepara una defensa oral de ocho a diez minutos y responde las preguntas con MIDI, registros, archivos y marcas temporales.',
       ],
       checklist: [
         'Cada sección de la letra tiene al menos una marca de las seis, sin marcas nuevas inventadas.',
         'El prompt de estilo repite literalmente la dirección anotada: cada marca tiene su traducción.',
         'La ficha de evaluación tiene tres veredictos con marca de tiempo y una única corrección para v2.',
         'La frase clave del coro se entiende sin leer la letra en la versión final.',
+        'La intención artística está definida antes de generar y se reconoce en la estructura.',
+        'El MIDI base y el revisado son editables y se conservan por separado.',
+        'La armonía se analiza con notas, acordes, función y revisión humana.',
+        'Las cinco versiones cambian una sola variable por comparación y tienen registro completo.',
+        'Los WAV se escucharon y las decisiones están justificadas con marcas temporales.',
+        'La mezcla y el master tienen mediciones reales y una lista de escucha crítica.',
+        'La procedencia, los permisos, las licencias y los hashes están documentados sin asumir derechos.',
+        'El informe y la defensa separan qué produjo la IA, qué decidió el estudiante y qué evidencia lo prueba.',
       ],
     },
     listening: [
@@ -868,8 +927,13 @@ export const COURSE_LESSONS: Lesson[] = [
       { mistake: 'Pedir la misma intensidad vocal en verso y coro.', fix: 'Escribe el contraste con qué se retira en el verso y qué se suma en el coro, no con adjetivos de volumen.' },
       { mistake: 'Corregir cinco cosas después de una mala toma.', fix: 'Una corrección por versión, con marca de tiempo como evidencia. Así sabrás qué arregló qué.' },
       { mistake: 'Confiar en que el matiz fino de una sílaba va a salir igual dos veces.', fix: 'Acepta que eso no es dirigible por prompt: genera varias tomas y elige, o graba una guía vocal propia.' },
+      { mistake: 'Afirmar que la pieza está en una tonalidad solo porque se escribió en el prompt.', fix: 'Analiza el MIDI y el render; contrasta notas, acordes y cadencias, y declara la estimación como tal.' },
+      { mistake: 'Cambiar prompt, semilla, duración y guidance a la vez.', fix: 'Diseña variaciones con una única variable controlada y guarda el resto de parámetros idénticos.' },
+      { mistake: 'Guardar guidance o fijar el WAV a 44.1 kHz sin revisar la API.', fix: 'Usa guidance_scale y exporta con pipeline.vae.sampling_rate; registra la versión de Diffusers y del modelo.' },
+      { mistake: 'Generar una sola llamada de Stable Audio para cubrir una pieza de 60–120 segundos.', fix: 'Limita cada fragmento al máximo documentado por el modelo y crea la duración final mediante arreglo, edición y continuidad en el DAW.' },
+      { mistake: 'Confundir hash, licencia del modelo y derechos de la grabación.', fix: 'El hash verifica identidad del archivo; revisa por separado la licencia del modelo/servicio y los permisos de samples, voces y materiales externos.' },
     ],
-    takeaway: 'Dirigir una voz es escribir qué se oye en cada sección y verificarlo con marcas de tiempo.',
+    takeaway: 'La IA entrega material; el estudiante define la intención, controla el proceso, toma las decisiones musicales y valida el resultado con evidencia reproducible.',
   },
   {
     id: 'm04-l11', moduleIndex: 4, lessonNumber: 11,
