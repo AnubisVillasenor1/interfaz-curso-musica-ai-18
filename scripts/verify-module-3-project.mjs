@@ -27,7 +27,7 @@ const checks = [
   ['Módulo 3 capstone is integrated into existing m03-l10', course.includes("title: 'Proyecto final: obra musical controlada por IA'") && course.includes("id: 'm03-l10'")],
   ['course source includes controlled Stable Audio parameters', course.includes('guidance_scale') && course.includes('audio_end_in_s') && course.includes('pipeline.vae.sampling_rate')],
   ['course source preserves human and AI provenance distinction', course.includes('qué material produjo el modelo') && course.includes('qué decisiones tomó la persona')],
-  ['final project document exists with all seven rubric weights', rubricWeights.every((weight) => new RegExp('(?:^|\\\\D)' + weight + '%').test(rubric))],
+  ['final project document exists with all seven rubric weights', rubricWeights.every((weight) => rubric.includes(weight + '%'))],
   ['final project document requires five versions and oral defense', rubric.includes('version_A.wav') && rubric.includes('Defensa oral') && rubric.includes('Reproducibilidad')],
   ['MIDI generator produces an editable multi-track MIDI', midiScript.includes('pretty_midi.PrettyMIDI') && midiScript.includes('midi.instruments.extend')],
   ['Stable Audio API uses guidance_scale and model sample rate', audioScript.includes('guidance_scale=') && audioScript.includes('pipeline.vae.sampling_rate')],
