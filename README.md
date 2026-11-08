@@ -25,7 +25,7 @@ documento mide, no supone: cada afirmación trae la prueba y el comando.
 | Laboratorio técnico de audio e IA musical | `app/curso/laboratorio-audio/`, `lib/advanced-audio-curriculum.ts` | dos módulos complementarios con ocho lecciones, código, rúbricas y fuentes técnicas |
 | Exámenes y revisión formativa | `app/api/advanced-audio/`, `lib/advanced-audio-exam.ts` | 20 preguntas por módulo; claves solo en servidor; IA revisa texto aportado y requiere login/proveedor |
 | Pagos | `app/api/checkout/`, `app/api/stripe/` | flujo escrito, pendiente de claves y de montar el webhook |
-| Base de datos | `supabase/migrations/` | cuatro migraciones escritas, **todavía no aplicadas** |
+| Base de datos | `supabase/migrations/` | ocho archivos SQL versionados en la rama de hardening; el historial aplicado en Supabase debe verificarse antes de ejecutar o reparar migraciones |
 
 Nada de lo anterior es maqueta: se puede levantar con `pnpm dev` y tocar. Pero
 el sitio **no cobra ni guarda progreso hasta que haya variables de entorno y
@@ -37,11 +37,15 @@ migraciones aplicadas**, y las páginas lo dicen en vez de fingir que funcionan.
 app/                    # App Router: páginas, rutas de API, layout raíz
 components/             # UI: cinematic/, course/, account/, music-studio
 lib/                    # course.ts, music/, agent/, cinematic/, supabase/, utils
-supabase/migrations/    # schema, RLS, funciones RPC y storage
+supabase/migrations/    # schema, RLS, RPC, storage, examen, derechos y hardening
 public/                 # marca local (logo.svg, hero-studio.svg) y audio/
 docs/                   # DEPLOY_FAILURES.md y el análisis del proyecto
 proxy.ts                # refresco de sesión (reemplaza a middleware.ts en Next 16)
 ```
+
+## Estado de la base de datos y migraciones
+
+Vercel utiliza el proyecto prj_ogAIlFJ2Vs9Sll0NIT0h0YKricG4 y la URL pública de Supabase configurada apunta al proyecto qtfuflqujpblyklewclm. Los ocho archivos SQL de esta rama describen el orden de cambios en el repositorio; no prueban cuáles están aplicados en la base remota. Consulta docs/VERCEL_SUPABASE_AUDIT_2026-11-07.md y verifica supabase_migrations.schema_migrations en el proyecto correcto antes de ejecutar db push o reparar el historial.
 
 ## Laboratorio técnico complementario
 
