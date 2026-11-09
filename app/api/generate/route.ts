@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 
 import { getAppUrl } from '@/lib/app-url'
+import { isAdminUser } from '@/lib/admin-access'
 import { signCallbackUrl } from '@/lib/callback-signature'
 import { COURSE_LESSONS } from '@/lib/course'
 import { createTask, setTaskStatus } from '@/lib/music/task-store'
@@ -84,9 +85,14 @@ export async function POST(request: Request) {
   // rompía joins/progreso del curso.
   const validLessonId = lessonId && COURSE_LESSONS.some((lesson) => lesson.id === lessonId) ? lessonId : null
 
-  // Reserva atómica de cupo.
-  const quota = await supabase.rpc('consume_generation_quota', { p_owner: user.id, p_engine: engine })
-  const granted = (quota.data as Array<{ allowed: boolean; reason: string | null; limit_total: number; limit_used: number }> | null)?.[0]
+  // La cuenta propietaria usa el mismo flujo de seguridad, pero no consume cupo.
+  // El privilegio depende únicamente del email verificado por Supabase, nunca del
+  // cuerpo de la petición ni de metadata editable desde el navegador.
+  const adminAccount = isAdminUser(user)
+  const quota = adminAccount ? { data: null, error: null } : await supabase.rpc('consume_generation_quota', { p_owner: user.id, p_engine: engine })
+  const granted = adminAccount
+    ? { allowed: true, reason: null, limit_total: 999999, limit_used: 0 }
+    : (quota.data as Array<{ allowed: boolean; reason: string | null; limit_total: number; limit_used: number }> | null)?.[0]
 
   if (!quota.error && granted?.allowed !== true) {
     return NextResponse.json(

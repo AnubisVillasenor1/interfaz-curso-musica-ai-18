@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 
-import { FREE_TIER } from '@/lib/products'
+import { FREE_TIER, PRO_PRODUCT } from '@/lib/products'
+import { isAdminUser } from '@/lib/admin-access'
 import { SUPABASE_NOT_CONFIGURED } from '@/lib/supabase/config'
 import { createClient } from '@/lib/supabase/server'
 
@@ -29,7 +30,8 @@ export async function GET() {
   } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Inicia sesión para ver tu plan.', code: 'unauthorized' }, { status: 401 })
 
-  const { data, error } = await supabase.rpc('read_entitlement')
+  const adminAccount = isAdminUser(user)
+  const { data, error } = adminAccount ? { data: null, error: null } : await supabase.rpc('read_entitlement')
 
   if (error) {
     console.error('[entitlement] RPC falló', error.message)
@@ -42,16 +44,16 @@ export async function GET() {
   return NextResponse.json(
     {
       entitlement: data ?? {
-        plan: FREE_TIER.plan,
-        active: FREE_TIER.active,
-        daily_limit: FREE_TIER.dailyLimit,
+        plan: adminAccount ? PRO_PRODUCT.grant.plan : FREE_TIER.plan,
+        active: adminAccount || FREE_TIER.active,
+        daily_limit: adminAccount ? 999999 : FREE_TIER.dailyLimit,
         used_today: 0,
-        local_daily_limit: FREE_TIER.localDailyLimit,
+        local_daily_limit: adminAccount ? 999999 : FREE_TIER.localDailyLimit,
         local_used_today: 0,
-        role: 'user',
+        role: adminAccount ? 'admin' : 'user',
         songs_total: 0,
         songs_ready: 0,
-        lessons_done: 0,
+        is_admin: adminAccount,
       },
       userId: user.id,
       email: user.email ?? null,
