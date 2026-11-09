@@ -165,3 +165,31 @@ jobs:
 
       - name: Run AudioCore service tests
         run: python -m unittest discover -s tests -v
+
+  native-core:
+    name: Native C++ audio core build and tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure scalar build
+        run: cmake -S native/tamv-audiocore -B build/native -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build native core and contract tests
+        run: cmake --build build/native --parallel 2
+
+      - name: Run native contract tests
+        run: ctest --test-dir build/native --output-on-failure
+
+  audiocore-image:
+    name: TAMV-AudioCore reference image
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build NumPy reference image
+        run: docker build -f services/audiocore/Dockerfile -t tamv-audiocore:ci .
