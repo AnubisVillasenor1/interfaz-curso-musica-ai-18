@@ -141,6 +141,8 @@ export default function CinematicIntro({
   const [bedState, setBedState] = useState<BedState>('idle')
   const [progressKey, setProgressKey] = useState(0)
   const [frozen, setFrozen] = useState(false)
+  const [started, setStarted] = useState(false)
+  const [ended, setEnded] = useState(false)
 
   const env = useRef<CinematicEnv>(createEnv())
   const shellRef = useRef<HTMLDivElement>(null)
@@ -207,10 +209,8 @@ export default function CinematicIntro({
 
     const unsubscribe = bed.onState(setBedState)
 
-    void bed.enable()
-
     const retry = () => {
-      if (bed.playState !== 'playing') void bed.enable()
+      if (started && bed.playState !== 'playing') void bed.enable()
     }
 
     window.addEventListener('pointerdown', retry, { passive: true })
@@ -223,7 +223,7 @@ export default function CinematicIntro({
       bed.dispose()
       bedRef.current = null
     }
-  }, [])
+  }, [started])
 
   useEffect(
     () => () => {
@@ -282,11 +282,28 @@ export default function CinematicIntro({
 
   const advance = useCallback(() => {
     if (act < CINEMATIC_ACTS.length - 1) goTo(act + 1)
-    else finish(false)
-  }, [act, finish, goTo])
+    else {
+      bedRef.current?.disable()
+      setEnded(true)
+    }
+  }, [act, goTo])
+
+  const startExperience = useCallback(() => {
+    setStarted(true)
+    setEnded(false)
+    void bedRef.current?.enable()
+  }, [])
+
+  const restartExperience = useCallback(() => {
+    setEnded(false)
+    setStarted(true)
+    setAct(0)
+    setProgressKey((key) => key + 1)
+    void bedRef.current?.enable()
+  }, [])
 
   useEffect(() => {
-    if (!autoAdvance || frozen || warping || !capabilities || capabilities.reduced) {
+    if (!started || ended || !autoAdvance || frozen || warping || !capabilities || capabilities.reduced) {
       return
     }
 
@@ -303,7 +320,7 @@ export default function CinematicIntro({
     const id = window.setTimeout(advance, Math.max(0, durationMs - leadInMs))
 
     return () => window.clearTimeout(id)
-  }, [act, advance, autoAdvance, capabilities, frozen, progressKey, warping])
+  }, [act, advance, autoAdvance, capabilities, ended, frozen, progressKey, started, warping])
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -447,6 +464,36 @@ export default function CinematicIntro({
       aria-label="Intro cinemática de Play and Go"
       className="intro-shell"
     >
+      {!started && (
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/95 p-6 text-center backdrop-blur-xl">
+          <div className="relative flex size-28 items-center justify-center">
+            <span className="absolute inset-0 animate-ping rounded-full border border-cyan-300/40" />
+            <span className="absolute inset-3 animate-spin rounded-full border border-orange-300/40 [animation-duration:8s]" />
+            <span className="relative flex size-12 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-300 via-white to-orange-400 text-black shadow-2xl shadow-cyan-300/40">▶</span>
+          </div>
+          <p className="mt-8 font-mono text-[10px] uppercase tracking-[.3em] text-cyan-200">Experiencia inmersiva 3D AAA</p>
+          <h2 className="mt-4 max-w-2xl text-3xl font-black tracking-[.12em] text-white sm:text-5xl">PLAY &amp; GO <span className="bg-gradient-to-r from-cyan-300 via-white to-orange-400 bg-clip-text text-transparent">CINEMATIC</span></h2>
+          <p className="mt-5 max-w-xl text-sm leading-6 text-slate-300">Una experiencia audiovisual generativa sobre soberanía tecnológica latinoamericana. Activa el motor de audio y entra al recorrido.</p>
+          <button type="button" onClick={startExperience} className="mt-8 inline-flex items-center gap-3 rounded-2xl bg-gradient-to-r from-cyan-300 via-white to-orange-400 px-7 py-4 text-xs font-black tracking-[.14em] text-black shadow-2xl shadow-cyan-300/20 transition hover:scale-105" data-first-control>
+            ✦ INICIAR EXPERIENCIA CINEMÁTICA AAA <span aria-hidden="true">→</span>
+          </button>
+          <p className="mt-6 font-mono text-[9px] uppercase tracking-[.2em] text-slate-500">TAMV ONLINE NETWORK · MINERAL DEL MONTE, HGO.</p>
+        </div>
+      )}
+
+      {ended && (
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/95 p-6 text-center backdrop-blur-xl">
+          <div className="flex size-20 items-center justify-center rounded-3xl border border-cyan-300/40 bg-slate-950 text-3xl text-cyan-200 shadow-2xl shadow-cyan-300/20">✦</div>
+          <p className="mt-7 font-mono text-[10px] uppercase tracking-[.3em] text-cyan-200">Declaración de existencia</p>
+          <h2 className="mt-3 max-w-2xl text-2xl font-black tracking-[.08em] text-white sm:text-4xl">SOBERANÍA TECNOLÓGICA ACTIVA</h2>
+          <p className="mt-4 max-w-lg text-sm leading-6 text-slate-300">Has presenciado la introducción al ecosistema independiente de investigación y música con IA.</p>
+          <div className="mt-7 flex flex-col gap-3 sm:flex-row">
+            <button type="button" onClick={restartExperience} className="intro-pill justify-center">Repetir intro</button>
+            <button type="button" onClick={() => finish(false)} className="intro-cta justify-center">Entrar a Play &amp; Go <span aria-hidden="true">→</span></button>
+          </div>
+        </div>
+      )}
+
       {/* Capa WebGL: el grade del acto se funde en CSS, no en el corte */}
       <div className="intro-stage absolute inset-0" style={stageVars} aria-hidden="true">
         {ready && capabilities?.webgl ? (
