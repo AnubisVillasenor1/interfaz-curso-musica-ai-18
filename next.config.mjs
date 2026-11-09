@@ -27,6 +27,7 @@ const nextConfig = {
         headers: [
           { key: 'X-Content-Type-Options', value: 'nosniff' },
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+          { key: 'Strict-Transport-Security', value: 'max-age=63072000' },
           // SAMEORIGIN y no DENY: el panel de Vercel y las apps internas
           // previsualizan el deploy en un iframe propio; DENY cerraría la vista.
           { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
