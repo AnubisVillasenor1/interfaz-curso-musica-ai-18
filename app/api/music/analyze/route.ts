@@ -13,7 +13,10 @@ export const maxDuration = 30
  * 503 en vez de fingir un análisis nativo. El DSP de navegador sigue
  * funcionando sin este servicio.
  */
-const MAX_BINS = 32_768
+// El servicio sólo acepta hasta 16 384 bins (FFT de 32 768). Si el proxy
+// dejara pasar 32 768, el navegador creería que caben y el upstream lo
+// rechazaría con un 400 confuso.
+const MAX_BINS = 16_384
 const MIN_BINS = 32
 
 function fail(status: number, error: string, code: string) {
@@ -27,7 +30,7 @@ export async function GET() {
     engine: configured ? 'remote-audiocore' : 'browser-dsp-only',
     contract: {
       endpoint: 'POST /api/music/analyze',
-      body: { spectrumDb: 'number[32..32768]', sampleRate: '8000..192000', fftSize: 'power of two ≤ 32768' },
+      body: { spectrumDb: 'number[32..16384]', sampleRate: '8000..192000', fftSize: 'power of two ≤ 32768' },
       response: { chroma: 'number[12]', key: 'object | null', contrast: 'object', level: '0..1', engine: 'numpy | native' },
     },
     note: configured

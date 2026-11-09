@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import {
   AlertTriangle,
@@ -127,14 +127,27 @@ export function LessonView({
   previous?: LessonNavItem
   next?: LessonNavItem
 }) {
-  const { progress, applyCompletion } = useCourseProgress()
+  const { progress, checkpoints, applyCompletion } = useCourseProgress()
   const [submitting, setSubmitting] = useState(false)
   const [feedback, setFeedback] = useState<string | null>(null)
   const [newBadges, setNewBadges] = useState<string[]>([])
   const [error, setError] = useState<string | null>(null)
   const [checked, setChecked] = useState<Record<number, boolean>>({})
 
+  useEffect(() => {
+    setChecked(checkpoints[lesson.id] ?? {})
+  }, [checkpoints, lesson.id])
+
   const isDone = progress.completed.includes(lesson.id)
+
+  async function saveCheckpoint(next: Record<number, boolean>) {
+    setChecked(next)
+    await fetch('/api/progress', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ lessonId: lesson.id, checkpoint: next }),
+    }).catch(() => undefined)
+  }
 
   async function markComplete() {
     if (submitting) return
@@ -323,7 +336,10 @@ export function LessonView({
                 <button
                   type="button"
                   aria-pressed={Boolean(checked[index])}
-                  onClick={() => setChecked((current) => ({ ...current, [index]: !current[index] }))}
+                  onClick={() => {
+                    const next = { ...checked, [index]: !checked[index] }
+                    void saveCheckpoint(next)
+                  }}
                   className="pg-check"
                 >
                   <span className="pg-check-box" aria-hidden="true">
@@ -335,8 +351,7 @@ export function LessonView({
             ))}
           </ul>
           <p className="pg-note mt-2 max-w-3xl">
-            Las casillas son una ayuda local para tu práctica; lo que queda registrado en tu cuenta es el botón
-            «Marcar como completada».
+            Las casillas se guardan automáticamente en tu cuenta; también marca la lección como completada cuando termines el entregable.
           </p>
         </div>
       </section>

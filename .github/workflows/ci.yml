@@ -80,6 +80,12 @@ jobs:
       - name: Verify exam and certificate security
         run: node scripts/verify-exam-security.mjs
 
+      - name: Verify cinematic presentation alignment
+        run: node scripts/verify-cinematic-presentation.mjs
+
+      - name: Verify TAMV-AudioCore browser/native contracts
+        run: node scripts/verify-audio-core.mjs
+
       - name: Verify advanced audio curriculum contracts
         run: node scripts/verify-advanced-audio-curriculum.mjs
 
@@ -135,3 +141,27 @@ jobs:
       - name: Run Module 3 tests
         working-directory: laboratorio-audio-ia
         run: python -m unittest discover -s modulo_3_ia/tests -v
+
+  audiocore-service:
+    name: TAMV-AudioCore service tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: services/audiocore
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: services/audiocore/requirements.txt
+
+      - name: Install service dependencies
+        run: python -m pip install -r requirements.txt
+
+      - name: Run AudioCore service tests
+        run: python -m unittest discover -s tests -v

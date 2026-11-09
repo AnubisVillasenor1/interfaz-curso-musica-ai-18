@@ -1,3 +1,4 @@
+import { generateText, gateway } from 'ai'
 import { NextResponse } from 'next/server'
 
 import {
@@ -91,62 +92,19 @@ interface ProviderReply {
 }
 
 async function askProvider(messages: ChatTurn[]): Promise<ProviderReply> {
-  const apiKey = process.env.AI_AGENT_API_KEY
-  if (!apiKey) throw new Error('sin AI_AGENT_API_KEY')
-
-  const base = (process.env.AI_AGENT_BASE_URL ?? 'https://api.bazaarlink.ai/v1').replace(/\/+$/, '')
-  const model = process.env.AI_AGENT_MODEL ?? 'nvidia/nemotron-3.5-lightning-free'
-
-  // Los modelos recientes (o-series, gpt-5) rechazan `max_tokens` y exigen
-  // `max_completion_tokens`; los antiguos rechazan el nuevo nombre. Se intenta
-  // con el moderno y, si el proveedor lo rechaza por parámetro no soportado,
-  // se reintenta con el legado. Sin esto, configurar un modelo actual dejaba
-  // cada llamada en 400 silencioso y siempre caía a la guía sin que nadie lo
-  // viera.
-  const payloadBase = {
-    model,
-    messages: [{ role: 'system', content: buildSystemPrompt() }, ...messages],
+  const model = agentProviderLabel()
+  const result = await generateText({
+    model: gateway(model),
+    system: buildSystemPrompt(),
+    messages,
     temperature: 0.4,
-    // Sin cabecera de identificación, muchos proveedores agrupan el tráfico
-    // en logs compartidos; el correo del alumno no debe entrar ahí.
-    stream: false,
-  }
+    maxOutputTokens: 500,
+    abortSignal: AbortSignal.timeout(20_000),
+  })
 
-  async function callProvider(tokenField: 'max_completion_tokens' | 'max_tokens') {
-    return fetch(`${base}/chat/completions`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
-      signal: AbortSignal.timeout(20_000),
-      body: JSON.stringify({ ...payloadBase, [tokenField]: 500 }),
-    })
-  }
-
-  let response = await callProvider('max_completion_tokens')
-  if (response.status === 400) {
-    const detail = await response.text().catch(() => '')
-    if (/max_tokens|max_completion_tokens|unsupported_parameter/i.test(detail)) {
-      response = await callProvider('max_tokens')
-    } else {
-      throw new Error(`proveedor 400: ${detail.slice(0, 300)}`)
-    }
-  }
-
-  if (!response.ok) {
-    // El cuerpo del error del proveedor puede traer datos de la cuenta; se
-    // queda en el log del servidor y el usuario solo ve que no respondió.
-    const detail = await response.text().catch(() => '')
-    throw new Error(`proveedor ${response.status}: ${detail.slice(0, 300)}`)
-  }
-
-  const payload = (await response.json().catch(() => null)) as {
-    choices?: Array<{ message?: { content?: string } }>
-    model?: string
-  } | null
-
-  const content = payload?.choices?.[0]?.message?.content?.trim()
-  if (!content) throw new Error('el proveedor respondió sin contenido')
-
-  return { content: content.slice(0, 4000), model: payload?.model ?? model }
+  const content = result.text.trim()
+  if (!content) throw new Error('el Gateway respondió sin contenido')
+  return { content: content.slice(0, 4000), model }
 }
 
 /**
@@ -154,12 +112,11 @@ async function askProvider(messages: ChatTurn[]): Promise<ProviderReply> {
  *
  * Dos ramas y una sola promesa: nunca se finge una IA.
  *
- * - Con `AI_AGENT_API_KEY`, la pregunta se responde con un proveedor real
- *   compatible con /chat/completions, usando como contexto el programa del
- *   curso y el catálogo de precios.
- * - Sin clave, o si el proveedor falla o tarda demasiado, responde la guía
- *   determinista con el contenido curricular. La respuesta lleva
- *   `source: 'fallback'` y la interfaz lo dice.
+ * - El Vercel AI Gateway responde con un modelo real, usando como contexto el
+ *   programa del curso y el catálogo de precios sin exponer claves al cliente.
+ * - Si el Gateway falla o tarda demasiado, responde la guía determinista con
+ *   el contenido curricular. La respuesta lleva `source: 'fallback'` y la
+ *   interfaz lo dice.
  *
  * El system prompt viaja aparte del mensaje del usuario, para que lo que
  * alguien escriba en el chat no pueda reescribir las instrucciones.

@@ -13,8 +13,9 @@
 
 import type { LegalBlock, LegalSection } from '@/lib/legal/terms'
 
-export const PRIVACY_VERSION = '1.0'
-export const PRIVACY_EFFECTIVE_DATE = '1 de noviembre de 2026'
+export const PRIVACY_VERSION = '1.1'
+export const PRIVACY_EFFECTIVE_DATE = '8 de noviembre de 2026'
+export const PRIVACY_RIGHTSHOLDER = 'Edwin Oswaldo Castillo Trejo'
 
 export const PRIVACY_RESPONSIBLE = {
   name: 'TAMV Online Network',

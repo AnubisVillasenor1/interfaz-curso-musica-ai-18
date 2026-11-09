@@ -44,7 +44,7 @@ import { COURSE_PRODUCT } from '@/lib/products'
  * los mismos colores que el resto de la interfaz. El lockup de TAMV vuelve a
  * ser tipografía real, no una JPG con el fondo recortado.
  */
-const logoMark = '/brand/logo.svg'
+const logoMark = '/brand/tamv-official.jpg'
 
 /**
  * Precio único de verdad: se lee de `lib/products.ts`, que es lo que cobra el

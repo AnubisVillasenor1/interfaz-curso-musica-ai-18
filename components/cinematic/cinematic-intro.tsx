@@ -17,7 +17,7 @@ import CinematicStage from './cinematic-stage'
 import { actAt, CINEMATIC_ACTS, gradeFilter, withAlpha } from '@/lib/cinematic/scenes'
 import { markIntroSeen } from '@/lib/cinematic/gate'
 import { INTRO_TRACK, SoundBed, type BedState } from '@/lib/cinematic/soundbed'
-const TAMV_LOGO_URL = '/brand/logo.svg'
+const TAMV_LOGO_URL = '/brand/tamv-official.jpg'
 
 import {
   createEnv,
@@ -38,6 +38,10 @@ interface Props {
 
 const FOCUSABLE =
   'button:not([disabled]), [href], input, [tabindex]:not([tabindex="-1"])'
+
+// Keep animated chapter transitions inside the declared 60-second timeline.
+const ACT_TRANSITION_MS = 520
+const ACT_SETTLE_MS = 320
 
 const cssVars = (vars: Record<string, string>): CSSProperties =>
   vars as unknown as CSSProperties
@@ -260,9 +264,9 @@ export default function CinematicIntro({
           env.current.warp = 0.09
 
           transitionTimers.current.push(
-            window.setTimeout(() => setWarping(false), 320),
+            window.setTimeout(() => setWarping(false), ACT_SETTLE_MS),
           )
-        }, 520),
+        }, ACT_TRANSITION_MS),
       )
     },
     [act, warping],
@@ -286,7 +290,17 @@ export default function CinematicIntro({
       return
     }
 
-    const id = window.setTimeout(advance, actAt(act).duration * 1000)
+    const durationMs = actAt(act).duration * 1000
+    const lastAct = act === CINEMATIC_ACTS.length - 1
+    // Act 0 starts immediately; later acts begin 520 ms into a transition
+    // and their clock starts 320 ms after the new scene is mounted.
+    const leadInMs =
+      act === 0
+        ? ACT_TRANSITION_MS
+        : lastAct
+          ? ACT_SETTLE_MS
+          : ACT_TRANSITION_MS + ACT_SETTLE_MS
+    const id = window.setTimeout(advance, Math.max(0, durationMs - leadInMs))
 
     return () => window.clearTimeout(id)
   }, [act, advance, autoAdvance, capabilities, frozen, progressKey, warping])
@@ -490,8 +504,9 @@ export default function CinematicIntro({
 
         <header className="flex items-start justify-between gap-6">
           <div className="intro-monogram intro-fade flex items-center gap-3" style={cssVars({ animationDelay: '120ms' })}>
-            <img src={TAMV_LOGO_URL} alt="TAMV Online Network" width={38} height={38} className="size-9 rounded-full object-cover ring-1 ring-cyan-100/50" />
-            <span><i aria-hidden="true">TAMV</i><small>Play and Go · Online Network</small></span>
+            <img src="/brand/play-go-official.png" alt="Play & Go" width={42} height={42} className="size-10 rounded-xl object-cover ring-1 ring-[#d8c99d]/50" />
+            <img src={TAMV_LOGO_URL} alt="TAMV Online Network" width={42} height={42} className="size-10 rounded-xl object-cover object-top ring-1 ring-[#d8c99d]/60" />
+            <span><i aria-hidden="true">TAMV</i><small>Play &amp; Go · Online Network</small></span>
           </div>
 
           <div className="intro-fade flex items-center gap-2.5" style={cssVars({ animationDelay: '260ms' })}>

@@ -113,3 +113,29 @@ El endpoint del examen guardaba tanto el intento como la constancia usando el cl
 El campo entitlement_reconciliation_required documenta filas que necesitan contraste con Stripe, pero la derivación de acceso en sync_entitlement_effective_state, consume_generation_quota y read_entitlement no consulta ese campo. Una fila marcada puede seguir activando Pro si subscription_id, subscription_status y current_period_end satisfacen la condición de vigencia. Esto evita tratar la marca como una protección técnica automática.
 
 La puerta de liberación es operativa: no aplicar la migración 20261107190000_entitlement_lifecycle.sql a producción mientras existan filas ambiguas sin reconciliar y revisar. Consultar docs/ENTITLEMENT_LIFECYCLE.md, contrastar cada cuenta con Checkout/Subscriptions en Stripe y limpiar la marca solo después de verificar los tres derechos independientes. No modificar a ciegas las cuotas ni revocar acceso de clientes históricos.
+
+### P1 - TAMV-AudioCore vive fuera de Vercel
+
+El DSP de navegador (`lib/music/analysis-core.mjs`) y el compositor local no
+necesitan credenciales ni backend. El nucleo C++ (`native/tamv-audiocore/`) y
+el servicio HTTP (`services/audiocore/`) son opcionales: Vercel Functions no
+ejecuta binarios C++, CUDA ni TensorRT, asi que `/api/music/analyze` solo
+reenvia a `TAMV_AUDIO_CORE_URL` y falla cerrado con 503 cuando no esta
+configurado. El navegador conserva su analisis local en ese caso.
+
+Checklist antes de prometer analisis nativo en produccion:
+
+- [ ] Compilar el nucleo y el servicio en CI o en una imagen multi-etapa; no hay
+      toolchain C++/Docker garantizado en las maquinas de desarrollo actuales.
+- [ ] Desplegar `services/audiocore` en un host con CPU real y definir
+      `TAMV_AUDIO_CORE_URL` y `TAMV_AUDIO_CORE_TOKEN` en Vercel (Production).
+- [ ] Verificar que el servicio exige Bearer fuera de loopback y limita el
+      tamano del espectro (32..16384 bins, FFT <= 32768).
+- [ ] Aplicar `supabase/migrations/20261108200000_audio_core.sql` en staging y
+      comprobar RLS de `audio_analysis_jobs` con dos usuarios.
+- [ ] Tratar AVX-512, TensorRT y LibTorch como perfiles opcionales no
+      garantizados; el fallback escalar/AVX2 es el contrato soportado.
+
+El plan multiagente de `/api/music/agents` es una heuristica local
+determinista (`source: 'rules'`); no consume cuota de un LLM ni certifica
+calidad musical. No presentarlo como IA remota ni como evaluacion humana.

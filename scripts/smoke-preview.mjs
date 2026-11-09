@@ -1,6 +1,8 @@
 const baseUrl = (process.env.BASE_URL || 'http://127.0.0.1:3000').replace(/\/$/, '')
 const checks = [
   { path: '/', label: 'home', method: 'GET', expected: [200] },
+  { path: '/crear', label: 'instant composer landing', method: 'GET', expected: [200] },
+  { path: '/presentacion', label: 'direct cinematic presentation entry', method: 'GET', expected: [307, 308] },
   { path: '/curso', label: 'course catalog', method: 'GET', expected: [200] },
   { path: '/precios', label: 'pricing', method: 'GET', expected: [200] },
   { path: '/perfil', label: 'profile route', method: 'GET', expected: [200, 307, 308] },
@@ -24,6 +26,9 @@ const checks = [
   { path: '/api/generate', label: 'generation fails closed without Supabase', method: 'POST', body: { title: 'CI smoke test', prompt: 'instrumental piano', engine: 'local' }, expected: [503] },
   { path: '/api/stripe/webhook', label: 'Stripe webhook fails closed without secrets', method: 'POST', body: {}, expected: [503] },
   { path: '/api/music/plan', label: 'music planner fallback', method: 'POST', body: { prompt: 'instrumental ambient piano for focus' }, expected: [200] },
+  { path: '/api/music/agents', label: 'multi-agent manifest', method: 'GET', expected: [200] },
+  { path: '/api/music/agents', label: 'multi-agent deterministic rules plan', method: 'POST', body: { prompt: 'house cinemático en La menor a 122 bpm' }, expected: [200] },
+  { path: '/api/music/analyze', label: 'native analysis fails closed without AudioCore service', method: 'POST', body: { spectrumDb: Array.from({ length: 32 }, () => -60), sampleRate: 48000, fftSize: 64 }, expected: [503] },
   { path: '/api/agent', label: 'course assistant fallback', method: 'POST', body: { message: '¿Qué aprenderé en el curso?' }, expected: [200] },
   { path: '/api/advanced-audio/exam?module=dsp', label: 'DSP exam publishes questions without answer key', method: 'GET', expected: [200] },
   { path: '/api/advanced-audio/exam?module=mastering', label: 'mastering exam publishes questions without answer key', method: 'GET', expected: [200] },
@@ -51,11 +56,37 @@ for (const check of checks) {
       continue
     }
 
+    if (check.path === '/presentacion') {
+      const location = response.headers.get('location')
+      const target = location ? new URL(location, baseUrl) : null
+      const redirectOk = target?.pathname === '/' && target.searchParams.get('intro') === 'on'
+      if (!redirectOk) {
+        failures += 1
+        console.error('FAIL presentation entry: expected redirect to /?intro=on, got ' + (location || 'no Location header'))
+      } else {
+        console.log('PASS presentation entry: redirects to /?intro=on')
+      }
+    }
+
     if (check.path === '/api/music/plan' && response.status === 200) {
       const payload = await response.json().catch(() => null)
       if (!payload?.plan || typeof payload.plan !== 'object') {
         failures += 1
         console.error('FAIL music planner response contract: missing plan object')
+      }
+    }
+    if (check.method === 'POST' && check.path === '/api/music/agents' && response.status === 200) {
+      const payload = await response.json().catch(() => null)
+      const plan = payload?.plan
+      const planOk =
+        plan?.agent === 'TAMV-MultiAgent-Orchestrator' &&
+        plan?.source === 'rules' &&
+        typeof plan?.intent?.genreId === 'string' &&
+        Array.isArray(plan?.composition?.chordProgression) &&
+        plan.composition.chordProgression.length > 0
+      if (!planOk) {
+        failures += 1
+        console.error('FAIL multi-agent contract: missing orchestrator plan or non-rules source')
       }
     }
     if (check.path === '/api/agent' && response.status === 200) {
