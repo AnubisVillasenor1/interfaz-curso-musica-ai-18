@@ -2,6 +2,8 @@
 
 import { FormEvent, useState } from 'react'
 
+import { AgentControlPanel } from '@/components/agent-control-panel'
+
 type Plan = { title: string; genre: string; mood: string; tempo: number; key: string; instruments: string[]; structure: string[]; engine: string }
 type Result = { id: string; title: string; creator: string; source: string; license?: string; url: string }
 
@@ -69,6 +71,7 @@ export function MusicStudio() {
           <ul className="mt-4 space-y-3">{results.map((item) => <li key={item.id} className="pg-inset"><a className="pg-minilink" href={item.url} target="_blank" rel="noreferrer">{item.title}</a><p className="pg-note mt-1">{item.creator} · {item.source}</p><p className="pg-note mt-1 break-all">Licencia: {item.license}</p></li>)}</ul>
         </section>
       </div>
+      <div className="mt-6"><AgentControlPanel /></div>
       <aside className="pg-callout mt-6"><strong>Alcance:</strong> el exportador crea MIDI procedural con melodía y acordes, no audio renderizado ni stems. Usa un DAW/sintetizador propio para producir audio. El planificador sin Ollama es determinista y no utiliza un modelo de IA.</aside>
   </div>
 }

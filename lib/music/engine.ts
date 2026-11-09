@@ -5,6 +5,7 @@
  */
 
 import type { Arrangement, NoteEvent } from './arrangement'
+import { analysisFromAnalyser, type SpectrumAnalysis } from './analysis'
 
 export type EngineState = 'idle' | 'loading' | 'ready' | 'playing' | 'paused' | 'error'
 
@@ -387,6 +388,20 @@ export class MusicEngine {
     if (raw instanceof Float32Array) return raw
     if (Array.isArray(raw)) return Float32Array.from(raw as number[])
     return null
+  }
+
+  /**
+   * Análisis armónico del frame actual: chroma, tonalidad, contraste y nivel.
+   *
+   * Usa el mismo `Analyser` que alimenta el visualizador, así que no añade un
+   * segundo grafo de audio ni pide permiso al usuario. Devuelve `null` antes de
+   * cargar un arreglo o si el navegador no entrega FFT.
+   */
+  hybridAnalysis(): SpectrumAnalysis | null {
+    const data = this.analyserData()
+    if (!data?.length) return null
+    const sampleRate = this.Tone?.getContext().sampleRate ?? 48_000
+    return analysisFromAnalyser(data, sampleRate, data.length * 2)
   }
 
   /** Nivel medio de energía (0-1) derivado del FFT en dB; alimenta pulsos de la escena. */

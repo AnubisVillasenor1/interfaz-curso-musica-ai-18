@@ -1,23 +1,18 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   ArrowRight,
   Award,
-  BadgeCheck,
   Check,
   ChevronRight,
   Copy,
   CreditCard,
-  Headphones,
-  LockKeyhole,
   Menu,
   MessageCircle,
   Music2,
-  Pause,
-  Play,
   Send,
-  Sparkles,
+  ShieldCheck,
   Trophy,
   UserRound,
   UserPlus,
@@ -28,9 +23,14 @@ import {
 import Link from 'next/link'
 
 import { Dialog } from '@/components/ui/dialog'
+import { HeroSlider } from '@/components/cinematic/hero-slider'
+import { Manifesto } from '@/components/cinematic/manifesto'
+import { ModuleGrid } from '@/components/cinematic/module-grid'
+import { ParticleField } from '@/components/cinematic/particle-field'
 import { Reveal } from '@/components/reveal'
 import { TamvQuote } from '@/components/tamv-quote'
 import { COURSE_MODULES, COURSE_BADGES, COURSE_TOTAL_LESSONS, lessonsByModule } from '@/lib/course'
+import { hookRouteById } from '@/lib/music/hook-bridge'
 import { COURSE_PRODUCT } from '@/lib/products'
 
 /**
@@ -45,9 +45,6 @@ import { COURSE_PRODUCT } from '@/lib/products'
  * ser tipografía real, no una JPG con el fondo recortado.
  */
 const logoMark = '/brand/logo.svg'
-const playAndGoLogo = '/brand/logo.svg'
-const heroImage = '/brand/hero-studio.svg'
-const sampleAudio = '/audio/pista2.mp3'
 
 /**
  * Precio único de verdad: se lee de `lib/products.ts`, que es lo que cobra el
@@ -67,18 +64,6 @@ const totalMinutes = COURSE_MODULES.reduce(
   (sum, module) => sum + lessonsByModule(module.index).reduce((acc, lesson) => acc + lesson.minutes, 0),
   0,
 )
-
-const modules = COURSE_MODULES.map((module, index) => {
-  const lessons = lessonsByModule(module.index)
-  const minutes = lessons.reduce((sum, lesson) => sum + lesson.minutes, 0)
-  const state = index === 0 ? 'done' as const : index === 1 ? 'current' as const : 'locked' as const
-  return {
-    number: String(module.index).padStart(2, '0'),
-    title: module.title,
-    meta: `${lessons.length} lecciones · ${minutesLabel(minutes)}`,
-    state,
-  }
-})
 
 const editorialVisuals = [
   { src: '/visuals/aurora-studio.png', alt: 'Estudio de ondas sonoras cristalinas' },
@@ -155,14 +140,64 @@ export function CourseDashboard() {
   // El color no puede ser uno solo: el tono lo decide quien escribe el mensaje, no el
   // JSX, y viene del sistema (`--pg-amber` / `--pg-magenta`), no de un style en línea.
   const [statusTone, setStatusTone] = useState<'pending' | 'error'>('pending')
-  const [playing, setPlaying] = useState(false)
-  const audioRef = useRef<HTMLAudioElement | null>(null)
   const [chatOpen, setChatOpen] = useState(false)
   const [chatInput, setChatInput] = useState('')
   const [chatBusy, setChatBusy] = useState(false)
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
     { from: 'bot', text: 'Hola, soy el guía de Play and Go. Pregúntame por el curso, el precio, los pagos, tu idea musical o tus letras.', source: 'guide' },
   ])
+
+  /**
+   * Handoff del Instant Composer.
+   *
+   * El Hook & Bridge enlaza aquí con `?asistente=<ruta>&idea=<texto>`. Se lee
+   * con `window.location` en un efecto —no con `useSearchParams`— para no
+   * obligar a envolver toda la portada en un Suspense. El mensaje inicial es
+   * determinista y declara `source: 'guide'`: no se finge una llamada al modelo
+   * ni se gasta cuota antes de que la persona escriba.
+   */
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const params = new URLSearchParams(window.location.search)
+    const routeId = params.get('asistente')
+    const idea = params.get('idea')?.slice(0, 80).trim()
+    if (!routeId && !idea) return
+    const route = hookRouteById(routeId)
+    setChatOpen(true)
+    setChatMessages((messages) => [
+      ...messages,
+      {
+        from: 'bot',
+        text: route
+          ? `Vi que creaste «${idea || 'una pista'}» en el Instant Composer y te interesa la ${route.eyebrow.toLowerCase()}. ${route.assistantReply}`
+          : `Vi que creaste «${idea || 'una pista'}» en el Instant Composer. ¿Quieres aprender a producirla, a programar herramientas musicales o a convertir esa habilidad en un producto?`,
+        source: 'guide',
+      },
+    ])
+    setChatInput(route?.assistantQuestion ?? '¿Cuál es mi primer paso?')
+  }, [])
+
+  /**
+   * Cajón de navegación.
+   *
+   * En móvil la navegación superior vive detrás de la hamburguesa. Un
+   * desplegable dentro del header dejaba la página scrolleable por detrás y no
+   * se cerraba con Escape; el cajón bloquea el fondo, se cierra con la tecla y
+   * devuelve el foco al botón que lo abrió.
+   */
+  useEffect(() => {
+    if (!menuOpen) return
+    const previous = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    function onKey(event: KeyboardEvent) {
+      if (event.key === 'Escape') setMenuOpen(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      document.body.style.overflow = previous
+    }
+  }, [menuOpen])
 
   /**
    * Pregunta al guía del curso.
@@ -204,27 +239,6 @@ export function CourseDashboard() {
   }
 
   /**
-   * La muestra del hero antes solo movía una animación: el botón prometía audio
-   * y no sonaba nada. Ahora reproduce la pista real del intro cinemático y el
-   * ecualizador sigue el estado del elemento, no una promesa.
-   */
-  function toggleSample() {
-    const el = audioRef.current
-    if (!el) {
-      setPlaying((value) => !value)
-      return
-    }
-    if (el.paused) {
-      el.play()
-        .then(() => setPlaying(true))
-        .catch(() => setPlaying(false))
-    } else {
-      el.pause()
-      setPlaying(false)
-    }
-  }
-
-  /**
    * Copiar y personalizar: el botón existía y no copiaba nada, sólo cerraba el
    * diálogo. Ahora escribe al portapapeles y lo confirma; si el navegador exige
    * un contexto seguro o un permiso y falla, el texto sigue seleccionable.
@@ -257,6 +271,7 @@ export function CourseDashboard() {
   }
 
   const navLinks = [
+    ['Crear gratis', '/crear'],
     ['Curso', '/curso'],
     ['Estudio', '/studio'],
     ['Mi música', '/biblioteca'],
@@ -314,11 +329,15 @@ export function CourseDashboard() {
 
   return <main className="pg-shell relative min-h-screen overflow-x-clip" style={{ background: 'var(--pg-bg)' }}>
     <div aria-hidden="true" className="pg-glow" />
+    <div aria-hidden="true" className="cinema-scanlines" />
+    <ParticleField />
 
-    <header className="sticky top-0 z-30 backdrop-blur-xl" style={{ borderBottom: '1px solid var(--pg-hairline)', background: 'color-mix(in srgb, var(--pg-bg) 78%, transparent)' }}>
-      <div className="pg-container flex items-center justify-between py-4">
-        <a href="/" className="flex items-center gap-3">
-          <img src={logoMark} alt="" width={40} height={40} className="size-10 rounded-xl" />
+    <header className="cinema-header">
+      <div className="pg-container flex items-center justify-between gap-4 py-3">
+        <a href="/" className="cinema-brand flex items-center gap-3">
+          <span className="cinema-brand-mark">
+            <img src={logoMark} alt="" width={40} height={40} />
+          </span>
           <span className="block">
             <span className="block text-sm font-semibold tracking-[0.14em]">PLAY <span style={{ color: 'var(--pg-cyan)' }}>AND GO</span></span>
             <span className="pg-eyebrow" style={{ letterSpacing: '.24em' }}>por TAMV ONLINE NETWORK</span>
@@ -331,123 +350,104 @@ export function CourseDashboard() {
         </nav>
         <button
           type="button"
-          className="lg:hidden"
-          aria-label={menuOpen ? 'Cerrar menú' : 'Abrir menú'}
+          className="cinema-menu-button"
+          aria-label={menuOpen ? 'Cerrar temario' : 'Abrir temario'}
           aria-expanded={menuOpen}
+          aria-controls="nav-drawer"
           onClick={() => setMenuOpen((value) => !value)}
         >
-          {menuOpen ? <X size={22} /> : <Menu size={22} />}
+          <span className="cinema-menu-label">Temario</span>
+          {menuOpen ? <X size={18} /> : <Menu size={18} />}
         </button>
       </div>
-      {menuOpen && (
-        <nav aria-label="Navegación móvil" className="pg-container lg:hidden" style={{ paddingBottom: '1.25rem' }}>
-          <span className="pg-rule mb-4 block" />
-          <ul className="flex flex-col gap-3">
-            {navLinks.map(([label, href]) => <li key={href}><a className="pg-navlink" href={href}>{label}</a></li>)}
-            <li><a className="pg-navlink" href="/ajustes">Ajustes</a></li>
-            <li><a className="pg-navlink" href="/informacion">Información</a></li>
-            <li><Link className="pg-navlink" href="/auth">Entrar</Link></li>
-          </ul>
-          <Link href="/auth?mode=signup" className="pg-btn pg-btn-primary mt-5 w-full justify-center" onClick={() => setMenuOpen(false)}>Crear cuenta gratis</Link>
-          <button type="button" className="pg-btn pg-btn-ghost mt-3 w-full" onClick={() => { setMenuOpen(false); setShowRegister(true) }}>Pagar el curso · {coursePrice}</button>
-        </nav>
-      )}
+      <span className="cinema-header-line" aria-hidden="true" />
     </header>
 
-    {/* ---------------------------------------------------------- HERO */}
-    <section className="pg-section">
-      <div className="pg-container grid items-center gap-12 lg:grid-cols-[1.05fr_.95fr]">
-        <div>
-          <span className="pg-chip"><Sparkles size={12} /> Música aumentada por IA · Academia + Estudio + Portafolio</span>
-          <h1 className="pg-title pg-title-display" style={{ marginTop: '1.25rem' }}>
-            Tu próxima idea merece{' '}
-            <span
-              className="bg-clip-text text-transparent"
-              style={{ backgroundImage: 'linear-gradient(96deg, var(--color-champagne), var(--color-circuit) 52%, var(--color-ice))' }}
-            >
-              convertirse en música.
+    {menuOpen && (
+      <div
+        className="nav-backdrop"
+        onMouseDown={(event) => { if (event.target === event.currentTarget) setMenuOpen(false) }}
+      >
+        <aside
+          id="nav-drawer"
+          className="nav-drawer pg-shell"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Temario y navegación"
+        >
+          <div className="nav-drawer-head">
+            <span className="flex items-center gap-3">
+              <span className="cinema-brand-mark"><img src={logoMark} alt="" width={36} height={36} /></span>
+              <span className="block">
+                <span className="block text-sm font-semibold tracking-[0.14em]">PLAY <span style={{ color: 'var(--pg-cyan)' }}>AND GO</span></span>
+                <span className="pg-eyebrow" style={{ letterSpacing: '.2em' }}>TAMV Online Network</span>
+              </span>
             </span>
-          </h1>
-          <p className="pg-lede" style={{ maxWidth: '52ch' }}>
-            Aprende, compón y desarrolla tu sonido con herramientas de inteligencia artificial y decisiones propias. De la primera idea a una obra propia: crear con inteligencia artificial, decidir con criterio humano.
-          </p>
-          <div className="mt-9 flex flex-wrap items-center gap-3">
-            <Link href="/auth?mode=signup" className="pg-btn pg-btn-primary">
-              Crear cuenta gratis <ArrowRight size={15} />
+            <button
+              type="button"
+              autoFocus
+              className="cinema-control"
+              aria-label="Cerrar temario"
+              onClick={() => setMenuOpen(false)}
+            >
+              <X size={18} />
+            </button>
+          </div>
+
+          <div className="nav-drawer-scroll">
+            <p className="pg-eyebrow">Navegación</p>
+            <nav aria-label="Navegación del cajón">
+              <ul className="nav-drawer-links">
+                {navLinks.map(([label, href]) => (
+                  <li key={href}><a className="nav-drawer-link" href={href} onClick={() => setMenuOpen(false)}>{label}<ChevronRight size={15} aria-hidden /></a></li>
+                ))}
+              </ul>
+            </nav>
+
+            <p className="pg-eyebrow mt-7">Tu cuenta</p>
+            <ul className="nav-drawer-links">
+              <li><Link className="nav-drawer-link" href="/auth" onClick={() => setMenuOpen(false)}>Entrar<ChevronRight size={15} aria-hidden /></Link></li>
+              <li><a className="nav-drawer-link" href="/ajustes" onClick={() => setMenuOpen(false)}>Ajustes<ChevronRight size={15} aria-hidden /></a></li>
+              <li><a className="nav-drawer-link" href="/informacion" onClick={() => setMenuOpen(false)}>Información<ChevronRight size={15} aria-hidden /></a></li>
+            </ul>
+
+            <p className="pg-eyebrow mt-7">Módulos del programa</p>
+            <ul className="nav-drawer-modules">
+              {COURSE_MODULES.map((module) => (
+                <li key={module.id}>
+                  <a href={`/curso/${module.id}`} onClick={() => setMenuOpen(false)}>
+                    <span>{String(module.index).padStart(2, '0')}</span>
+                    {module.title}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="nav-drawer-foot">
+            <Link href="/auth?mode=signup" className="pg-btn pg-btn-primary w-full justify-center" onClick={() => setMenuOpen(false)}>
+              Crear cuenta gratis
             </Link>
-            <button type="button" className="pg-btn pg-btn-ghost" onClick={() => setShowRegister(true)}>
+            <button type="button" className="pg-btn pg-btn-ghost w-full" onClick={() => { setMenuOpen(false); setShowRegister(true) }}>
               Pagar el curso · {coursePrice}
             </button>
-            <a href="#ruta" className="pg-navlink" style={{ color: 'var(--pg-text)' }}>Ver el programa</a>
-            <Link href="/auth" className="pg-navlink" style={{ color: 'var(--pg-muted)' }}>Ya tengo cuenta · Entrar</Link>
+            <p className="nav-drawer-note">Sin tarjeta para crear cuenta. El pago lo procesa Stripe.</p>
           </div>
-          <div className="mt-10 flex flex-wrap items-center gap-6" style={{ fontSize: 'var(--pg-step--1)', color: 'var(--pg-muted)' }}>
-            <span className="flex items-center gap-2"><BadgeCheck size={15} style={{ color: 'var(--pg-cyan)' }} /> Constancia por participación (emitida por TAMV)</span>
-            <span className="flex items-center gap-2"><Headphones size={15} style={{ color: 'var(--pg-violet)' }} /> Audio + guías</span>
-            <span className="flex items-center gap-2 font-mono">{coursePrice} · pago único</span>
-          </div>
-        </div>
+        </aside>
+      </div>
+    )}
 
-        <Reveal>
-          <div className="pg-frame pg-hero-frame">
-            <div className="pg-brand-lockup absolute left-5 top-5 z-10 flex items-center gap-3 rounded-2xl px-3 py-2 backdrop-blur-xl">
-              <img src={playAndGoLogo} alt="Play and Go by TAMV ONLINE" width={44} height={44} className="size-11 rounded-xl object-cover" />
-              <span className="hidden text-[10px] font-semibold uppercase tracking-[0.18em] text-white sm:block">Play and Go<br /><span className="font-normal text-cyan-100/80">by TAMV Online Network</span></span>
-            </div>
-            <img
-              src={heroImage}
-              alt="Play and Go by TAMV Online Network: creación musical con inteligencia artificial"
-              width={1024}
-              height={576}
-              className="aspect-[16/9] w-full object-cover"
-            />
-
-            <audio ref={audioRef} src={sampleAudio} loop preload="none" onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} onEnded={() => setPlaying(false)} />
-            <div
-              className="absolute inset-x-5 bottom-5 flex items-center justify-between gap-4 rounded-2xl p-4 backdrop-blur-xl"
-              style={{ border: '1px solid var(--pg-hairline)', background: 'var(--pg-veil)' }}
-            >
-              <span className="block">
-                <span className="pg-eyebrow" style={{ letterSpacing: '.22em' }}>Ahora suena</span>
-                <span className="mt-1 block text-sm font-medium">Diseña tu primer universo sonoro</span>
-              </span>
-              <button
-                type="button"
-                aria-label={playing ? 'Pausar muestra' : 'Reproducir muestra'}
-                aria-pressed={playing}
-                onClick={toggleSample}
-                className="flex size-10 shrink-0 items-center justify-center rounded-full"
-                style={{ background: 'var(--pg-cyan)', color: 'var(--pg-bg)' }}
-              >
-                {playing ? <Pause size={15} fill="currentColor" /> : <Play size={15} fill="currentColor" />}
-              </button>
-            </div>
-            <div
-              className="absolute right-5 -bottom-5 flex h-16 items-end gap-1 rounded-xl p-3"
-              style={{ border: '1px solid var(--pg-hairline)', background: 'var(--pg-plinth)', boxShadow: '0 0 28px color-mix(in srgb, var(--pg-cyan) 16%, transparent)' }}
-              aria-hidden="true"
-            >
-              {[3, 7, 5, 9, 4, 8, 6, 10, 5, 7].map((height, index) => (
-                <span
-                  key={index}
-                  className={`equalizer-bar w-1 rounded-full ${playing ? 'equalizer-bar-active' : ''}`}
-                  style={{
-                    height: `${height * 4}px`,
-                    animationDelay: `${index * 80}ms`,
-                    backgroundImage: 'linear-gradient(to top, var(--pg-violet), var(--pg-cyan), var(--pg-amber))',
-                  }}
-                />
-              ))}
-            </div>
-          </div>
-        </Reveal>
+    {/* ---------------------------------------------------------- HERO */}
+    <section className="pg-section" style={{ paddingTop: 'clamp(1rem, 2vw, 1.75rem)' }}>
+      <div className="pg-container">
+        <HeroSlider />
       </div>
 
-      <div className="pg-container mt-16">
+      <div className="pg-container mt-10">
         <TamvQuote variant="hero" />
       </div>
 
-      <div className="pg-container mt-16 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="pg-container mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {metrics.map((metric, index) => (
           <Reveal key={metric.label} delay={index * 70}>
             <div className="pg-metric">
@@ -458,6 +458,70 @@ export function CourseDashboard() {
         ))}
       </div>
     </section>
+
+    {/* ------------------------------------------------- HOOK & BRIDGE */}
+    <section id="instant-composer" className="pg-section">
+      <div className="pg-container grid items-center gap-8 lg:grid-cols-[1.05fr_.95fr]">
+        <div>
+          <p className="pg-eyebrow">Hook & Bridge · puerta de entrada</p>
+          <h2 className="pg-title">Tu primera canción no tiene que empezar con un formulario.</h2>
+          <p className="pg-lede mt-3">
+            Escribe dos o tres palabras y escucha una pista real, sintetizada en tu navegador. Sin cuenta, sin tarjeta y
+            sin consumir tu cupo de voces. Después decides si quieres aprender a controlarla, programarla o convertir esa
+            habilidad en un producto.
+          </p>
+          <div className="mt-7 flex flex-wrap items-center gap-3">
+            <Link href="/crear" className="pg-btn pg-btn-primary">
+              Probar el Instant Composer <ArrowRight size={15} />
+            </Link>
+            <a href="#tu-espacio" className="pg-navlink" style={{ color: 'var(--pg-text)' }}>
+              Qué necesito para guardar mi música
+            </a>
+          </div>
+          <p className="pg-note mt-4 flex items-start gap-2">
+            <ShieldCheck size={15} className="pg-accent-mint mt-0.5" aria-hidden />
+            <span>
+              La pista se genera con Web Audio API y Tone.js dentro de tu dispositivo. Tu idea no se envía a un servidor
+              para sonar y no se usa IA remota en esta versión.
+            </span>
+          </p>
+        </div>
+
+        <div className="pg-card p-6">
+          <p className="pg-eyebrow">El puente, en tres pasos</p>
+          <ol className="mt-5 grid gap-4">
+            <li className="flex items-start gap-3">
+              <span className="pg-num">1</span>
+              <span>
+                <strong className="block text-sm" style={{ color: 'var(--pg-ink)' }}>Escribe y escucha</strong>
+                <span className="pg-note mt-1 block">Una idea corta produce un arreglo completo en segundos, sin registro.</span>
+              </span>
+            </li>
+            <li className="flex items-start gap-3">
+              <span className="pg-num">2</span>
+              <span>
+                <strong className="block text-sm" style={{ color: 'var(--pg-ink)' }}>Entiende qué pasó</strong>
+                <span className="pg-note mt-1 block">La interfaz muestra género, tempo, tonalidad y la razón de cada decisión.</span>
+              </span>
+            </li>
+            <li className="flex items-start gap-3">
+              <span className="pg-num">3</span>
+              <span>
+                <strong className="block text-sm" style={{ color: 'var(--pg-ink)' }}>Elige una ruta</strong>
+                <span className="pg-note mt-1 block">Productor, desarrollador o producto. Cada una empieza con un reto de cinco minutos.</span>
+              </span>
+            </li>
+          </ol>
+          <div className="mt-5 flex flex-wrap gap-2">
+            <span className="pg-chip" data-tone="cyan">Sin registro</span>
+            <span className="pg-chip" data-tone="violet">Sin tarjeta</span>
+            <span className="pg-chip" data-tone="mint">Sin subir tu idea</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <Manifesto />
 
     {/* ------------------------------------------------------ TU ESPACIO */}
     <section id="tu-espacio" className="pg-section">
@@ -504,41 +568,7 @@ export function CourseDashboard() {
     </section>
 
     {/* ---------------------------------------------------------- RUTA */}
-    <section id="ruta" className="pg-section">
-      <div className="pg-container">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <p className="pg-eyebrow">Tu recorrido</p>
-            <h2 className="pg-title">De la primera idea al release</h2>
-          </div>
-          <span className="pg-chip" data-tone="mint">{COURSE_MODULES.length} módulos · {COURSE_TOTAL_LESSONS} sesiones</span>
-        </div>
-        <div className="mt-9 grid gap-3">
-          {modules.map((item, index) => (
-            <Reveal key={item.number} delay={index * 60}>
-              <a
-                href={item.state === 'locked' ? '/precios' : '/curso'}
-                className="pg-card pg-card-hover flex items-center gap-4 p-4"
-                style={item.state === 'current' ? { borderColor: 'color-mix(in srgb, var(--pg-cyan) 45%, transparent)' } : undefined}
-              >
-                <span
-                  className="pg-mark"
-                  data-state={item.state === 'done' ? 'done' : item.state === 'current' ? 'part' : undefined}
-                >
-                  {item.state === 'done' ? <Check size={18} /> : item.state === 'locked' ? <LockKeyhole size={17} /> : item.number}
-                </span>
-                <span className="min-w-0 flex-1">
-                  <strong className="block text-sm font-medium">{item.title}</strong>
-                  <small className="mt-1 block" style={{ fontSize: 'var(--pg-step--1)', color: 'var(--pg-muted)' }}>{item.meta}</small>
-                </span>
-                {item.state === 'current' && <span className="pg-chip hidden sm:inline-flex">Siguiente</span>}
-                <ChevronRight size={18} className="shrink-0" style={{ color: 'var(--pg-muted)' }} />
-              </a>
-            </Reveal>
-          ))}
-        </div>
-      </div>
-    </section>
+    <ModuleGrid />
 
     {/* ------------------------------------------------------ PROGRAMA */}
     <section id="sesiones" className="pg-section">
@@ -728,6 +758,7 @@ export function CourseDashboard() {
 
     {/* ------------------------------------------------------ ASISTENTE */}
     <button
+      id="asistente"
       type="button"
       aria-label={chatOpen ? 'Cerrar asistente del curso' : 'Abrir asistente del curso'}
       aria-expanded={chatOpen}

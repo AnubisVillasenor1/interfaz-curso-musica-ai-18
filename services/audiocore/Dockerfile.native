@@ -1,0 +1,63 @@
+# TAMV-AudioCore v2.0 — imagen con extensión C++/pybind11 opcional.
+#
+# Construir desde la raíz del repositorio:
+#   docker build -f services/audiocore/Dockerfile.native -t tamv-audiocore:native .
+#
+# AVX2 es opcional y sólo debe activarse en CPUs x86-64 compatibles:
+#   docker build -f services/audiocore/Dockerfile.native \
+#     --build-arg TAMV_AVX2=ON -t tamv-audiocore:native-avx2 .
+#
+# AVX-512 y LibTorch/TensorRT no se compilan aquí: son perfiles aparte y no se
+# prometen como parte del servicio base. La referencia NumPy sigue disponible si
+# la extensión no carga.
+FROM python:3.12-slim AS native-build
+
+ARG TAMV_AVX2=OFF
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends build-essential cmake \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN pip install --no-cache-dir "pybind11>=2.12,<3" "numpy>=1.26,<2.3"
+
+WORKDIR /build
+COPY native/tamv-audiocore ./native
+
+RUN cmake -S native -B native/build \
+      -DCMAKE_BUILD_TYPE=Release \
+      -DTAMV_BUILD_TESTS=OFF \
+      -DTAMV_WITH_PYBIND11=ON \
+      -DTAMV_ENABLE_AVX2=${TAMV_AVX2} \
+      -DCMAKE_PREFIX_PATH="$(python -m pybind11 --cmakedir)" \
+    && cmake --build native/build --target tamv_audio_core_ext -j"$(nproc)" \
+    && mkdir -p /opt/tamv \
+    && find native/build -maxdepth 2 -name 'tamv_audio_core_ext*.so' -exec cp {} /opt/tamv/ \;
+
+FROM python:3.12-slim AS runtime
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    TAMV_AUDIO_CORE_HOST=0.0.0.0 \
+    TAMV_AUDIO_CORE_PORT=8000
+
+WORKDIR /app
+
+COPY services/audiocore/requirements.txt ./requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY --from=native-build /opt/tamv/ /app/
+COPY services/audiocore/audiocore ./audiocore
+COPY services/audiocore/service.py ./service.py
+COPY services/audiocore/tests ./tests
+
+RUN addgroup --system audiocore && adduser --system --ingroup audiocore audiocore \
+    && chown -R audiocore:audiocore /app
+USER audiocore
+
+EXPOSE 8000
+
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD python -c "import json, urllib.request; data=json.load(urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2)); raise SystemExit(0 if data.get('status') == 'ok' else 1)"
+
+CMD ["python", "service.py"]

@@ -41,7 +41,7 @@ export default function AdvancedAudioLabIndexPage() {
           <p className="pg-note mt-5">{ADVANCED_AUDIO_CREDENTIAL_NOTE}</p>
         </section>
 
-        <section className="mt-12">
+        <section id="modulos" className="mt-12">
           <h2 className="pg-section-title">Mapa del trayecto</h2>
           <p className="pg-note mt-2 max-w-3xl">Este recorrido técnico se integra de forma aditiva con el curso original de 16 lecciones y 5 módulos. Conserva los identificadores de progreso, las insignias y el proyecto final “Mi Nodo Cero”; no sustituye ese contenido ni duplica sus contadores.</p>
           <div className="mt-6 grid gap-4 lg:grid-cols-2">
