@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic'
 import { Film } from 'lucide-react'
 
 import { CourseDashboard } from '@/components/course-dashboard'
+import { PlatformTutorial } from '@/components/onboarding/platform-tutorial'
 import {
   markIntroSeen,
   replayIntro as clearIntroSeen,
@@ -18,11 +19,12 @@ const CinematicIntro = dynamic(() => import('./cinematic-intro'), {
 
 export function IntroGate() {
   const [isIntroVisible, setIsIntroVisible] = useState(false)
+  const [tutorialReady, setTutorialReady] = useState(false)
 
   useEffect(() => {
-    if (shouldRunIntro()) {
-      setIsIntroVisible(true)
-    }
+    const shouldShowIntro = shouldRunIntro()
+    setIsIntroVisible(shouldShowIntro)
+    setTutorialReady(!shouldShowIntro)
   }, [])
 
   const closeIntro = useCallback(() => {
@@ -44,6 +46,7 @@ export function IntroGate() {
     }
 
     setIsIntroVisible(false)
+    setTutorialReady(true)
   }, [])
 
   const replayIntro = useCallback(() => {
@@ -54,6 +57,7 @@ export function IntroGate() {
   return (
     <>
       <CourseDashboard />
+      {!isIntroVisible && <PlatformTutorial enabled={tutorialReady} />}
 
       {isIntroVisible ? (
         <CinematicIntro

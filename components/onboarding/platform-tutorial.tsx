@@ -11,7 +11,7 @@ const STEPS = [
     icon: Sparkles,
     eyebrow: '01 · EMPIEZA AQUÍ',
     title: 'Convierte una idea en música',
-    body: 'En Crear puedes escribir una escena, elegir género, tempo e instrumentos y escuchar una pista local en tu navegador. Es la forma más rápida de probar la plataforma.',
+    body: 'Mira la barra superior y presiona Crear. En esa sección escribe tu idea en el campo principal, elige género, tempo e instrumentos y pulsa Generar para escuchar una pista local.',
     href: '/crear',
     action: 'Abrir creador',
   },
@@ -19,7 +19,7 @@ const STEPS = [
     icon: BookOpen,
     eyebrow: '02 · APRENDE PRODUCCIÓN',
     title: 'Sigue el curso paso a paso',
-    body: 'Curso reúne módulos sobre ritmo, armonía, voces, prompts, mezcla y publicación. Cada lección tiene ejemplos, ejercicios y una ruta clara para avanzar.',
+    body: 'En la barra superior presiona Curso. Abre el primer módulo, entra a una sesión y completa el ejercicio de la página antes de pasar a la siguiente lección.',
     href: '/curso',
     action: 'Ver cursos',
   },
@@ -27,7 +27,7 @@ const STEPS = [
     icon: Music2,
     eyebrow: '03 · GUARDA TU OBRA',
     title: 'Usa el Estudio y tu biblioteca',
-    body: 'En Estudio generas, escuchas, descargas y guardas tus canciones. La Biblioteca concentra tus WAV, prompts, análisis y avances privados.',
+    body: 'En la barra superior presiona Estudio. Usa el botón Nuevo proyecto para generar una pista; después usa los controles de reproducción y Guardar para conservarla en tu Biblioteca.',
     href: '/studio',
     action: 'Ir al estudio',
   },
@@ -35,23 +35,25 @@ const STEPS = [
     icon: CreditCard,
     eyebrow: '04 · AMPLÍA EL ACCESO',
     title: 'Compra solo cuando lo necesites',
-    body: 'Planes y pago explica qué incluye cada acceso y abre Stripe de forma segura. Nunca pedimos tarjeta para crear una cuenta ni para probar el motor local.',
+    body: 'En la barra superior presiona Planes y pago. Compara los accesos y, si necesitas ampliar tu uso, presiona Comprar ahora; el checkout seguro se abre en la siguiente pantalla.',
     href: '/precios',
     action: 'Ver planes y pago',
   },
 ] as const
 
-export function PlatformTutorial() {
-  const [open, setOpen] = useState(false)
+export function PlatformTutorial({ enabled = true }: { enabled?: boolean }) {
+  const [open, setOpen] = useState(enabled)
   const [step, setStep] = useState(0)
 
   useEffect(() => {
+    if (!enabled) return
+
     try {
       setOpen(window.sessionStorage.getItem(SEEN_KEY) !== '1')
     } catch {
       setOpen(true)
     }
-  }, [])
+  }, [enabled])
 
   function close() {
     try {
