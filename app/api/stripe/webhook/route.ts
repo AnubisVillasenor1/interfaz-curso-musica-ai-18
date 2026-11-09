@@ -114,33 +114,36 @@ async function handleCheckoutCompleted(
     return NextResponse.json({ received: true, unknownProduct: true })
   }
 
-  // La entrega no depende solo de la metadata: si el precio de Stripe cambió
-  // tras crear la Session, el monto cobrado no corresponde al producto. Se
-  // verifica moneda y, en compras únicas sin cupón, el monto. Con cupón
-  // (allow_promotion_codes) el monto puede ser menor de forma legítima, así
-  // que solo se bloquea sin descuentos aplicados.
-  const currency = (session.currency ?? '').toLowerCase()
-  if (currency && currency !== 'mxn') {
-    console.error('[webhook] moneda inesperada en la Session', { sessionId: session.id, currency })
+  // La metadata nunca es suficiente para conceder acceso. Recuperamos los
+  // line items desde Stripe y exigimos un único artículo, precio/currency
+  // esperados y cantidad exacta. Así una Session manipulada o un Price ID
+  // cambiado no puede activar un plan superior.
+  const stripe = new Stripe(stripeSecretKey)
+  const lineItems = await stripe.checkout.sessions.listLineItems(session.id, {
+    limit: 10,
+    expand: ['data.price'],
+  })
+  if (lineItems.data.length !== 1) {
+    console.error('[webhook] cantidad de line items inesperada', { sessionId: session.id, count: lineItems.data.length })
     return NextResponse.json({ received: true, amountMismatch: true })
   }
-  const hasDiscount =
-    (session.total_details?.amount_discount ?? 0) > 0 ||
-    (Array.isArray(session.discounts) && session.discounts.length > 0) ||
-    (Array.isArray((session as unknown as { discounts?: unknown[] }).discounts) && (session as unknown as { discounts?: unknown[] }).discounts!.length > 0)
-  const amountTotal = typeof session.amount_total === 'number' ? session.amount_total : null
-  if (
-    product.mode === 'payment' &&
-    !product.stripePriceId &&
-    !hasDiscount &&
-    amountTotal !== null &&
-    amountTotal !== product.priceInCents
-  ) {
-    console.error('[webhook] monto no coincide con el precio del catálogo', {
+  const line = lineItems.data[0]
+  const linePrice = typeof line.price === 'string' ? null : line.price
+  const linePriceId = typeof line.price === 'string' ? line.price : line.price?.id
+  const lineCurrency = (linePrice?.currency ?? session.currency ?? '').toLowerCase()
+  const lineUnitAmount = linePrice?.unit_amount ?? null
+  const quantity = line.quantity ?? 0
+  const expectedPriceId = product.stripePriceId ?? null
+  const priceMismatch = expectedPriceId ? linePriceId !== expectedPriceId : lineUnitAmount !== product.priceInCents
+  if (quantity !== 1 || lineCurrency !== 'mxn' || priceMismatch) {
+    console.error('[webhook] line item no coincide con el catálogo', {
       sessionId: session.id,
       productId: product.id,
-      amountTotal,
-      expected: product.priceInCents,
+      linePriceId,
+      expectedPriceId,
+      lineUnitAmount,
+      quantity,
+      lineCurrency,
     })
     return NextResponse.json({ received: true, amountMismatch: true })
   }
