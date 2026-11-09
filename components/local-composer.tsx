@@ -65,6 +65,34 @@ const PRESETS = [
     prompt:
       'House de festival, enérgico y luminoso. Bombo four-on-the-floor, bajo con filtro, pads abiertos y plucks. 124 BPM. Estructura: intro, build, drop, breakdown y drop final.',
   },
+  {
+    label: 'Neo-soul vocal',
+    genreId: 'neosoul',
+    bpm: 84,
+    prompt:
+      'Neo-soul íntimo con voz principal cálida, coros de respuesta, Rhodes, guitarra con chorus y bajo redondo. 84 BPM, pocket detrás del beat. Estructura: verso, pre-coro, coro y puente.',
+  },
+  {
+    label: 'Techno industrial',
+    genreId: 'techno',
+    bpm: 134,
+    prompt:
+      'Techno industrial hipnótico con kick profundo, hats mecánicos, percusión metálica, bajo ácido y textura de warehouse. 134 BPM. Build gradual, break de tensión y drop contundente.',
+  },
+  {
+    label: 'Ambient cinematográfico',
+    genreId: 'ambient',
+    bpm: 60,
+    prompt:
+      'Ambient cinematográfico suspendido con pads evolutivos, piano distante, arpa procesada, grabación de campo y cola de reverb larga. 60 BPM. Sin batería constante: silencio, ascenso y resolución.',
+  },
+  {
+    label: 'Jazz nocturno',
+    genreId: 'jazz',
+    bpm: 126,
+    prompt:
+      'Jazz neo-bop nocturno con contrabajo caminante, piano acústico con voicings extendidos, saxo improvisado y batería con escobillas. 126 BPM, swing humano. Tema, solo y reprise.',
+  },
 ] as const
 
 /**

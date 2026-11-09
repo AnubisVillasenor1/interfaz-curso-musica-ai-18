@@ -29,6 +29,7 @@ import { ModuleGrid } from '@/components/cinematic/module-grid'
 import { ParticleField } from '@/components/cinematic/particle-field'
 import { Reveal } from '@/components/reveal'
 import { TamvQuote } from '@/components/tamv-quote'
+import { PlatformTutorial } from '@/components/onboarding/platform-tutorial'
 import { COURSE_MODULES, COURSE_BADGES, COURSE_TOTAL_LESSONS, lessonsByModule } from '@/lib/course'
 import { hookRouteById } from '@/lib/music/hook-bridge'
 import { COURSE_PRODUCT } from '@/lib/products'
@@ -755,6 +756,8 @@ export function CourseDashboard() {
         </div>
       </div>
     </footer>
+
+    <PlatformTutorial />
 
     {/* ------------------------------------------------------ ASISTENTE */}
     <button
