@@ -312,7 +312,7 @@ export function LocalComposer({ initialPrompt = '' }: { initialPrompt?: string }
       <div>
         <p className="pg-eyebrow">Paso 2 · Componer</p>
         <h2 className="pg-block-title mt-1.5">Describe la canción</h2>
-        <p className="pg-note mt-1.5 max-w-xl">
+        <p className="pg-note mt-1.5 max-w-xl" aria-live="polite">
           Escribe la idea en una frase. El motor local la convierte en arreglo y renderiza el audio en tu navegador:
           no usa el servicio de pago y no descuenta tu cupo con voces.
         </p>
@@ -344,15 +344,15 @@ export function LocalComposer({ initialPrompt = '' }: { initialPrompt?: string }
 
     <label className="pg-label flex flex-col gap-1.5">
       1. Título de la canción
-      <input value={title} onChange={(event) => setTitle(event.target.value)} maxLength={80} required
-        placeholder="Ej. Mapa sonoro nº1"
+      <input name="song-title" autoComplete="off" value={title} onChange={(event) => setTitle(event.target.value)} maxLength={80} required
+        placeholder="Ej. Mapa sonoro nº1…"
         className="pg-field h-11 text-sm" />
     </label>
 
     <label className="pg-label flex flex-col gap-1.5">
       2. Describe la canción
-      <textarea value={prompt} onChange={(event) => setPrompt(event.target.value)} maxLength={2000} required rows={5}
-        placeholder="Ej. Balada de piano melancólica pero esperanzadora, con cuerdas cálidas y batería suave. 72 BPM. Estructura: intro, verso, coro, puente y final."
+      <textarea name="music-prompt" autoComplete="off" value={prompt} onChange={(event) => setPrompt(event.target.value)} maxLength={2000} required rows={5}
+        placeholder="Ej. Balada de piano melancólica, cuerdas cálidas y batería suave. 72 BPM…"
         className="pg-field p-3 text-sm leading-6" />
     </label>
 
@@ -381,9 +381,9 @@ export function LocalComposer({ initialPrompt = '' }: { initialPrompt?: string }
       </label>
       <label className="pg-label flex flex-col gap-1.5">
         4. BPM (opcional, 40–200)
-        <input type="number" min={40} max={200} value={bpm || ''}
+        <input name="tempo" type="number" min={40} max={200} inputMode="numeric" value={bpm || ''}
           onChange={(event) => setBpm(Number(event.target.value) || 0)}
-          placeholder="Automático"
+          placeholder="Automático…"
           className="pg-field h-11 text-sm" />
       </label>
     </div>

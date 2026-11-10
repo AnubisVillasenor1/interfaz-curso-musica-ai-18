@@ -72,6 +72,8 @@ export class MusicEngine {
   private drumSynths: Map<string, unknown> = new Map()
   private partHandles: unknown[] = []
   private masterGain: import('tone').Gain | null = null
+  private masterEq: import('tone').EQ3 | null = null
+  private masterCompressor: import('tone').Compressor | null = null
   private reverb: import('tone').Reverb | null = null
   private delay: import('tone').FeedbackDelay | null = null
   private analyserNode: import('tone').Analyser | null = null
@@ -128,6 +130,8 @@ export class MusicEngine {
     }
 
     const master = new Tone.Gain(this.globalLevel)
+    const eq = new Tone.EQ3({ low: 0.8, mid: 0, high: 1.2, lowFrequency: 140, highFrequency: 5200 })
+    const compressor = new Tone.Compressor({ threshold: -18, ratio: 3, attack: 0.012, release: 0.18, knee: 8 })
     const limiter = new Tone.Limiter(-1.2)
     const reverb = new Tone.Reverb({ decay: 2.6, preDelay: 0.02, wet: 0.18 })
     const delay = new Tone.FeedbackDelay('8n.', 0.22)
@@ -136,10 +140,12 @@ export class MusicEngine {
 
     reverb.connect(master)
     delay.connect(master)
-    master.chain(limiter, Tone.Destination)
+    master.chain(eq, compressor, limiter, Tone.Destination)
     master.connect(analyser)
 
     this.masterGain = master
+    this.masterEq = eq
+    this.masterCompressor = compressor
     this.reverb = reverb
     this.delay = delay
     this.analyserNode = analyser
@@ -440,11 +446,13 @@ export class MusicEngine {
       try { inst.dispose?.() } catch { /* ignorar */ }
     }
     this.drumSynths.clear()
-    for (const node of [this.masterGain, this.reverb, this.delay, this.analyserNode]) {
+    for (const node of [this.masterGain, this.masterEq, this.masterCompressor, this.reverb, this.delay, this.analyserNode]) {
       const n = node as { dispose?: () => void } | null
       try { n?.dispose?.() } catch { /* ignorar */ }
     }
     this.masterGain = null
+    this.masterEq = null
+    this.masterCompressor = null
     this.reverb = null
     this.delay = null
     this.analyserNode = null
