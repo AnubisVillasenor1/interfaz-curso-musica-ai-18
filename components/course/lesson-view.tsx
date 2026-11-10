@@ -19,6 +19,7 @@ import {
 
 import { COURSE_BADGES, type CourseModule, type Lesson, type PromptTemplate } from '@/lib/course'
 
+import { AudioSectionButton } from './audio-section-button'
 import { ProgressBar, useCourseProgress } from './progress-bar'
 
 export interface LessonNavItem {
@@ -235,6 +236,9 @@ export function LessonView({
           <b>Objetivo: </b>
           {lesson.objective}
         </p>
+        <div className="mt-5">
+          <AudioSectionButton text={`${lesson.title}. Objetivo: ${lesson.objective}. ${lesson.takeaway}`} label="Escuchar la lección" />
+        </div>
       </header>
 
       <ProgressBar progress={progress} label="Progreso del programa" />
@@ -246,7 +250,10 @@ export function LessonView({
         <div className="mt-5 flex flex-col gap-8">
           {lesson.blocks.map((block, index) => (
             <div key={`${block.heading}-${index}`}>
-              <h3 className="pg-block-title">{block.heading}</h3>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <h3 className="pg-block-title">{block.heading}</h3>
+                <AudioSectionButton text={`${block.heading}. ${block.body.join(' ')}`} label="Escuchar sección" />
+              </div>
               <div className="mt-3 flex flex-col gap-4">
                 {block.body.map((paragraph, pIndex) => (
                   <p key={pIndex} className={bodyText}>
@@ -261,9 +268,12 @@ export function LessonView({
 
       {lesson.examples.length > 0 && (
         <section aria-labelledby="ejemplos-heading" className={sectionShell}>
-          <h2 id="ejemplos-heading" className={sectionTitle}>
-            <Quote size={18} className="pg-accent-magenta" aria-hidden="true" /> Ejemplos
-          </h2>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 id="ejemplos-heading" className={sectionTitle}>
+              <Quote size={18} className="pg-accent-magenta" aria-hidden="true" /> Ejemplos
+            </h2>
+            <AudioSectionButton text={`Ejemplos. ${lesson.examples.join(' ')}`} label="Escuchar ejemplos" />
+          </div>
           <ul className="mt-5 flex flex-col gap-4">
             {lesson.examples.map((example, index) => (
               <li key={index} className="pg-quote">
@@ -307,9 +317,12 @@ export function LessonView({
       )}
 
       <section aria-labelledby="ejercicio-heading" className={sectionShell}>
-        <h2 id="ejercicio-heading" className={sectionTitle}>
-          <ListChecks size={18} className="pg-accent-mint" aria-hidden="true" /> Ejercicio
-        </h2>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 id="ejercicio-heading" className={sectionTitle}>
+            <ListChecks size={18} className="pg-accent-mint" aria-hidden="true" /> Ejercicio
+          </h2>
+          <AudioSectionButton text={`${lesson.exercise.title}. ${lesson.exercise.steps.join(' ')} Entregable: ${lesson.exercise.deliverable}`} label="Escuchar ejercicio" />
+        </div>
         <h3 className="pg-block-title mt-4">{lesson.exercise.title}</h3>
 
         <ol className="mt-5 flex flex-col gap-3">
@@ -358,9 +371,12 @@ export function LessonView({
 
       {lesson.listening.length > 0 && (
         <section aria-labelledby="escucha-heading" className={sectionShell}>
-          <h2 id="escucha-heading" className={sectionTitle}>
-            <Headphones size={18} className="pg-accent-violet" aria-hidden="true" /> Escucha guiada
-          </h2>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 id="escucha-heading" className={sectionTitle}>
+              <Headphones size={18} className="pg-accent-violet" aria-hidden="true" /> Escucha guiada
+            </h2>
+            <AudioSectionButton text={`Escucha guiada. ${lesson.listening.map((item) => `${item.title}. ${item.focus}`).join(' ')}`} label="Escuchar guía" />
+          </div>
           <ul className="mt-5 flex flex-col gap-4">
             {lesson.listening.map((reference, index) => (
               <li key={index} className="pg-inset">

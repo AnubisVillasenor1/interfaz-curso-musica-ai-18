@@ -587,6 +587,7 @@ function HolographicCore({
 }: SceneNodeProps) {
   const groupRef = useRef<THREE.Group>(null)
   const wireRef = useRef<THREE.Mesh>(null)
+  const ringRefs = useRef<Array<THREE.Mesh | null>>([])
   const focusRef = useRef(1)
 
   const detail = GEOMETRY_DETAIL[quality]
@@ -669,6 +670,19 @@ function HolographicCore({
       }
     }
 
+    ringRefs.current.forEach((ring, index) => {
+      if (!ring) return
+      const ringPulse = 1 + environment.level * (0.08 + index * 0.025) + environment.bass * 0.04
+      ring.scale.setScalar(THREE.MathUtils.damp(ring.scale.x, ringPulse, 5 + index, step))
+      if (!reducedMotion) {
+        ring.rotation.x += step * (0.16 + index * 0.07)
+        ring.rotation.z -= step * (0.12 + index * 0.04)
+      }
+      const ringMaterial = ring.material as THREE.MeshBasicMaterial
+      ringMaterial.opacity = 0.18 - index * 0.035 + focusRef.current * 0.035
+      ringMaterial.color.lerp(linearColor(index % 2 === 0 ? act.palette.key : act.palette.ember), step * 1.4)
+    })
+
     if (wireRef.current) {
       const targetScale =
         1.06 +
@@ -707,6 +721,22 @@ function HolographicCore({
         <icosahedronGeometry args={[1.74, detail]} />
         <shaderMaterial args={materialArgs} />
       </mesh>
+
+      <mesh rotation={[Math.PI / 2, 0.2, 0.35]}>
+        <torusKnotGeometry args={[1.48, 0.12, 128, 18, 2, 3]} />
+        <meshBasicMaterial color={actAt(0).palette.core} transparent opacity={0.22} blending={THREE.AdditiveBlending} depthWrite={false} wireframe />
+      </mesh>
+
+      {[0, 1, 2].map((index) => (
+        <mesh
+          key={index}
+          ref={(node) => { ringRefs.current[index] = node }}
+          rotation={[index * 0.85, index * 0.55, index * 0.35]}
+        >
+          <torusGeometry args={[2.16 + index * 0.28, 0.018 + index * 0.009, 12, 128]} />
+          <meshBasicMaterial color={index % 2 === 0 ? actAt(0).palette.key : actAt(0).palette.ember} transparent opacity={0.14} blending={THREE.AdditiveBlending} depthWrite={false} />
+        </mesh>
+      ))}
 
       <mesh ref={wireRef}>
         <icosahedronGeometry
