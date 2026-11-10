@@ -76,6 +76,9 @@ const editorialVisuals = [
   { src: '/visuals/playlist-night.png', alt: 'Escucha nocturna con prisma de cristal' },
   { src: '/visuals/sonic-architecture.png', alt: 'Arquitectura construida con ondas sonoras' },
   { src: '/visuals/creative-spark.png', alt: 'Chispa creativa de partículas musicales' },
+  { src: '/visuals/modular-signal.png', alt: 'Patch modular con señales luminosas' },
+  { src: '/visuals/beat-lab.png', alt: 'Laboratorio de ritmo y pads electrónicos' },
+  { src: '/visuals/vocal-lab.png', alt: 'Laboratorio vocal de ondas de cristal' },
 ]
 
 const prompts = [
@@ -721,7 +724,7 @@ export function CourseDashboard() {
           <span className="pg-chip" data-tone="amber">10 atmósferas originales</span>
         </div>
         <div className="visual-mosaic mt-10">
-          {editorialVisuals.slice(3).map((visual, index) => <Reveal key={visual.src} delay={index * 55}><figure className={`visual-tile visual-tile-${index % 4}`}><img src={visual.src} alt={visual.alt} loading="lazy" /><figcaption><span>Frecuencia {String(index + 4).padStart(2, '0')}</span><b>{['Órbita', 'Oro líquido', 'Voz', 'Mezcla', 'Escucha', 'Arquitectura', 'Chispa'][index]}</b></figcaption></figure></Reveal>)}
+          {editorialVisuals.slice(3).map((visual, index) => <Reveal key={visual.src} delay={index * 55}><figure className={`visual-tile visual-tile-${index % 4}`}><img src={visual.src} alt={visual.alt} loading="lazy" /><figcaption><span>Frecuencia {String(index + 4).padStart(2, '0')}</span><b>{['Órbita', 'Oro líquido', 'Voz', 'Mezcla', 'Escucha', 'Arquitectura', 'Chispa', 'Modular', 'Beat lab', 'Vocal lab'][index]}</b></figcaption></figure></Reveal>)}
         </div>
       </div>
     </section>
