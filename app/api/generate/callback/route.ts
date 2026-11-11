@@ -53,14 +53,27 @@ export async function POST(request: Request) {
   const url = new URL(request.url)
   const songId = url.searchParams.get('songId') ?? url.searchParams.get('id')
   const signature = url.searchParams.get('sig')
+  const expiresAt = url.searchParams.get('exp')
+  const nonce = url.searchParams.get('nonce')
 
   if (!songId || !/^[0-9a-f-]{36}$/i.test(songId)) {
     return NextResponse.json({ error: 'Falta el identificador de canción.', code: 'invalid_request' }, { status: 400 })
   }
 
-  if (!(await verifyCallbackSignature(songId, signature))) {
-    console.warn('[callback] firma ausente o inválida', { songId })
-    return NextResponse.json({ error: 'Firma del callback inválida.', code: 'signature_invalid' }, { status: 401 })
+  const signatureReason = await verifyCallbackSignature(songId, signature, expiresAt, nonce)
+  if (signatureReason !== 'ok') {
+    console.warn('[callback] firma rechazada', {
+      songId,
+      reason: signatureReason,
+      event: 'callback_signature_rejected',
+    })
+    return NextResponse.json(
+      {
+        error: 'Firma del callback inválida o expirada.',
+        code: signatureReason === 'expired' ? 'signature_expired' : 'signature_invalid',
+      },
+      { status: 401 },
+    )
   }
 
   const payload = (await request.json().catch(() => null)) as Record<string, unknown> | null
@@ -74,21 +87,65 @@ export async function POST(request: Request) {
   }
 
   const { url: audioUrl, duration } = readAudio(payload)
+
+  const finish = async (result: string) => {
+    // Un fallo de base de datos debe reintento: devolvemos 500 para que el
+    // proveedor vuelva a llamar en vez de perder el audio que ya pagamos.
+    if (result === 'db_error') {
+      return NextResponse.json({ error: 'No se pudo registrar el resultado.', code: 'update_failed' }, { status: 500 })
+    }
+
+    // El nonce se consume sólo cuando el resultado terminal ya está aplicado.
+    // Si la escritura falla, el ticket sigue vivo y el reintento del proveedor
+    // puede completar la tarea.
+    const ticket = await consumeCallbackTicket(admin, nonce as string, songId)
+    if (ticket === 'error') {
+      return NextResponse.json({ error: 'No se pudo registrar el resultado.', code: 'update_failed' }, { status: 500 })
+    }
+    return NextResponse.json({
+      received: true,
+      result,
+      ...(ticket === 'replay' ? { duplicate: true } : {}),
+    })
+  }
+
   if (status === 'ready' && !audioUrl) {
     // "Terminada sin audio" es un error del proveedor, no un estado propio: si
     // la dejáramos en generating se quedaría colgada para siempre.
-    const result = await applyResult(admin, songId, 'error', null, duration, 'El proveedor dio la tarea por terminada sin audio.')
-    if (result === 'db_error') return NextResponse.json({ error: 'No se pudo registrar el resultado.', code: 'update_failed' }, { status: 500 })
-    return NextResponse.json({ received: true, result })
+    return finish(await applyResult(admin, songId, 'error', null, duration, 'El proveedor dio la tarea por terminada sin audio.'))
   }
 
-  const result = await applyResult(admin, songId, status, audioUrl, duration, String(payload.errorMsg ?? payload.error ?? ''))
+  return finish(await applyResult(admin, songId, status, audioUrl, duration, String(payload.errorMsg ?? payload.error ?? '')))
+}
 
-  // Un fallo de base de datos debe reintento: devolvemos 500 para que el
-  // proveedor vuelva a llamar en vez de perder el audio que ya pagamos.
-  if (result === 'db_error') return NextResponse.json({ error: 'No se pudo registrar el resultado.', code: 'update_failed' }, { status: 500 })
-
-  return NextResponse.json({ received: true, result })
+/**
+ * Marca el ticket como usado dentro de la base.
+ *
+ * `consumed` y `replay` son respuestas válidas: el primero consume el nonce,
+ * el segundo demuestra que ya se consumió. `missing` indica que el ticket no
+ * existe (despliegue sin la migración), se registra pero no invalida un
+ * resultado que ya se aplicó con firma válida.
+ */
+async function consumeCallbackTicket(
+  admin: NonNullable<ReturnType<typeof createAdminClient>>,
+  nonce: string,
+  songId: string,
+): Promise<'consumed' | 'replay' | 'missing' | 'error'> {
+  const { data, error } = await admin.rpc('consume_generation_callback_ticket', {
+    p_nonce: nonce,
+    p_song_id: songId,
+  })
+  if (error) {
+    console.error('[callback] consume_generation_callback_ticket falló', {
+      code: error.code,
+      message: error.message,
+    })
+    return 'error'
+  }
+  const outcome = String(data ?? '')
+  if (outcome === 'consumed' || outcome === 'replay') return outcome
+  console.error('[callback] ticket de callback no consumido', { outcome, songId })
+  return 'missing'
 }
 
 async function applyResult(

@@ -55,6 +55,12 @@ jobs:
       - name: Rate limit policy and memory store tests
         run: node --test scripts/test-rate-limit.mjs
 
+      - name: Callback signature expiration and nonce tests
+        run: node --test scripts/test-callback-signature.mjs
+
+      - name: Verify callback replay protection contracts
+        run: node scripts/verify-callback-security.mjs
+
       - name: Production build
         run: pnpm build
 

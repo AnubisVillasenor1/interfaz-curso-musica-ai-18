@@ -15,26 +15,6 @@ export interface SubscriptionSnapshot {
   currentPeriodEnd: number | null
 }
 
-type EntitlementSnapshot = {
-  plan?: string | null
-  base_plan?: string | null
-  extension_expires_at?: string | null
-  access_expires_at?: string | null
-  active?: boolean | null
-  subscription_id?: string | null
-  subscription_status?: string | null
-  current_period_end?: string | null
-  entitlement_reconciliation_required?: boolean | null
-}
-
-type EffectiveState = {
-  plan: 'free' | 'enrolled' | 'extension' | 'pro'
-  active: boolean
-  dailyLimit: number
-  localDailyLimit: number
-  extensionExpiresAt: string | null
-}
-
 const PRO_ACTIVE_STATUSES = new Set(['active', 'trialing', 'past_due'])
 
 function isFutureDate(value: string | null | undefined, now = Date.now()): boolean {
@@ -46,63 +26,6 @@ function isFutureDate(value: string | null | undefined, now = Date.now()): boole
 function periodEndIso(seconds: number | null | undefined): string | null {
   if (typeof seconds !== 'number' || !Number.isFinite(seconds) || seconds <= 0) return null
   return new Date(seconds * 1000).toISOString()
-}
-
-/**
- * El curso permanente, la extensión temporal y la suscripción son derechos
- * independientes. Nunca inferimos una compra permanente desde una extensión.
- */
-function deriveEffectiveState(snapshot: EntitlementSnapshot, now = Date.now()): EffectiveState {
-  const basePlan = snapshot.base_plan === 'enrolled'
-    || (snapshot.base_plan == null && snapshot.plan === 'enrolled')
-    ? 'enrolled'
-    : 'free'
-  const extensionExpiresAt = snapshot.extension_expires_at ?? snapshot.access_expires_at ?? null
-  const reconciliationRequired = Boolean(snapshot.entitlement_reconciliation_required)
-  const extensionActive = !reconciliationRequired && isFutureDate(extensionExpiresAt, now)
-  const rawStatus = snapshot.subscription_status ?? ''
-  const periodEndIsFuture = isFutureDate(snapshot.current_period_end, now)
-  const proActive = Boolean(
-    !reconciliationRequired
-    && snapshot.subscription_id
-    && PRO_ACTIVE_STATUSES.has(rawStatus)
-    && periodEndIsFuture,
-  )
-
-  const plan: EffectiveState['plan'] = proActive
-    ? 'pro'
-    : basePlan === 'enrolled'
-      ? 'enrolled'
-      : extensionActive
-        ? 'extension'
-        : 'free'
-
-  const dailyLimit = proActive
-    ? 20
-    : basePlan === 'enrolled' && extensionActive
-      ? 10
-      : basePlan === 'enrolled'
-        ? 2
-        : extensionActive
-          ? 10
-          : 0
-  const localDailyLimit = proActive
-    ? 100
-    : basePlan === 'enrolled' && extensionActive
-      ? 40
-      : basePlan === 'enrolled'
-        ? 20
-        : extensionActive
-          ? 40
-          : 10
-
-  return {
-    plan,
-    active: proActive || basePlan === 'enrolled' || extensionActive,
-    dailyLimit,
-    localDailyLimit,
-    extensionExpiresAt,
-  }
 }
 
 /**
@@ -143,30 +66,19 @@ export async function grantProduct(
   customerId?: string | null,
   subscription?: SubscriptionSnapshot | null,
 ): Promise<DeliveryResult> {
-  const { data: current, error: readError } = await admin
-    .from('entitlements')
-    .select('plan, base_plan, extension_expires_at, daily_limit, local_daily_limit, active, stripe_customer_id, subscription_id, subscription_status, current_period_end, access_expires_at, entitlement_reconciliation_required')
-    .eq('user_id', userId)
-    .maybeSingle()
-
-  if (readError) return { status: 'error', detail: readError.message }
-
-  let basePlan = current?.base_plan ?? (current?.plan === 'enrolled' ? 'enrolled' : 'free')
-  let extensionExpiresAt: string | null = current?.extension_expires_at ?? current?.access_expires_at ?? null
-  let subscriptionId: string | null = current?.subscription_id ?? null
-  let subscriptionStatus: string | null = current?.subscription_status ?? null
-  let currentPeriodEnd: string | null = current?.current_period_end ?? null
-  let reconciliationRequired = Boolean(current?.entitlement_reconciliation_required)
+  let extensionDays: number | null = null
+  let subscriptionId: string | null = null
+  let subscriptionStatus: string | null = null
+  let currentPeriodEnd: string | null = null
 
   if (product.id === 'play-and-go-course') {
-    basePlan = 'enrolled'
+    // Sin datos adicionales: la compra permanente sólo cambia `base_plan`.
   } else if (product.id === 'play-and-go-extension') {
     const days = product.grant.accessDays
     if (days === null || days <= 0) {
       return { status: 'error', detail: 'La extensión debe tener una duración temporal válida.' }
     }
-    const priorTimestamp = extensionExpiresAt ? Date.parse(extensionExpiresAt) : 0
-    extensionExpiresAt = new Date(Math.max(Date.now(), Number.isFinite(priorTimestamp) ? priorTimestamp : 0) + days * 86_400_000).toISOString()
+    extensionDays = days
   } else if (product.id === 'play-and-go-pro') {
     if (!subscription || !subscription.id || !PRO_ACTIVE_STATUSES.has(subscription.status)) {
       return { status: 'error', detail: 'No existe un snapshot activo y verificado de la suscripción.' }
@@ -178,41 +90,46 @@ export async function grantProduct(
     subscriptionId = subscription.id
     subscriptionStatus = subscription.status
     currentPeriodEnd = verifiedPeriodEnd
-    reconciliationRequired = false
   } else {
     return { status: 'error', detail: 'El producto no tiene una regla de entrega reconocida.' }
   }
 
-  const state = deriveEffectiveState({
-    plan: product.mode === 'subscription' ? 'pro' : current?.plan,
-    base_plan: basePlan,
-    extension_expires_at: extensionExpiresAt,
-    access_expires_at: current?.access_expires_at,
-    subscription_id: subscriptionId,
-    subscription_status: subscriptionStatus,
-    current_period_end: currentPeriodEnd,
-    entitlement_reconciliation_required: reconciliationRequired,
+  // La lectura-cálculo-escritura anterior permitía que dos webhooks
+  // concurrentes se pisaran. La transacción en Postgres bloquea por usuario y
+  // registra la sesión de Checkout para que un evento reenviado no vuelva a
+  // conceder una extensión. Requiere la migración
+  // 20261111170000_transactional_fulfilment.sql aplicada.
+  const { data, error } = await admin.rpc('grant_product_entitlement', {
+    p_user_id: userId,
+    p_product_id: product.id,
+    p_session_id: sessionId,
+    p_customer_id: customerId ?? null,
+    p_subscription_id: subscriptionId,
+    p_subscription_status: subscriptionStatus,
+    p_current_period_end: currentPeriodEnd,
+    p_extension_days: extensionDays,
   })
 
-  const payload = {
-    user_id: userId,
-    base_plan: basePlan,
-    extension_expires_at: extensionExpiresAt,
-    plan: state.plan,
-    active: state.active,
-    daily_limit: state.dailyLimit,
-    local_daily_limit: state.localDailyLimit,
-    access_expires_at: state.plan === 'extension' ? extensionExpiresAt : null,
-    last_stripe_session_id: sessionId,
-    stripe_customer_id: customerId ?? current?.stripe_customer_id ?? null,
-    subscription_id: subscriptionId,
-    subscription_status: subscriptionStatus,
-    current_period_end: currentPeriodEnd,
-    entitlement_reconciliation_required: reconciliationRequired,
+  if (error) {
+    // PGRST202 significa que la función no existe todavía: la migración no se
+    // aplicó en este entorno. Se devuelve error para que Stripe reintente y no
+    // se conceda nada a medias.
+    console.error('[fulfilment] grant_product_entitlement falló', {
+      code: error.code,
+      message: error.message,
+      userId,
+      product: product.id,
+    })
+    return { status: 'error', detail: error.message }
   }
 
-  const { error } = await admin.from('entitlements').upsert(payload, { onConflict: 'user_id' })
-  if (error) return { status: 'error', detail: error.message }
+  const result = data as { status?: string } | null
+  if (result?.status === 'duplicate') {
+    return { status: 'granted', userId, detail: 'duplicate_session' }
+  }
+  if (result?.status !== 'granted') {
+    return { status: 'error', detail: 'La concesión no devolvió un estado reconocido.' }
+  }
 
   return { status: 'granted', userId }
 }

@@ -46,11 +46,16 @@ export async function POST(request: Request) {
   const querySongId = url.searchParams.get('songId')
   const headerSig = request.headers.get('x-signature')
   const querySig = url.searchParams.get('sig')
+  const queryExpires = url.searchParams.get('exp')
+  const queryNonce = url.searchParams.get('nonce')
 
   const bodyOk = verifyCallbackSignatureBody(rawBody, headerSig)
-  const queryOk = querySongId ? await verifyCallbackSignature(querySongId, querySig) : false
+  const queryReason = querySongId
+    ? await verifyCallbackSignature(querySongId, querySig, queryExpires, queryNonce)
+    : 'missing'
+  const queryOk = queryReason === 'ok'
   if (!bodyOk && !queryOk) {
-    console.warn('[callback] firma ausente o inválida')
+    console.warn('[callback] firma ausente o inválida', { reason: queryReason })
     return NextResponse.json({ error: 'Firma del callback inválida.', code: 'signature_invalid' }, { status: 401 })
   }
 
@@ -59,8 +64,15 @@ export async function POST(request: Request) {
   })()) as Record<string, unknown> | null
   if (!payload) return NextResponse.json({ error: 'El cuerpo del callback no es JSON válido.', code: 'invalid_request' }, { status: 400 })
 
+  // Cuando la autorización viene del query, la canción objetivo es la firmada.
+  // Antes se resolvía por `taskId` del cuerpo, así que una URL válida para una
+  // canción podía escribir en otra cuyo `provider_task_id` se conociera.
+  const authorizedSongId = queryOk ? querySongId : null
   const taskId = String(payload.taskId ?? payload.id ?? payload.request_id ?? '').trim()
-  if (!taskId) return NextResponse.json({ error: 'taskId es obligatorio.', code: 'invalid_request' }, { status: 400 })
+
+  if (!authorizedSongId && !taskId) {
+    return NextResponse.json({ error: 'taskId es obligatorio.', code: 'invalid_request' }, { status: 400 })
+  }
 
   const status = normalizeStatus(payload.status ?? payload.state)
   if (status === 'pending') return NextResponse.json({ received: true, ignored: 'pending' })
@@ -70,40 +82,86 @@ export async function POST(request: Request) {
     ? String((payload.error as Record<string, unknown>).message ?? payload.error)
     : String(payload.error ?? payload.errorMsg ?? '')
 
-  if (status === 'ready' && !audioUrl) {
-    // Terminada sin audio = error del proveedor; se registra como error para
-    // no colgar la fila en generating (si la BD falla → 500 y reintento).
-    const result = await applyResult(taskId, 'error', null, duration, 'El proveedor dio la tarea por terminada sin audio.')
-    if (result === 'db_error') return NextResponse.json({ error: 'No se pudo registrar el resultado.', code: 'update_failed' }, { status: 500 })
+  const finish = async (result: string) => {
+    if (result === 'db_error') {
+      return NextResponse.json({ error: 'No se pudo registrar el resultado.', code: 'update_failed' }, { status: 500 })
+    }
+
+    if (authorizedSongId && queryNonce) {
+      const consumed = await consumeCallbackTicket(authorizedSongId, queryNonce)
+      if (consumed === 'error') {
+        return NextResponse.json({ error: 'No se pudo registrar el resultado.', code: 'update_failed' }, { status: 500 })
+      }
+    }
+
     return NextResponse.json({ received: true, result })
   }
 
-  const result = await applyResult(taskId, status, audioUrl, duration, errorMsg || null)
-  if (result === 'db_error') return NextResponse.json({ error: 'No se pudo registrar el resultado.', code: 'update_failed' }, { status: 500 })
-  return NextResponse.json({ received: true, result })
+  if (status === 'ready' && !audioUrl) {
+    // Terminada sin audio = error del proveedor; se registra como error para
+    // no colgar la fila en generating (si la BD falla → 500 y reintento).
+    return finish(await applyResult({ songId: authorizedSongId, taskId }, 'error', null, duration, 'El proveedor dio la tarea por terminada sin audio.'))
+  }
+
+  return finish(await applyResult({ songId: authorizedSongId, taskId }, status, audioUrl, duration, errorMsg || null))
+}
+
+async function consumeCallbackTicket(
+  songId: string,
+  nonce: string,
+): Promise<'consumed' | 'replay' | 'missing' | 'error'> {
+  const admin = createAdminClient()
+  if (!admin) return 'error'
+  const { data, error } = await admin.rpc('consume_generation_callback_ticket', {
+    p_nonce: nonce,
+    p_song_id: songId,
+  })
+  if (error) {
+    console.error('[callback] consume_generation_callback_ticket falló', {
+      code: error.code,
+      message: error.message,
+    })
+    return 'error'
+  }
+  const outcome = String(data ?? '')
+  if (outcome === 'consumed' || outcome === 'replay') return outcome
+  console.error('[callback] ticket de callback no consumido', { outcome, songId })
+  return 'missing'
 }
 
 async function applyResult(
-  taskId: string,
+  target: { songId: string | null; taskId: string },
   status: 'ready' | 'error',
   audioUrl: string | null,
   duration: number | null,
   error: string | null,
 ): Promise<string> {
-  setTaskStatus(taskId, status === 'ready' ? 'completed' : 'failed', { audioUrl: audioUrl ?? undefined, error: error ?? undefined })
+  if (target.taskId) {
+    setTaskStatus(target.taskId, status === 'ready' ? 'completed' : 'failed', {
+      audioUrl: audioUrl ?? undefined,
+      error: error ?? undefined,
+    })
+  }
+
   const admin = createAdminClient()
   if (!admin) return 'db_error'
-  const { data: song, error: lookupError } = await admin
-    .from('songs')
-    .select('id')
-    .eq('provider_task_id', taskId)
-    .maybeSingle()
-  if (lookupError || !song?.id) {
-    console.error('[callback] canción no localizada por taskId', { taskId })
-    return song === null ? 'not_found' : 'db_error'
+
+  let songId = target.songId
+  if (!songId) {
+    const { data: song, error: lookupError } = await admin
+      .from('songs')
+      .select('id')
+      .eq('provider_task_id', target.taskId)
+      .maybeSingle()
+    if (lookupError || !song?.id) {
+      console.error('[callback] canción no localizada por taskId', { taskId: target.taskId })
+      return song === null ? 'not_found' : 'db_error'
+    }
+    songId = song.id
   }
+
   const { data, error: rpcError } = await admin.rpc('apply_generation_result', {
-    p_song_id: song.id,
+    p_song_id: songId,
     p_status: status,
     p_audio_url: audioUrl,
     p_duration: duration,

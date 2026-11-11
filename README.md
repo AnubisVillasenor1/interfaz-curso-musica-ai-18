@@ -168,6 +168,20 @@ Los límites se separan por endpoint y por costo (`local`, `service`,
 que una llamada a un proveedor de pago. `/api/health` publica el modo del
 limitador y la presencia de configuración, sin valores ni secretos.
 
+### Callbacks de generación
+
+La URL que se entrega al proveedor musical lleva una firma HMAC de
+`songId + expiración + nonce`, con 24 h de vigencia. El nonce se registra en
+`generation_callback_tickets` y se consume una sola vez después de aplicar un
+resultado terminal; un fallo de base de datos no quema el reintento. La canción
+objetivo siempre sale de la firma, nunca del `taskId` que llega en el cuerpo.
+
+Requiere `GENERATOR_CALLBACK_SECRET` y las migraciones
+`20261111170000_transactional_fulfilment.sql` y
+`20261111180000_callback_replay_protection.sql` aplicadas **antes** del
+despliegue. Sin ellas la generación externa falla cerrada con 503 y devuelve el
+cupo.
+
 ## Cuenta y rama
 
 GitHub está escribiendo aquí desde `AnubisVillasenor1`, que es la cuenta a la

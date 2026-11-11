@@ -1,61 +1,78 @@
 /**
- * Firma de los callbacks de generación.
+ * Adaptador de firma de callbacks.
  *
- * `app/api/generate/callback/route.ts` era público y no verificaba nada: solo
- * miraba que el `songId` tuviera forma de UUID y escribía con `service_role`.
- * Quien conociera un identificador —por el tráfico de su propia sesión, por un
- * log, por cualquier fuga— podía reemplazar el audio de otra persona por una
- * URL arbitraria. Eso es inyección de contenido en la biblioteca ajena.
+ * El proveedor musical no firma sus notificaciones, así que firmamos la URL que
+ * le entregamos. La firma cubre `songId`, la expiración y un nonce de un solo
+ * uso: una URL filtrada deja de servir al caducar y no puede aplicarse dos
+ * veces aunque siga vigente.
  *
- * El proveedor no firma sus notificaciones, así que firmamos nosotros la
- * propia URL: el callback solo se acepta si lleva el HMAC del `songId` con un
- * secreto que el cliente jamás ve.
+ * La lógica pura vive en `callback-signature-core.mjs` para probarla con Node
+ * sin Next ni variables de entorno.
  */
 
-const encoder = new TextEncoder()
+import {
+  DEFAULT_CALLBACK_TTL_SECONDS,
+  createCallbackSignature,
+  verifyCallbackSignature as verifyWithSecret,
+  type CallbackSignature,
+  type CallbackVerifyReason,
+} from './callback-signature-core.mjs'
 
-function timingSafeEqual(a: string, b: string): boolean {
-  if (a.length !== b.length) return false
-  let diff = 0
-  for (let i = 0; i < a.length; i += 1) diff |= a.charCodeAt(i) ^ b.charCodeAt(i)
-  return diff === 0
-}
+export { DEFAULT_CALLBACK_TTL_SECONDS }
+export type { CallbackSignature, CallbackVerifyReason }
 
-async function hmac(secret: string, message: string): Promise<string> {
-  const key = await crypto.subtle.importKey(
-    'raw',
-    encoder.encode(secret),
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign'],
-  )
-  const signature = await crypto.subtle.sign('HMAC', key, encoder.encode(message))
-  return Array.from(new Uint8Array(signature))
-    .map((byte) => byte.toString(16).padStart(2, '0'))
-    .join('')
+function callbackSecret(): string {
+  return process.env.GENERATOR_CALLBACK_SECRET?.trim() ?? ''
 }
 
 export function callbackSecretConfigured(): boolean {
-  return Boolean(process.env.GENERATOR_CALLBACK_SECRET)
+  return callbackSecret().length > 0
 }
 
-/** Firma corta y estable sobre el identificador de la canción. */
-export async function signCallbackUrl(songId: string): Promise<string | null> {
-  const secret = process.env.GENERATOR_CALLBACK_SECRET
+/**
+ * Firma canónica de una canción. Devuelve `null` si el secreto no está
+ * configurado para que la ruta de generación falle cerrada.
+ */
+export async function signCallbackUrl(
+  songId: string,
+  options: { ttlSeconds?: number; now?: number; nonce?: string } = {},
+): Promise<CallbackSignature | null> {
+  const secret = callbackSecret()
   if (!secret) return null
-  return hmac(secret, songId)
+  return createCallbackSignature({
+    secret,
+    songId,
+    ttlSeconds: options.ttlSeconds ?? DEFAULT_CALLBACK_TTL_SECONDS,
+    now: options.now,
+    nonce: options.nonce,
+  })
 }
 
-export async function verifyCallbackSignature(songId: string, signature: string | null): Promise<boolean> {
-  const secret = process.env.GENERATOR_CALLBACK_SECRET
+/**
+ * Verifica firma, expiración y nonce.
+ *
+ * Sin secreto configurado se rechaza el callback: aceptarlo a ciegas
+ * convertiría cualquier URL filtrada en una escritura con `service_role`.
+ */
+export async function verifyCallbackSignature(
+  songId: string,
+  signature: string | null,
+  expiresAt: string | number | null,
+  nonce: string | null,
+  options: { now?: number; clockSkewSeconds?: number } = {},
+): Promise<CallbackVerifyReason> {
+  const secret = callbackSecret()
   if (!secret) {
-    // Sin secreto configurado no hay forma de autenticar el callback. Se
-    // rechaza en lugar de aceptar a ciegas: el fallo es visible y se arregla
-    // con una variable de entorno, no con un parche de código.
     console.error('[callback] GENERATOR_CALLBACK_SECRET no configurado: callback rechazado')
-    return false
+    return 'missing'
   }
-  if (!signature || !/^[0-9a-f]{64}$/i.test(signature)) return false
-  const expected = await hmac(secret, songId)
-  return timingSafeEqual(expected, signature.toLowerCase())
+  return verifyWithSecret({
+    secret,
+    songId,
+    signature,
+    expiresAt,
+    nonce,
+    now: options.now,
+    clockSkewSeconds: options.clockSkewSeconds ?? 60,
+  })
 }

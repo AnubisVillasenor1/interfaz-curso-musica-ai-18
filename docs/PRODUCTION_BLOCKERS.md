@@ -177,3 +177,66 @@ con dos instancias para demostrar que el cupo es global. Mientras no exista esa
 evidencia, el modo distribuido sólo está validado por contrato y pruebas
 unitarias.
 
+### P1-001 — Concesión de derechos transaccional e idempotente (corregido en código, pendiente de migración)
+
+`grantProduct` leía `entitlements`, calculaba el estado en JavaScript y hacía
+`upsert`. Dos webhooks concurrentes del mismo usuario podían pisarse: una compra
+del curso podía quedar como extensión y dos entregas de la misma sesión podían
+sumar 60 días en lugar de 30.
+
+Corrección: `supabase/migrations/20261111170000_transactional_fulfilment.sql`
+introduce `public.grant_product_entitlement(...)`, que:
+
+- bloquea por usuario con `pg_advisory_xact_lock` (también cuando la fila aún no
+  existe) y después con `select ... for update`;
+- registra cada `stripe_session_id` en `stripe_session_grants` con clave
+  primaria, de modo que un evento reenviado no vuelve a conceder la extensión;
+- valida el snapshot de suscripción (estado y periodo futuro) dentro de la
+  transacción;
+- delega plan, acceso y cupos en `sync_entitlement_effective_state` para no
+  duplicar umbrales.
+
+`lib/fulfilment.ts` ya no escribe `entitlements` directamente: llama a la RPC.
+`scripts/verify-entitlement-lifecycle.mjs` (15 comprobaciones en CI) impide que
+vuelva el patrón lectura-cálculo-escritura.
+
+**Orden de despliegue obligatorio:** aplicar la migración en Supabase antes de
+desplegar este código. Si la función no existe, la webhook responde error y
+Stripe reintenta; no se concede nada a medias. No se ha aplicado a producción
+desde este repositorio.
+
+### P1-002 — Callbacks de generación con expiración y nonce de un solo uso (corregido en código, pendiente de migración)
+
+La firma anterior cubría sólo `songId`, valía indefinidamente y `/api/callback`
+resolvía la canción por el `taskId` del cuerpo: una URL válida para una canción
+podía escribir en otra cuyo `provider_task_id` se conociera.
+
+Corrección:
+
+- `lib/callback-signature-core.mjs` firma `v1.<songId>.<exp>.<nonce>` con
+  HMAC-SHA256; la URL caduca a las 24 h (`DEFAULT_CALLBACK_TTL_SECONDS`) y la
+  verificación distingue `missing`, `malformed`, `expired` e `invalid`.
+- `supabase/migrations/20261111180000_callback_replay_protection.sql` crea
+  `generation_callback_tickets` y `consume_generation_callback_ticket(...)`. El
+  `UPDATE ... WHERE consumed_at IS NULL AND expires_at > now()` es atómico:
+  dos callbacks concurrentes no pueden consumir el mismo nonce.
+- El nonce se consume sólo después de aplicar un resultado terminal; si la
+  escritura falla, el ticket sobrevive y el reintento del proveedor puede
+  completar la tarea.
+- `/api/callback` usa el `songId` firmado como objetivo y ya no confía en el
+  `taskId` del cuerpo cuando la autorización viene del query.
+- `apply_generation_result` ya rechazaba estados terminales repetidos
+  (`already_settled`); ahora se suma la defensa del ticket.
+- Pruebas: `node --test scripts/test-callback-signature.mjs` (7 casos) y
+  `node scripts/verify-callback-security.mjs` (13 contratos), ambas en CI.
+
+**Limitación conocida:** los proveedores que sólo firman el cuerpo
+(`x-signature`) no envían expiración ni nonce propios. Para ellos la ventana la
+impone el estado de la canción (`queued`/`generating`) y la firma del cuerpo;
+añadir caducidad exigiría un contrato que el proveedor no ofrece. Está
+documentado como pendiente de validación con cada proveedor real.
+
+**Orden de despliegue obligatorio:** aplicar la migración antes del código. Sin
+la tabla, `/api/generate` con `suno` falla cerrado (503) y devuelve el cupo.
+
+

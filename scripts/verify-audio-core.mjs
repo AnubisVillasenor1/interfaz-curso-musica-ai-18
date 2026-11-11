@@ -156,7 +156,7 @@ check('analysis wrapper keeps a typed contract and honest labels', () => {
 })
 
 check('multi-agent route is separate from the course assistant and rate-limited', () => {
-  assert.match(route, /enforceRateLimit\(\s*`agents:/)
+  assert.match(route, /enforcePolicy\(\s*request,\s*'music\.agents'/)
   assert.match(route, /planMultiAgent/)
   assert.match(route, /status: 400/)
   assert.doesNotMatch(route, /app\/api\/agent/)

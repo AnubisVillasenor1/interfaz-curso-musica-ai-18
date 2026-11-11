@@ -205,11 +205,48 @@ export async function POST(request: Request) {
     throw error
   }
 
+  if (provider.id === 'suno') {
+    // El nonce se registra antes de entregar la URL. Sin este ticket el
+    // callback no podrá consumirse: es preferible fallar aquí, con el cupo
+    // devuelto, que aceptar notificaciones no verificables.
+    const { error: ticketError } = await admin.from('generation_callback_tickets').insert({
+      nonce: signature.nonce,
+      song_id: song.id,
+      expires_at: new Date(signature.expiresAt * 1000).toISOString(),
+    })
+    if (ticketError) {
+      await refundQuota(admin, user.id, engine)
+      console.error('[generate] no se pudo registrar el ticket del callback', {
+        code: ticketError.code,
+        message: ticketError.message,
+      })
+      await admin
+        .from('songs')
+        .update({ status: 'error', error: 'El retorno del proveedor no está configurado.' })
+        .eq('id', song.id)
+        .eq('user_id', user.id)
+      return NextResponse.json(
+        {
+          error: 'El estudio con voces no está disponible ahora. Puedes crear con el motor local gratis.',
+          code: 'not_configured',
+          fallback: 'local',
+        },
+        { status: 503 },
+      )
+    }
+  }
+
   // `suno` habla el contrato histórico (songId+sig en query → /api/generate/callback);
   // el resto POSTea JSON firmada por cuerpo a `/api/callback`.
+  const callbackQuery = new URLSearchParams({
+    songId: String(song.id),
+    sig: signature.signature,
+    exp: String(signature.expiresAt),
+    nonce: signature.nonce,
+  })
   const callbackUrl =
     provider.id === 'suno'
-      ? `${base}/api/generate/callback?songId=${encodeURIComponent(String(song.id))}&sig=${signature}`
+      ? `${base}/api/generate/callback?${callbackQuery.toString()}`
       : `${base}/api/callback`
 
   const failSong = async (message: string) => {
