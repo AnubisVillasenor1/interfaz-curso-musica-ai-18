@@ -1,0 +1,12 @@
+# Propietarios de código
+# Revisión obligatoria para cambios en estas rutas.
+* @AnubisVillasenor1
+
+/supabase/migrations/ @AnubisVillasenor1
+/lib/fulfilment.ts @AnubisVillasenor1
+/lib/rate-limit.ts @AnubisVillasenor1
+/lib/callback-signature.ts @AnubisVillasenor1
+/app/api/stripe/ @AnubisVillasenor1
+/app/api/callback/ @AnubisVillasenor1
+/app/api/generate/ @AnubisVillasenor1
+/.github/workflows/ @AnubisVillasenor1
