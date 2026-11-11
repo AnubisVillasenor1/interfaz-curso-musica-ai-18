@@ -36,6 +36,15 @@ const PHASE_COPY: Record<Phase, string> = {
  * deja el texto editable: quien no sabe qué escribir elige uno y cambia una
  * palabra, que es exactamente el ejercicio del curso.
  */
+const FEATURED_PRESETS = new Set(['Corrido tumbado', 'Cumbia sonidera', 'Salsa colombiana', 'Balada pop'])
+
+const PRESET_VISUALS: Record<string, string> = {
+  'Corrido tumbado': '/visuals/golden-wave.png',
+  'Cumbia sonidera': '/visuals/playlist-night.png',
+  'Salsa colombiana': '/visuals/mixing-console.png',
+  'Balada pop': '/visuals/vocal-atmosphere.png',
+}
+
 const PRESETS = [
   {
     label: 'Lo-fi para estudiar',
@@ -86,14 +95,20 @@ const PRESETS = [
     prompt:
       'Ambient cinematográfico suspendido con pads evolutivos, piano distante, arpa procesada, grabación de campo y cola de reverb larga. 60 BPM. Sin batería constante: silencio, ascenso y resolución.',
   },
-  {
-    label: 'Jazz nocturno',
-    genreId: 'jazz',
-    bpm: 126,
-    prompt:
-      'Jazz neo-bop nocturno con contrabajo caminante, piano acústico con voicings extendidos, saxo improvisado y batería con escobillas. 126 BPM, swing humano. Tema, solo y reprise.',
-  },
-] as const
+    {
+      label: 'Jazz nocturno',
+      genreId: 'jazz',
+      bpm: 126,
+      prompt:
+        'Jazz neo-bop nocturno con contrabajo caminante, piano acústico con voicings extendidos, saxo improvisado y batería con escobillas. 126 BPM, swing humano. Tema, solo y reprise.',
+    },
+    { label: 'Sierreño acústico', genreId: 'sierreño', bpm: 92, prompt: 'Sierreño acústico íntimo en 3/4, con requinto melódico, guitarras de madera, bajo cálido y espacio para una voz narrativa. Intro, verso, coro y outro.' },
+    { label: 'Cumbia sonidera', genreId: 'cumbia-sonidera', bpm: 96, prompt: 'Cumbia sonidera bailable con güiro, órgano cumbiero, congas y bajo sincopado. 96 BPM, vaivén hipnótico y llamada-respuesta.' },
+    { label: 'Salsa colombiana', genreId: 'salsa-colombiana', bpm: 102, prompt: 'Salsa colombiana con clave, campana, tumbao de bajo, montuno de piano y metales en respuesta. 102 BPM y espacio para improvisación.' },
+    { label: 'Rap de barrio', genreId: 'rap-barrio', bpm: 88, prompt: 'Rap de barrio reflexivo con batería boom bap, piano eléctrico, bajo firme y textura de cinta. 88 BPM, voz narrativa al frente y coro breve.' },
+    { label: 'Balada pop', genreId: 'pop-ballad', bpm: 78, prompt: 'Balada pop vulnerable con piano íntimo, guitarra limpia, cuerdas suaves y batería contenida. 78 BPM, verso cercano, coro expansivo y clímax dinámico.' },
+    { label: 'Trova acústica', genreId: 'trova', bpm: 78, prompt: 'Trova acústica poética con guitarra de nylon, voz cercana y arreglo con espacio. 78 BPM, letra narrativa, puente instrumental y cierre íntimo.' },
+  ] as const
 
 /**
  * Estudio con el motor local.
@@ -322,22 +337,21 @@ export function LocalComposer({ initialPrompt = '' }: { initialPrompt?: string }
 
     <div>
       <p className="pg-label">Empieza con un ejemplo y cámbialo</p>
-      <div className="mt-2 flex flex-wrap gap-2">
-        {PRESETS.map((preset) => (
-          <button
-            key={preset.label}
-            type="button"
-            onClick={() => {
-              setPrompt(preset.prompt)
-              setGenreId(preset.genreId)
-              setBpm(preset.bpm)
-              if (!title.trim()) setTitle(preset.label)
-            }}
-            className="pg-chip transition-colors hover:text-[var(--pg-ink)]"
-            data-tone="violet"
-          >
-            {preset.label}
+      <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {PRESETS.filter((preset) => FEATURED_PRESETS.has(preset.label)).map((preset) => (
+          <button key={preset.label} type="button" aria-label={`Usar ejemplo: ${preset.label}`}
+            onClick={() => { setPrompt(preset.prompt); setGenreId(preset.genreId); setBpm(preset.bpm); if (!title.trim()) setTitle(preset.label) }}
+            className="group relative flex min-h-24 items-end overflow-hidden rounded-xl border border-white/10 bg-cover bg-center p-3 text-left text-sm font-medium text-white transition duration-200 hover:-translate-y-0.5 hover:border-cyan-200/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"
+            style={{ backgroundImage: `linear-gradient(0deg, rgba(7, 13, 22, .92), rgba(7, 13, 22, .08)), url(${PRESET_VISUALS[preset.label]})` }}>
+            <span className="relative z-10">{preset.label}</span>
           </button>
+        ))}
+      </div>
+      <div className="mt-3 flex flex-wrap gap-2" aria-label="Más ejemplos musicales">
+        {PRESETS.filter((preset) => !FEATURED_PRESETS.has(preset.label)).map((preset) => (
+          <button key={preset.label} type="button"
+            onClick={() => { setPrompt(preset.prompt); setGenreId(preset.genreId); setBpm(preset.bpm); if (!title.trim()) setTitle(preset.label) }}
+            className="pg-chip transition-colors hover:text-[var(--pg-ink)]" data-tone="violet">{preset.label}</button>
         ))}
       </div>
     </div>

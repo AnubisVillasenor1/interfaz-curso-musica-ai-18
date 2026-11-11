@@ -138,6 +138,7 @@ export function chooseProgression(prompt: string, rng: () => number) {
   if (/(happy|feliz|verano|solead|bright|eufor)/.test(t)) return PROGRESSIONS.find((p) => p.id === 'I-V-vi-IV') ?? PROGRESSIONS[0]
   if (/(nostalg|recuerd|vinilo|retro|vapor)/.test(t)) return PROGRESSIONS.find((p) => p.id === 'vi-IV-I-V') ?? PROGRESSIONS[1]
   if (/(sensual|romant|beso|intimo)/.test(t)) return PROGRESSIONS.find((p) => p.id === 'iv-I-v-III') ?? PROGRESSIONS[6]
+  if (/(salsa|sonider|cumbia|guaracha|merengue|bachata)/.test(t)) return PROGRESSIONS.find((p) => p.id === 'i-iv-v-i') ?? PROGRESSIONS[9]
   if (/(baile|club|groove|fiesta|bailar)/.test(t)) return PROGRESSIONS.find((p) => p.id === 'i-iv-v-i') ?? PROGRESSIONS[9]
   return pickFrom(rng, PROGRESSIONS)
 }
@@ -378,7 +379,6 @@ export function compose(opts: {
       const intensity = section?.energy ?? 0.5
       const fill = section && bar === section.startBar + section.bars - 1
       for (const [voiceName, steps] of Object.entries(pattern.voices) as Array<[DrumVoice, number[]]>) {
-        if (voiceName === 'perc') continue
         for (let i = 0; i < 16; i += 1) {
           const hit = steps[i] ?? 0
           if (!hit) continue
@@ -447,8 +447,8 @@ function nameForLayer(layer: LayerSpec): string {
 function bassStyleFor(genreId: string): 'root' | 'walk' | 'syncopated' | 'offbeat' | 'octave' {
   if (['jazz', 'bossa', 'funk', 'neosoul'].includes(genreId)) return 'walk'
   if (['house', 'techno', 'edm', 'synthwave'].includes(genreId)) return 'offbeat'
-  if (['trap', 'drill', 'reggaeton', 'afrobeat'].includes(genreId)) return 'syncopated'
-  if (['corrido', 'country', 'folk'].includes(genreId)) return 'octave'
+  if (['trap', 'drill', 'reggaeton', 'afrobeat', 'cumbia-sonidera', 'salsaton', 'guaracha', 'industrial-hiphop'].includes(genreId)) return 'syncopated'
+  if (['corrido', 'sierreño', 'norteño', 'mariachi', 'country', 'folk'].includes(genreId)) return 'octave'
   return 'root'
 }
 
