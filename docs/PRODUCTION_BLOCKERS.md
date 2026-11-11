@@ -239,4 +239,25 @@ documentado como pendiente de validación con cada proveedor real.
 **Orden de despliegue obligatorio:** aplicar la migración antes del código. Sin
 la tabla, `/api/generate` con `suno` falla cerrado (503) y devuelve el cupo.
 
+### P1-003 — Validación del contenedor real en la subida de audio (corregido en código, pendiente de prueba con archivos reales)
+
+`/api/songs/complete` validaba tamaño, MIME declarado, extensión, propiedad,
+motor y estado, pero el MIME de `multipart/form-data` lo controla el cliente:
+un ejecutable renombrado podía declararse `audio/mpeg`.
+
+Corrección:
+
+- `lib/audio-file-signature.mjs` detecta el contenedor por cabecera: `RIFF...WAVE`,
+  `OggS`, `ftyp` y MP3 (`ID3` o sincronía de trama MPEG).
+- La ruta lee 64 bytes con `file.slice(0, AUDIO_HEADER_BYTES)` y rechaza con 415
+  `content_type_mismatch` si no coinciden tipo declarado y contenido real.
+- `scripts/test-audio-file-signature.mjs` cubre WAV, OGG, M4A, MP3, ejecutable
+  disfrazado, archivo vacío y MIME no admitido (6 casos, en CI).
+
+Pendiente: probar con archivos reales de cada proveedor, verificar el límite de
+tamaño en el bucket y confirmar que Storage sirve el contenido con el
+`Content-Type` correcto. La duración sigue viniendo del cliente: validarla de
+verdad exige decodificar el audio en servidor.
+
+
 

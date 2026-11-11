@@ -28,6 +28,7 @@ pnpm install --frozen-lockfile
 pnpm typecheck
 node --test scripts/test-rate-limit.mjs
 node --test scripts/test-callback-signature.mjs
+node --test scripts/test-audio-file-signature.mjs
 node scripts/verify-entitlement-lifecycle.mjs
 node scripts/verify-callback-security.mjs
 node scripts/verify-exam-security.mjs

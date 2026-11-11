@@ -58,6 +58,9 @@ jobs:
       - name: Callback signature expiration and nonce tests
         run: node --test scripts/test-callback-signature.mjs
 
+      - name: Audio upload container detection tests
+        run: node --test scripts/test-audio-file-signature.mjs
+
       - name: Verify callback replay protection contracts
         run: node scripts/verify-callback-security.mjs
 

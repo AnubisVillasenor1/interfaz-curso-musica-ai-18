@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 
+import { AUDIO_HEADER_BYTES, verifyAudioHeader } from '@/lib/audio-file-signature.mjs'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { SUPABASE_NOT_CONFIGURED } from '@/lib/supabase/config'
 import { createClient } from '@/lib/supabase/server'
@@ -77,6 +78,26 @@ export async function POST(request: Request) {
   const extension = extensionFor(file.type)
   if (!extension) {
     return NextResponse.json({ error: `Formato no admitido: ${file.type || 'desconocido'}.`, code: 'unsupported_media_type', allowed: Object.keys(ALLOWED_TYPES) }, { status: 415 })
+  }
+
+  // El MIME de multipart lo declara el cliente. Se comprueba el contenedor
+  // real en los primeros bytes para que un ejecutable renombrado no llegue al
+  // bucket compartido.
+  const headerBytes = new Uint8Array(await file.slice(0, AUDIO_HEADER_BYTES).arrayBuffer())
+  const headerCheck = verifyAudioHeader(headerBytes, file.type)
+  if (!headerCheck.ok) {
+    console.warn('[songs/complete] cabecera de audio rechazada', {
+      reason: headerCheck.reason,
+      detected: headerCheck.detected,
+      expected: headerCheck.expected,
+    })
+    return NextResponse.json(
+      {
+        error: 'El contenido del archivo no coincide con el formato declarado.',
+        code: 'content_type_mismatch',
+      },
+      { status: 415 },
+    )
   }
   const rawDuration = Number(form.get('duration'))
   if (!Number.isFinite(rawDuration) || rawDuration <= 0 || rawDuration >= 3600) {
