@@ -8,6 +8,7 @@ import { createTask, setTaskStatus } from '@/lib/music/task-store'
 import { getMusicProvider } from '@/lib/music/providers'
 import { isNotConfigured } from '@/lib/music/providers/errors'
 import { SUPABASE_NOT_CONFIGURED } from '@/lib/supabase/config'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 
 export const runtime = 'nodejs'
@@ -31,8 +32,8 @@ function text(value: unknown, max: number): string | null {
  * Devuelve la unidad consumida cuando el intento muere antes de producir nada.
  * Sin esto, un proveedor caído le costaba al usuario una canción de su cupo.
  */
-async function refundQuota(supabase: NonNullable<Awaited<ReturnType<typeof createClient>>>, userId: string, engine: string) {
-  const { error } = await supabase.rpc('refund_generation_quota', { p_owner: userId, p_engine: engine })
+async function refundQuota(admin: NonNullable<ReturnType<typeof createAdminClient>>, userId: string, engine: string) {
+  const { error } = await admin.rpc('refund_generation_quota', { p_owner: userId, p_engine: engine })
   if (error) console.error('[generate] no se pudo devolver la cuota', error.message)
 }
 
@@ -89,6 +90,10 @@ export async function POST(request: Request) {
   // El privilegio depende únicamente del email verificado por Supabase, nunca del
   // cuerpo de la petición ni de metadata editable desde el navegador.
   const adminAccount = isAdminUser(user)
+  const admin = createAdminClient()
+  if (!admin) {
+    return NextResponse.json({ error: 'El servicio de generación no está configurado.', code: 'not_configured' }, { status: 503 })
+  }
   const quota = adminAccount ? { data: null, error: null } : await supabase.rpc('consume_generation_quota', { p_owner: user.id, p_engine: engine })
   const granted = adminAccount
     ? { allowed: true, reason: null, limit_total: 999999, limit_used: 0 }
@@ -128,7 +133,7 @@ export async function POST(request: Request) {
 
   if (insertError || !song) {
     console.error('[generate] no se pudo guardar el proyecto', insertError?.message)
-    await refundQuota(supabase, user.id, engine)
+    await refundQuota(admin, user.id, engine)
     return NextResponse.json(
       { error: 'No se pudo guardar tu proyecto. El cupo no se descontó.', code: 'storage_error' },
       { status: 500 },
@@ -159,9 +164,9 @@ export async function POST(request: Request) {
   // intento que no podría completarse.
   const base = getAppUrl(request)
   if (!base) {
-    await refundQuota(supabase, user.id, engine)
+    await refundQuota(admin, user.id, engine)
     console.error('[generate] NEXT_PUBLIC_APP_URL sin definir: no hay retorno para el proveedor')
-    await supabase.from('songs').update({ status: 'error', error: 'El retorno del proveedor no está configurado.' }).eq('id', song.id)
+    await admin.from('songs').update({ status: 'error', error: 'El retorno del proveedor no está configurado.' }).eq('id', song.id).eq('user_id', user.id)
     return NextResponse.json(
       { error: 'El estudio con voces no está disponible ahora mismo. Puedes crear con el motor local gratis.', code: 'not_configured', fallback: 'local' },
       { status: 503 },
@@ -170,9 +175,9 @@ export async function POST(request: Request) {
 
   const signature = await signCallbackUrl(String(song.id))
   if (!signature) {
-    await refundQuota(supabase, user.id, engine)
+    await refundQuota(admin, user.id, engine)
     console.error('[generate] GENERATOR_CALLBACK_SECRET sin definir: el callback no se puede firmar')
-    await supabase.from('songs').update({ status: 'error', error: 'El retorno del proveedor no está configurado.' }).eq('id', song.id)
+    await admin.from('songs').update({ status: 'error', error: 'El retorno del proveedor no está configurado.' }).eq('id', song.id).eq('user_id', user.id)
     return NextResponse.json(
       { error: 'El estudio con voces no está disponible ahora mismo. Puedes crear con el motor local gratis.', code: 'not_configured', fallback: 'local' },
       { status: 503 },
@@ -184,9 +189,9 @@ export async function POST(request: Request) {
     provider = getMusicProvider()
   } catch (error) {
     if (isNotConfigured(error)) {
-      await refundQuota(supabase, user.id, engine)
+      await refundQuota(admin, user.id, engine)
       console.error('[generate] proveedor no configurado', error instanceof Error ? error.message : String(error))
-      await supabase.from('songs').update({ status: 'error', error: 'Proveedor musical no configurado.' }).eq('id', song.id)
+      await admin.from('songs').update({ status: 'error', error: 'Proveedor musical no configurado.' }).eq('id', song.id).eq('user_id', user.id)
       return NextResponse.json(
         {
           song,
@@ -208,7 +213,7 @@ export async function POST(request: Request) {
       : `${base}/api/callback`
 
   const failSong = async (message: string) => {
-    await supabase.from('songs').update({ status: 'error', error: message }).eq('id', song.id)
+    await admin.from('songs').update({ status: 'error', error: message }).eq('id', song.id).eq('user_id', user.id)
   }
 
   try {
@@ -232,7 +237,7 @@ export async function POST(request: Request) {
 
     // Proveedor síncrono (Hugging Face): el audio ya existe, la fila queda lista.
     if (result.audioUrl) {
-      await supabase.from('songs').update({ status: 'ready', audio_url: result.audioUrl, provider_task_id: result.taskId }).eq('id', song.id)
+      await admin.from('songs').update({ status: 'ready', audio_url: result.audioUrl, provider_task_id: result.taskId }).eq('id', song.id).eq('user_id', user.id)
       setTaskStatus(result.taskId, 'completed', { audioUrl: result.audioUrl, model: result.model })
       return NextResponse.json({
         song,
@@ -251,6 +256,7 @@ export async function POST(request: Request) {
       .from('songs')
       .update({ status: 'generating', provider_task_id: result.taskId.slice(0, 120) })
       .eq('id', song.id)
+      .eq('user_id', user.id)
 
     return NextResponse.json({
       song,
@@ -262,7 +268,7 @@ export async function POST(request: Request) {
     })
   } catch (error) {
     if (isNotConfigured(error)) {
-      await refundQuota(supabase, user.id, engine)
+      await refundQuota(admin, user.id, engine)
       await failSong('Proveedor musical no configurado.')
       return NextResponse.json(
         {
@@ -278,7 +284,7 @@ export async function POST(request: Request) {
       message: error instanceof Error ? error.message : String(error),
       provider: provider.id,
     })
-    await refundQuota(supabase, user.id, engine)
+    await refundQuota(admin, user.id, engine)
     await failSong('El proveedor musical no respondió.')
     return NextResponse.json(
       { song, error: 'El proveedor musical no respondió. Tu proyecto quedó guardado para reintentar.', code: 'provider_unreachable' },

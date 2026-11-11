@@ -2,7 +2,7 @@ import { generateSpeech } from 'ai'
 import { gateway } from '@ai-sdk/gateway'
 import { NextResponse } from 'next/server'
 
-import { ipOf, rateLimitPublic } from '@/lib/rate-limit'
+import { enforceRateLimit, ipOf } from '@/lib/rate-limit'
 
 export const runtime = 'nodejs'
 export const maxDuration = 30
@@ -15,9 +15,12 @@ export const maxDuration = 30
  * servidor para evitar abuso de costes.
  */
 export async function POST(request: Request) {
-  if (!rateLimitPublic(`tts:${ipOf(request)}`, 10)) {
-    return NextResponse.json({ error: 'Demasiadas peticiones de voz. Espera un momento.', code: 'rate_limited' }, { status: 429, headers: { 'Retry-After': '60' } })
-  }
+const rateLimitResponse = await enforceRateLimit(
+    `tts:${ipOf(request)}`,
+    10,
+    'Demasiadas peticiones de voz. Espera un momento.',
+  )
+  if (rateLimitResponse) return rateLimitResponse
 
   const body = (await request.json().catch(() => null)) as { text?: unknown; voice?: unknown } | null
   const text = typeof body?.text === 'string' ? body.text.trim().slice(0, 900) : ''

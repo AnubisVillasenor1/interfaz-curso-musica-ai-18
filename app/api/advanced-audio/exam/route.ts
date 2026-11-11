@@ -7,7 +7,7 @@ import {
   validateAdvancedAudioAnswers,
 } from '@/lib/advanced-audio-exam'
 import { ADVANCED_AUDIO_ASSESSMENT, ADVANCED_AUDIO_MODULE_IDS, isAdvancedAudioModuleId } from '@/lib/advanced-audio-curriculum'
-import { ipOf, rateLimitPublic } from '@/lib/rate-limit'
+import { enforceRateLimit, ipOf } from '@/lib/rate-limit'
 import { readBoundedJson } from '@/lib/http/read-body'
 import { createClient } from '@/lib/supabase/server'
 
@@ -40,12 +40,13 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  if (!rateLimitPublic('advanced-audio-exam:' + ipOf(request), 20)) {
-    return NextResponse.json({ error: 'Demasiados intentos; espera antes de volver a presentar el examen.', code: 'rate_limited' }, {
-      status: 429,
-      headers: { ...PRIVATE_HEADERS, 'Retry-After': '60' },
-    })
-  }
+const rateLimitResponse = await enforceRateLimit(
+    `advanced-audio-exam:${ipOf(request)}`,
+    20,
+    'Demasiados intentos; espera antes de volver a presentar el examen.',
+    PRIVATE_HEADERS,
+  )
+  if (rateLimitResponse) return rateLimitResponse
 
   const parsed = await readBoundedJson<{ moduleId?: unknown; answers?: unknown } | null>(request, 16 * 1024)
   if (!parsed.ok) {

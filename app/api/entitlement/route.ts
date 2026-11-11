@@ -53,6 +53,7 @@ export async function GET() {
         role: adminAccount ? 'admin' : 'user',
         songs_total: 0,
         songs_ready: 0,
+        entitlement_reconciliation_required: false,
         is_admin: adminAccount,
       },
       userId: user.id,

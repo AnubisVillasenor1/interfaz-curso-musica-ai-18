@@ -137,7 +137,7 @@ const [engine, route, analyzeRoute, multiagent, panel, studio, migration, dts, a
   readFile(new URL('../lib/music/multiagent.ts', import.meta.url), 'utf8'),
   readFile(new URL('../components/agent-control-panel.tsx', import.meta.url), 'utf8'),
   readFile(new URL('../components/music-studio.tsx', import.meta.url), 'utf8'),
-  readFile(new URL('../supabase/migrations/20261108200000_audio_core.sql', import.meta.url), 'utf8'),
+  readFile(new URL('../supabase/migrations/20261111143000_runtime_security_alignment.sql', import.meta.url), 'utf8'),
   readFile(new URL('../lib/music/analysis-core.d.mts', import.meta.url), 'utf8'),
   readFile(new URL('../lib/music/analysis.ts', import.meta.url), 'utf8'),
 ])
@@ -156,7 +156,7 @@ check('analysis wrapper keeps a typed contract and honest labels', () => {
 })
 
 check('multi-agent route is separate from the course assistant and rate-limited', () => {
-  assert.match(route, /rateLimitPublic\(`agents:/)
+  assert.match(route, /enforceRateLimit\(\s*`agents:/)
   assert.match(route, /planMultiAgent/)
   assert.match(route, /status: 400/)
   assert.doesNotMatch(route, /app\/api\/agent/)

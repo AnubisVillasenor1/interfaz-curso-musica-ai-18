@@ -8,6 +8,7 @@ import {
   trimHistory,
   type ChatTurn,
 } from '@/lib/agent/guide'
+import { rateLimitPublic } from '@/lib/rate-limit'
 import { createClient } from '@/lib/supabase/server'
 
 export const runtime = 'nodejs'
@@ -16,49 +17,8 @@ export const maxDuration = 30
 /** Límites duros: un chat abierto al público sin techo es una factura, no una función. */
 const MAX_MESSAGE_CHARS = 2000
 const MAX_TURNS = 8
-const WINDOW_MS = 60_000
 const ANONYMOUS_PER_WINDOW = 6
 const SIGNED_IN_PER_WINDOW = 20
-
-/**
- * Tope en memoria por nodo.
- *
- * Serverless no comparte memoria entre instancias, así que esto no es un
- * cortafuegos: es el frenado razonable que cabe sin infraestructura. El techo
- * real lo ponen el límite de tokens del proveedor y el gasto máximo
- * configurado en su panel, y eso va en la documentación de despliegue.
- */
-const hits = new Map<string, { count: number; resetAt: number }>()
-
-type RateVerdict = { allowed: boolean; remaining: number; retryAfterS: number }
-
-/**
- * Ventana fija en memoria. Devuelve el veredicto completo en vez de un booleano:
- * un cliente que recibe 429 sin `Retry-After` reintenta a ciegas y convierte un
- * freno en una tormenta. El conteo vive en el nodo, así que en un despliegue con
- * varios nodos el límite es orientativo — lo que sí es exacto es el tiempo que
- * queda para la ventana que este nodo está sirviendo.
- */
-function rateCheck(key: string, limit: number): RateVerdict {
-  const now = Date.now()
-
-  // Poda: sin esto el mapa crecería con cada IP nueva durante toda la vida del
-  // proceso, que en un nodo largo son muchas ventanas ya caducadas.
-  if (hits.size > 2000) {
-    for (const [bucket, entry] of hits) if (entry.resetAt < now) hits.delete(bucket)
-  }
-
-  const entry = hits.get(key)
-  if (!entry || entry.resetAt < now) {
-    hits.set(key, { count: 1, resetAt: now + WINDOW_MS })
-    return { allowed: true, remaining: Math.max(0, limit - 1), retryAfterS: 0 }
-  }
-  entry.count += 1
-  if (entry.count > limit) {
-    return { allowed: false, remaining: 0, retryAfterS: Math.max(1, Math.ceil((entry.resetAt - now) / 1000)) }
-  }
-  return { allowed: true, remaining: Math.max(0, limit - entry.count), retryAfterS: 0 }
-}
 
 function ipOf(request: Request): string {
   // `x-forwarded-for` lo escribe el cliente: la primera entrada es falsificable
@@ -145,29 +105,31 @@ export async function POST(request: Request) {
     } = (await supabase?.auth.getUser()) ?? { data: { user: null } }
 
     const limit = user ? SIGNED_IN_PER_WINDOW : ANONYMOUS_PER_WINDOW
-    const rate = rateCheck(bucketKey(user?.id ?? null, request), limit)
-    if (!rate.allowed) {
-      // Sigue llevando `answer` y `source`, porque la interfaz del chat los lee y
-      // muestra la frase al alumno: quitarlos sería cambiar el contrato con la UI
-      // por una preferencia de estilo. Lo que faltaba era la semántica de error
-      // (código de máquina) y el tiempo de espera, para que un agente pueda
-      // reintentar sin adivinar.
+    const rate = await rateLimitPublic(bucketKey(user?.id ?? null, request), limit)
+    if (rate.status !== 'allowed') {
+      const unavailable = rate.status === 'unavailable'
+      const retryAfter = unavailable ? 5 : Math.max(1, Math.ceil((rate.reset - Date.now()) / 1000))
       return NextResponse.json(
         {
-          answer: 'Varios mensajes seguidos desde el mismo sitio: espera un minuto y vuelve a preguntar.',
+          answer: unavailable
+            ? 'El servicio de respuestas está temporalmente ocupado. Inténtalo de nuevo en unos segundos.'
+            : 'Varios mensajes seguidos desde el mismo sitio: espera un minuto y vuelve a preguntar.',
           source: 'fallback',
           lessonIds: [],
-          rateLimited: true,
-          error: 'Demasiadas preguntas seguidas. Espera antes de volver a intentar.',
-          code: 'rate_limited',
-          retryAfter: rate.retryAfterS,
+          rateLimited: !unavailable,
+          error: unavailable
+            ? 'El control de solicitudes no está disponible temporalmente.'
+            : 'Demasiadas preguntas seguidas. Espera antes de volver a intentar.',
+          code: unavailable ? 'rate_limit_unavailable' : 'rate_limited',
+          retryAfter,
         },
         {
-          status: 429,
+          status: unavailable ? 503 : 429,
           headers: {
-            'Retry-After': String(rate.retryAfterS),
+            'Retry-After': String(retryAfter),
             'X-RateLimit-Limit': String(limit),
             'X-RateLimit-Remaining': '0',
+            'Cache-Control': 'no-store',
           },
         },
       )
