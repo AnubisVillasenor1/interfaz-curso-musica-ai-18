@@ -64,6 +64,9 @@ jobs:
       - name: Verify callback replay protection contracts
         run: node scripts/verify-callback-security.mjs
 
+      - name: Verify authentication and per-user isolation contracts
+        run: node scripts/verify-auth-isolation.mjs
+
       - name: Production build
         run: pnpm build
 

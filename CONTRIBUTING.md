@@ -31,6 +31,7 @@ node --test scripts/test-callback-signature.mjs
 node --test scripts/test-audio-file-signature.mjs
 node scripts/verify-entitlement-lifecycle.mjs
 node scripts/verify-callback-security.mjs
+node scripts/verify-auth-isolation.mjs
 node scripts/verify-exam-security.mjs
 node scripts/verify-audio-core.mjs
 pnpm build
