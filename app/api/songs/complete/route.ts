@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 
+import { createAdminClient } from '@/lib/supabase/admin'
 import { SUPABASE_NOT_CONFIGURED } from '@/lib/supabase/config'
 import { createClient } from '@/lib/supabase/server'
 
@@ -53,6 +54,8 @@ export async function POST(request: Request) {
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Inicia sesión para guardar tu canción.', code: 'unauthorized' }, { status: 401 })
+  const admin = createAdminClient()
+  if (!admin) return NextResponse.json({ error: SUPABASE_NOT_CONFIGURED, code: 'not_configured' }, { status: 503 })
 
   const form = await request.formData().catch(() => null)
   if (!form) return NextResponse.json({ error: 'Envía el audio como multipart.', code: 'invalid_request' }, { status: 400 })
@@ -75,6 +78,11 @@ export async function POST(request: Request) {
   if (!extension) {
     return NextResponse.json({ error: `Formato no admitido: ${file.type || 'desconocido'}.`, code: 'unsupported_media_type', allowed: Object.keys(ALLOWED_TYPES) }, { status: 415 })
   }
+  const rawDuration = Number(form.get('duration'))
+  if (!Number.isFinite(rawDuration) || rawDuration <= 0 || rawDuration >= 3600) {
+    return NextResponse.json({ error: 'La duración del audio no es válida.', code: 'invalid_duration' }, { status: 400 })
+  }
+  const duration = Math.round(rawDuration * 100) / 100
 
   // La fila tiene que existir y ser del usuario. Se consulta con su propio
   // cliente: RLS ya filtra por dueño, así que un songId ajeno devuelve null.
@@ -117,37 +125,22 @@ export async function POST(request: Request) {
   // listado. Lo que queda permanente en la fila es `storage_path`.
   const { data: signed } = await supabase.storage.from('song-audio').createSignedUrl(path, SIGNED_URL_TTL_SECONDS)
 
-  // Duración validada como en el callback del proveedor (finite, >0, <1h):
-  // sin esto, -5, 1e20 o Infinity quedaban persistidos en la fila.
-  const rawDuration = Number(form.get('duration'))
-  const duration = Number.isFinite(rawDuration) && rawDuration > 0 && rawDuration < 3600 ? Math.round(rawDuration * 100) / 100 : null
-
-  const updated = await supabase
-    .from('songs')
-    .update({ storage_path: path, duration_seconds: duration })
-    .eq('id', songId)
-    .eq('user_id', user.id)
-
-  // Si la fila no se actualizó, la canción no debe marcarse lista: marcarla
-  // dejaba una fila `ready` sin storage_path reproductible y sin forma de
-  // reintentar desde la biblioteca. 500 para que el cliente reintente.
-  if (updated.error) {
-    console.error('[songs/complete] no se guardó la ruta', updated.error.message)
-    return NextResponse.json(
-      { error: 'El audio quedó guardado pero no pudimos registrarlo; inténtalo otra vez.', code: 'update_failed' },
-      { status: 500 },
-    )
+  if (!signed?.signedUrl) {
+    return NextResponse.json({ error: 'No pudimos firmar el audio guardado.', code: 'storage_error' }, { status: 502 })
   }
 
-  const marked = await supabase.rpc('mark_song_ready', {
+  const marked = await admin.rpc('mark_song_ready', {
+    p_owner: user.id,
     p_song_id: songId,
-    p_audio_url: signed?.signedUrl ?? null,
+    p_audio_url: signed.signedUrl,
+    p_duration_seconds: duration,
+    p_storage_path: path,
   })
 
-  if (marked.error) {
-    console.error('[songs/complete] mark_song_ready falló', marked.error.message)
+  if (marked.error || marked.data !== true) {
+    console.error('[songs/complete] mark_song_ready falló', marked.error?.message ?? 'transición rechazada')
     return NextResponse.json(
-      { error: 'El audio quedó guardado pero no pudimos marcar la canción; refléjala desde la biblioteca.', code: 'update_failed' },
+      { error: 'El audio quedó guardado pero no pudimos registrar la canción; inténtalo otra vez.', code: 'update_failed' },
       { status: 500 },
     )
   }

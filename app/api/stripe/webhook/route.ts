@@ -250,13 +250,28 @@ async function handleSubscriptionUpdated(
     })
     return NextResponse.json({ error: 'No se pudo actualizar la suscripción.' }, { status: 500 })
   }
-  if (!row?.user_id) return NextResponse.json({ received: true, skipped: 'stale-subscription' })
+  if (!row?.user_id) {
+    const { data: pending, error: pendingError } = await admin
+      .from('pending_fulfilments')
+      .update({ subscription_status: subscription.status, current_period_end: periodEnd })
+      .eq('subscription_id', subscription.id)
+      .eq('product_id', 'play-and-go-pro')
+      .is('resolved_at', null)
+      .select('id')
+
+    if (pendingError) {
+      console.error('[webhook] no se pudo actualizar una suscripción pendiente', pendingError.message)
+      return NextResponse.json({ error: 'No se pudo actualizar la suscripción.' }, { status: 500 })
+    }
+    return NextResponse.json({ received: true, pendingSubscriptionUpdated: (pending ?? []).length })
+  }
 
   const { data: updated, error: updateError } = await admin
     .from('entitlements')
     .update({
       subscription_status: subscription.status,
       current_period_end: periodEnd,
+      entitlement_reconciliation_required: false,
     })
     .eq('user_id', row.user_id)
     .eq('subscription_id', subscription.id)
@@ -300,7 +315,19 @@ async function handleSubscriptionDeleted(
     .maybeSingle()
 
   if (error) return NextResponse.json({ error: 'No se pudo localizar la suscripción.' }, { status: 500 })
-  if (!row?.user_id) return NextResponse.json({ received: true, skipped: 'unknown-subscription' })
+  if (!row?.user_id) {
+    const { error: pendingError } = await admin
+      .from('pending_fulfilments')
+      .update({ subscription_status: 'canceled', current_period_end: null })
+      .eq('subscription_id', subscription.id)
+      .eq('product_id', 'play-and-go-pro')
+      .is('resolved_at', null)
+    if (pendingError) {
+      console.error('[webhook] no se pudo revocar una suscripción pendiente', pendingError.message)
+      return NextResponse.json({ error: 'No se pudo revocar la suscripción.' }, { status: 500 })
+    }
+    return NextResponse.json({ received: true, pendingSubscriptionRevoked: true })
+  }
 
   const result = await deactivateSubscription(admin, row.user_id, subscription.id)
   if (result.status === 'error') {

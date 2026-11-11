@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 
-import { ipOf, rateLimitPublic } from '@/lib/rate-limit'
+import { enforceRateLimit, ipOf } from '@/lib/rate-limit'
 
 type MusicResult = { id: string; title: string; creator: string; source: string; license?: string; url: string }
 
@@ -85,9 +85,12 @@ async function jamendoSearch(query: string, take: number, page: number): Promise
  * iniciales son todo lo que existe.
  */
 export async function GET(request: Request) {
-  if (!rateLimitPublic(`search:${ipOf(request)}`, 30)) {
-    return NextResponse.json({ error: 'Demasiadas búsquedas. Espera un momento.', code: 'rate_limited' }, { status: 429, headers: { 'Retry-After': '60' } })
-  }
+const rateLimitResponse = await enforceRateLimit(
+    `search:${ipOf(request)}`,
+    30,
+    'Demasiadas búsquedas. Espera un momento.',
+  )
+  if (rateLimitResponse) return rateLimitResponse
   const params = new URL(request.url).searchParams
   const query = params.get('q')?.trim() ?? ''
   if (query.length < 2) return NextResponse.json({ error: 'La búsqueda debe tener al menos 2 caracteres.', code: 'query_too_short' }, { status: 400 })

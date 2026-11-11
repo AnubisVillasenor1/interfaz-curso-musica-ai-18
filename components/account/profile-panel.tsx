@@ -21,6 +21,7 @@ interface Entitlement {
   songs_total: number
   songs_ready: number
   lessons_done: number
+  entitlement_reconciliation_required: boolean
 }
 
 interface EntitlementResponse {
@@ -218,6 +219,15 @@ export function ProfilePanel() {
           </button>
         </div>
       </section>
+
+      {entitlement.entitlement_reconciliation_required && (
+        <section className="pg-notice" role="status" aria-live="polite">
+          <h2 className="pg-card-title" data-tone="amber">Verificación de acceso pendiente</h2>
+          <p className="pg-prose mt-3">
+            Las generaciones con proveedor asociadas a un pago no verificado están pausadas. El acceso del curso confirmado y las composiciones locales disponibles no cambian.
+          </p>
+        </section>
+      )}
 
       <div className="grid gap-5 sm:grid-cols-2">
         <section className="pg-card p-6">

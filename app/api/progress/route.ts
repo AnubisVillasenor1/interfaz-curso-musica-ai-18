@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 
 import { COURSE_LESSONS } from '@/lib/course'
+import { readBoundedJson } from '@/lib/http/read-body'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { SUPABASE_NOT_CONFIGURED } from '@/lib/supabase/config'
 import { createClient } from '@/lib/supabase/server'
 
@@ -38,14 +40,21 @@ export async function POST(request: Request) {
   } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Inicia sesión para guardar tu avance.', code: 'unauthorized' }, { status: 401 })
 
-  const body = (await request.json().catch(() => null)) as { lessonId?: unknown; checkpoint?: unknown } | null
-  const lessonId = typeof body?.lessonId === 'string' ? body.lessonId.trim() : ''
+  const parsed = await readBoundedJson<{ lessonId?: unknown; checkpoint?: unknown } | null>(request, 4 * 1024)
+  if (!parsed.ok) return NextResponse.json({ error: parsed.message, code: parsed.code }, { status: parsed.status, headers: PRIVATE_HEADERS })
+  const body = parsed.value
+  if (!body || typeof body !== 'object' || Array.isArray(body)) {
+    return NextResponse.json({ error: 'Envía una lección válida.', code: 'invalid_request' }, { status: 400 })
+  }
+  const lessonId = typeof body.lessonId === 'string' ? body.lessonId.trim() : ''
 
   if (!COURSE_LESSONS.some((lesson) => lesson.id === lessonId)) {
     return NextResponse.json({ error: 'Esa lección no existe en el programa.', code: 'unknown_lesson' }, { status: 400 })
   }
 
-  const { data, error } = await supabase.rpc('complete_lesson', { p_lesson_id: lessonId })
+  const admin = createAdminClient()
+  if (!admin) return NextResponse.json({ error: SUPABASE_NOT_CONFIGURED, code: 'not_configured' }, { status: 503 })
+  const { data, error } = await admin.rpc('complete_lesson', { p_owner: user.id, p_lesson_id: lessonId })
 
   if (error) {
     console.error('[progress] complete_lesson falló', error.message)
@@ -72,11 +81,22 @@ export async function PATCH(request: Request) {
   if (!supabase) return NextResponse.json({ error: SUPABASE_NOT_CONFIGURED, code: 'not_configured' }, { status: 503 })
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Inicia sesión para guardar tu práctica.', code: 'unauthorized' }, { status: 401 })
-  const body = (await request.json().catch(() => null)) as { lessonId?: unknown; checkpoint?: unknown } | null
-  const lessonId = typeof body?.lessonId === 'string' ? body.lessonId.trim() : ''
+  const parsed = await readBoundedJson<{ lessonId?: unknown; checkpoint?: unknown } | null>(request, 20 * 1024)
+  if (!parsed.ok) return NextResponse.json({ error: parsed.message, code: parsed.code }, { status: parsed.status, headers: PRIVATE_HEADERS })
+  const body = parsed.value
+  if (!body || typeof body !== 'object' || Array.isArray(body)) {
+    return NextResponse.json({ error: 'Envía una práctica válida.', code: 'invalid_request' }, { status: 400, headers: PRIVATE_HEADERS })
+  }
+  const lessonId = typeof body.lessonId === 'string' ? body.lessonId.trim() : ''
   if (!COURSE_LESSONS.some((lesson) => lesson.id === lessonId)) return NextResponse.json({ error: 'Esa lección no existe en el programa.', code: 'unknown_lesson' }, { status: 400 })
   const checkpoint = body?.checkpoint && typeof body.checkpoint === 'object' && !Array.isArray(body.checkpoint) ? body.checkpoint : {}
-  const { data, error } = await supabase.rpc('save_lesson_checkpoint', { p_lesson_id: lessonId, p_checkpoint: checkpoint })
+  const admin = createAdminClient()
+  if (!admin) return NextResponse.json({ error: SUPABASE_NOT_CONFIGURED, code: 'not_configured' }, { status: 503, headers: PRIVATE_HEADERS })
+  const { data, error } = await admin.rpc('save_lesson_checkpoint', {
+    p_owner: user.id,
+    p_lesson_id: lessonId,
+    p_checkpoint: checkpoint,
+  })
   if (error) {
     console.error('[progress] checkpoint falló', error.message)
     return NextResponse.json({ error: 'No pudimos guardar tu práctica.', code: 'write_failed' }, { status: 500 })
@@ -93,7 +113,7 @@ export async function GET() {
   } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Inicia sesión para ver tu ruta.', code: 'unauthorized' }, { status: 401 })
 
-  const { data, error } = await supabase.from('lesson_progress').select('lesson_id, completed_at, checkpoint').eq('user_id', user.id).order('completed_at')
+  const { data, error } = await supabase.from('lesson_progress').select('lesson_id, completed_at, checkpoint, is_completed').eq('user_id', user.id).order('completed_at')
 
   if (error) {
     console.error('[progress] lectura falló', error.message)
@@ -110,7 +130,7 @@ export async function GET() {
 
   return NextResponse.json(
     {
-      completed: (data ?? []).map((row) => ({ lessonId: row.lesson_id, at: row.completed_at })),
+      completed: (data ?? []).filter((row) => row.is_completed).map((row) => ({ lessonId: row.lesson_id, at: row.completed_at })),
       checkpoints: (data ?? []).map((row) => ({ lessonId: row.lesson_id, checkpoint: row.checkpoint ?? {} })),
       badges: (badges ?? []).map((row) => ({ code: row.code, earnedAt: row.earned_at })),
       total: COURSE_LESSONS.length,

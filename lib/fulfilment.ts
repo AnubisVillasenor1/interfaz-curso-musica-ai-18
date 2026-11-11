@@ -24,6 +24,7 @@ type EntitlementSnapshot = {
   subscription_id?: string | null
   subscription_status?: string | null
   current_period_end?: string | null
+  entitlement_reconciliation_required?: boolean | null
 }
 
 type EffectiveState = {
@@ -57,12 +58,13 @@ function deriveEffectiveState(snapshot: EntitlementSnapshot, now = Date.now()): 
     ? 'enrolled'
     : 'free'
   const extensionExpiresAt = snapshot.extension_expires_at ?? snapshot.access_expires_at ?? null
-  const extensionActive = isFutureDate(extensionExpiresAt, now)
-  const rawStatus = snapshot.subscription_status
-    ?? (snapshot.plan === 'pro' && snapshot.subscription_id ? 'active' : '')
-  const periodEndIsFuture = !snapshot.current_period_end || isFutureDate(snapshot.current_period_end, now)
+  const reconciliationRequired = Boolean(snapshot.entitlement_reconciliation_required)
+  const extensionActive = !reconciliationRequired && isFutureDate(extensionExpiresAt, now)
+  const rawStatus = snapshot.subscription_status ?? ''
+  const periodEndIsFuture = isFutureDate(snapshot.current_period_end, now)
   const proActive = Boolean(
-    snapshot.subscription_id
+    !reconciliationRequired
+    && snapshot.subscription_id
     && PRO_ACTIVE_STATUSES.has(rawStatus)
     && periodEndIsFuture,
   )
@@ -154,6 +156,7 @@ export async function grantProduct(
   let subscriptionId: string | null = current?.subscription_id ?? null
   let subscriptionStatus: string | null = current?.subscription_status ?? null
   let currentPeriodEnd: string | null = current?.current_period_end ?? null
+  let reconciliationRequired = Boolean(current?.entitlement_reconciliation_required)
 
   if (product.id === 'play-and-go-course') {
     basePlan = 'enrolled'
@@ -168,9 +171,14 @@ export async function grantProduct(
     if (!subscription || !subscription.id || !PRO_ACTIVE_STATUSES.has(subscription.status)) {
       return { status: 'error', detail: 'No existe un snapshot activo y verificado de la suscripción.' }
     }
+    const verifiedPeriodEnd = periodEndIso(subscription.currentPeriodEnd)
+    if (!verifiedPeriodEnd || !isFutureDate(verifiedPeriodEnd)) {
+      return { status: 'error', detail: 'La suscripción no tiene una fecha de vigencia futura verificada.' }
+    }
     subscriptionId = subscription.id
     subscriptionStatus = subscription.status
-    currentPeriodEnd = periodEndIso(subscription.currentPeriodEnd)
+    currentPeriodEnd = verifiedPeriodEnd
+    reconciliationRequired = false
   } else {
     return { status: 'error', detail: 'El producto no tiene una regla de entrega reconocida.' }
   }
@@ -183,6 +191,7 @@ export async function grantProduct(
     subscription_id: subscriptionId,
     subscription_status: subscriptionStatus,
     current_period_end: currentPeriodEnd,
+    entitlement_reconciliation_required: reconciliationRequired,
   })
 
   const payload = {
@@ -199,7 +208,7 @@ export async function grantProduct(
     subscription_id: subscriptionId,
     subscription_status: subscriptionStatus,
     current_period_end: currentPeriodEnd,
-    entitlement_reconciliation_required: Boolean(current?.entitlement_reconciliation_required),
+    entitlement_reconciliation_required: reconciliationRequired,
   }
 
   const { error } = await admin.from('entitlements').upsert(payload, { onConflict: 'user_id' })
@@ -286,6 +295,7 @@ export async function deactivateSubscription(
       subscription_id: null,
       subscription_status: 'canceled',
       current_period_end: null,
+      entitlement_reconciliation_required: false,
     })
     .eq('user_id', userId)
     .eq('subscription_id', subscriptionId)

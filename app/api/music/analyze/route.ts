@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 
-import { ipOf, rateLimitPublic } from '@/lib/rate-limit'
+import { enforceRateLimit, ipOf } from '@/lib/rate-limit'
 
 export const runtime = 'nodejs'
 export const maxDuration = 30
@@ -42,12 +42,12 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  if (!rateLimitPublic(`analyze:${ipOf(request)}`, 20)) {
-    return NextResponse.json(
-      { error: 'Demasiadas peticiones. Espera un momento.', code: 'rate_limited' },
-      { status: 429, headers: { 'Retry-After': '60', 'Cache-Control': 'no-store' } },
-    )
-  }
+const rateLimitResponse = await enforceRateLimit(
+    `analyze:${ipOf(request)}`,
+    20,
+    'Demasiadas peticiones. Espera un momento.',
+  )
+  if (rateLimitResponse) return rateLimitResponse
 
   const baseUrl = process.env.TAMV_AUDIO_CORE_URL?.trim()
   if (!baseUrl) {
