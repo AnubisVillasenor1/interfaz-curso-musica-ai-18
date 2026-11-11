@@ -52,6 +52,9 @@ jobs:
       - name: TypeScript validation
         run: pnpm typecheck
 
+      - name: Rate limit policy and memory store tests
+        run: node --test scripts/test-rate-limit.mjs
+
       - name: Production build
         run: pnpm build
 
@@ -73,6 +76,24 @@ jobs:
 
       - name: Route and API smoke tests
         run: node scripts/smoke-preview.mjs
+
+      - name: Rate limit HTTP regression (429, headers and recovered endpoints)
+        run: node scripts/test-rate-limit-http.mjs
+
+      - name: Operational health endpoint
+        run: |
+          curl --silent --fail http://127.0.0.1:3000/api/health > /tmp/play-go-health.json
+          node -e "
+            const health = require('/tmp/play-go-health.json');
+            if (health.ok !== true) throw new Error('health.ok is not true');
+            if (health.rateLimit.mode !== 'memory') {
+              throw new Error('CI must run with the in-memory limiter, got ' + health.rateLimit.mode);
+            }
+            if (health.checks.stripe || health.checks.supabaseAdmin) {
+              throw new Error('CI must not report configured production credentials');
+            }
+            console.log('Health endpoint OK:', JSON.stringify(health.rateLimit));
+          "
 
       - name: Verify entitlement lifecycle contracts
         run: node scripts/verify-entitlement-lifecycle.mjs

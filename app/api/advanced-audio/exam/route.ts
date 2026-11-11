@@ -7,7 +7,7 @@ import {
   validateAdvancedAudioAnswers,
 } from '@/lib/advanced-audio-exam'
 import { ADVANCED_AUDIO_ASSESSMENT, ADVANCED_AUDIO_MODULE_IDS, isAdvancedAudioModuleId } from '@/lib/advanced-audio-curriculum'
-import { enforceRateLimit, ipOf } from '@/lib/rate-limit'
+import { enforcePolicy } from '@/lib/rate-limit'
 import { readBoundedJson } from '@/lib/http/read-body'
 import { createClient } from '@/lib/supabase/server'
 
@@ -40,9 +40,9 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-const rateLimitResponse = await enforceRateLimit(
-    `advanced-audio-exam:${ipOf(request)}`,
-    20,
+  const rateLimitResponse = await enforcePolicy(
+    request,
+    'advanced-audio.exam',
     'Demasiados intentos; espera antes de volver a presentar el examen.',
     PRIVATE_HEADERS,
   )

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 
 import { planMusic } from '@/lib/music/agent'
-import { enforceRateLimit, ipOf } from '@/lib/rate-limit'
+import { enforcePolicy } from '@/lib/rate-limit'
 
 export const runtime = 'nodejs'
 export const maxDuration = 30
@@ -19,12 +19,16 @@ export const maxDuration = 30
  * fallback determinista) pero ninguna ruta lo llamaba.
  */
 export async function POST(request: Request) {
-const rateLimitResponse = await enforceRateLimit(
-    `plan:${ipOf(request)}`,
-    20,
+  // El planificador es local y determinista: no llama a un proveedor de pago.
+  // Aun así tiene techo por endpoint para no convertir la función en un bucle
+  // de CPU gratuito.
+  const rateLimitResponse = await enforcePolicy(
+    request,
+    'music.plan',
     'Demasiadas peticiones. Espera un momento.',
   )
   if (rateLimitResponse) return rateLimitResponse
+
   try {
     const body = (await request.json().catch(() => null)) as { prompt?: unknown } | null
     const prompt = typeof body?.prompt === 'string' ? body.prompt.trim() : ''

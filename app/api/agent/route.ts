@@ -8,7 +8,7 @@ import {
   trimHistory,
   type ChatTurn,
 } from '@/lib/agent/guide'
-import { rateLimitPublic } from '@/lib/rate-limit'
+import { RATE_LIMIT_POLICIES, checkPolicy } from '@/lib/rate-limit'
 import { createClient } from '@/lib/supabase/server'
 
 export const runtime = 'nodejs'
@@ -17,34 +17,6 @@ export const maxDuration = 30
 /** Límites duros: un chat abierto al público sin techo es una factura, no una función. */
 const MAX_MESSAGE_CHARS = 2000
 const MAX_TURNS = 8
-const ANONYMOUS_PER_WINDOW = 6
-const SIGNED_IN_PER_WINDOW = 20
-
-function ipOf(request: Request): string {
-  // `x-forwarded-for` lo escribe el cliente: la primera entrada es falsificable
-  // y con ella el límite anónimo se evade rotando el header. Los proxies de
-  // confianza añaden al final, así que la última entrada es la IP real vista
-  // por la plataforma; `x-real-ip` (Vercel) se prefiere cuando existe.
-  const realIp = request.headers.get('x-real-ip')?.trim()
-  if (realIp) return realIp.slice(0, 120)
-  const forwarded = request.headers.get('x-forwarded-for')
-  if (forwarded) {
-    const parts = forwarded.split(',').map((part) => part.trim()).filter(Boolean)
-    if (parts.length) return parts[parts.length - 1].slice(0, 120)
-  }
-  return 'sin-ip'
-}
-
-/**
- * Clave de la bucket.
- *
- * El chat responde igual con o sin sesión, así que la identidad solo cambia el
- * techo. Se prefiere el `userId`: un aula entera sale por la misma IP y
- * castigarla como si fuera un solo alumno levantaría un muro falso.
- */
-function bucketKey(userId: string | null, request: Request): string {
-  return userId ? `u:${userId}` : `ip:${ipOf(request)}`
-}
 
 interface ProviderReply {
   content: string
@@ -104,8 +76,9 @@ export async function POST(request: Request) {
       data: { user },
     } = (await supabase?.auth.getUser()) ?? { data: { user: null } }
 
-    const limit = user ? SIGNED_IN_PER_WINDOW : ANONYMOUS_PER_WINDOW
-    const rate = await rateLimitPublic(bucketKey(user?.id ?? null, request), limit)
+    const scope = user ? 'agent.chat.authenticated' : 'agent.chat.anonymous'
+    const limit = RATE_LIMIT_POLICIES[scope].limit
+    const rate = await checkPolicy(request, scope, user?.id ?? null)
     if (rate.status !== 'allowed') {
       const unavailable = rate.status === 'unavailable'
       const retryAfter = unavailable ? 5 : Math.max(1, Math.ceil((rate.reset - Date.now()) / 1000))

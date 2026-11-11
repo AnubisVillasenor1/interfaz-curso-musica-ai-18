@@ -1,15 +1,15 @@
 import { NextResponse } from 'next/server'
 import { createMidi } from '@/lib/music/midi'
 import { createLocalPlan } from '@/lib/music/agent'
-import { enforceRateLimit, ipOf } from '@/lib/rate-limit'
+import { enforcePolicy } from '@/lib/rate-limit'
 
 export const runtime = 'nodejs'
 export const maxDuration = 30
 
 export async function POST(request: Request) {
-const rateLimitResponse = await enforceRateLimit(
-    `compose:${ipOf(request)}`,
-    20,
+  const rateLimitResponse = await enforcePolicy(
+    request,
+    'music.compose',
     'Demasiadas peticiones. Espera un momento.',
   )
   if (rateLimitResponse) return rateLimitResponse

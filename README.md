@@ -143,6 +143,31 @@ degradar: `NEXT_PUBLIC_APP_URL`, `NEXT_PUBLIC_SUPABASE_URL`,
 reiniciar. El análisis nativo es opcional: `TAMV_AUDIO_CORE_URL` y
 `TAMV_AUDIO_CORE_TOKEN` sólo hacen falta si despliegas el servicio externo.
 
+### Control de solicitudes y Redis
+
+El limitador elige su backend según el entorno, no según `NODE_ENV`: `next
+start` también define `NODE_ENV=production` en local y en CI, y confundirlos fue
+la causa de la regresión del 11/11/2026 (tres endpoints en 503).
+
+| Entorno | Backend | Comportamiento |
+|---|---|---|
+| Desarrollo, CI, Preview | memoria por proceso | aplica el cupo; no es global entre instancias |
+| Producción con `KV_REST_API_URL` + `KV_REST_API_TOKEN` | Redis (Upstash) | cupo distribuido entre funciones |
+| Producción sin Redis | ninguna | falla cerrado con 503 y lo registra |
+| Producción sin Redis y `RATE_LIMIT_ALLOW_MEMORY_FALLBACK=true` | memoria degradada | sólo emergencia declarada |
+
+Producción se detecta con `VERCEL_ENV=production` (Vercel) o
+`PLAY_AND_GO_ENV=production` (self-hosting). Un fallo de Redis en producción
+tampoco abre el límite: devuelve 503 con `Retry-After`, nunca permiso
+ilimitado. Las respuestas rechazadas incluyen `X-RateLimit-Limit`,
+`X-RateLimit-Remaining`, `X-RateLimit-Reset`, `X-RateLimit-Mode` y
+`Retry-After`.
+
+Los límites se separan por endpoint y por costo (`local`, `service`,
+`provider`, `external`): una composición determinista no consume el mismo cupo
+que una llamada a un proveedor de pago. `/api/health` publica el modo del
+limitador y la presencia de configuración, sin valores ni secretos.
+
 ## Cuenta y rama
 
 GitHub está escribiendo aquí desde `AnubisVillasenor1`, que es la cuenta a la

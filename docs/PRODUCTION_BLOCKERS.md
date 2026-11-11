@@ -139,3 +139,41 @@ Checklist antes de prometer analisis nativo en produccion:
 El plan multiagente de `/api/music/agents` es una heuristica local
 determinista (`source: 'rules'`); no consume cuota de un LLM ni certifica
 calidad musical. No presentarlo como IA remota ni como evaluacion humana.
+
+### P0-001 — Regresión del limitador: tres endpoints en 503 (corregido en código, pendiente de CI)
+
+La ejecución #76 falló exactamente tres comprobaciones de 38: `POST
+/api/music/plan`, `POST /api/music/agents` y `POST /api/agent`. Las tres
+devolvían 503 porque `rateLimitPublic` interpretaba la ausencia de Redis como
+"servicio no disponible" sin mirar el entorno. En CI y en local no hay Redis,
+así que el limitador bloqueaba funciones deterministas que no consumen ningún
+proveedor externo.
+
+Corrección:
+
+- `lib/rate-limit-engine.mjs` decide el modo con `VERCEL_ENV` o
+  `PLAY_AND_GO_ENV`; `NODE_ENV=production` ya no basta, porque `next start` lo
+  define también en local y CI.
+- Desarrollo, CI y Preview usan memoria por proceso; Producción exige Redis y,
+  sin credenciales, falla cerrado con 503 (salvo
+  `RATE_LIMIT_ALLOW_MEMORY_FALLBACK=true`, que se registra como degradado).
+- Si Redis falla en producción, la decisión es 503, nunca permiso ilimitado.
+- Límites por endpoint y costo (`local`, `service`, `provider`, `external`).
+- Identidad por `userId` cuando hay sesión; los anónimos se agrupan por la IP
+  del proxy de confianza (`x-real-ip` o la última entrada de
+  `x-forwarded-for`).
+- Métricas de permitidas, bloqueadas y fallidas, y logs estructurados sin IP ni
+  identificadores.
+- `app/api/health/route.ts` publica modo, motivo y checks de configuración sin
+  revelar valores.
+- Pruebas: `node --test scripts/test-rate-limit.mjs` (14 casos: entorno,
+  expiración, aislamiento, concurrencia, métricas) y
+  `node scripts/test-rate-limit-http.mjs` (cupo 20/min, 429 con cabeceras y los
+  tres endpoints recuperados). Ambas se ejecutan en CI.
+
+Pendiente de verificación real: Redis distribuido no puede probarse en CI sin
+credenciales. Debe confirmarse en Preview/Producción con Upstash configurado y
+con dos instancias para demostrar que el cupo es global. Mientras no exista esa
+evidencia, el modo distribuido sólo está validado por contrato y pruebas
+unitarias.
+

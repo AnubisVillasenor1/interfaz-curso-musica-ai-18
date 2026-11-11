@@ -11,7 +11,7 @@ import {
 } from '@/lib/advanced-audio-curriculum'
 import { createClient } from '@/lib/supabase/server'
 import { readBoundedJson } from '@/lib/http/read-body'
-import { enforceRateLimit, ipOf } from '@/lib/rate-limit'
+import { enforcePolicy } from '@/lib/rate-limit'
 
 export const runtime = 'nodejs'
 export const maxDuration = 30
@@ -92,11 +92,12 @@ export async function POST(request: Request) {
   const { data: { user } } = await authClient.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Inicia sesión para solicitar retroalimentación asistida por IA.', code: 'unauthorized' }, { status: 401, headers: PRIVATE_HEADERS })
 
-const rateLimitResponse = await enforceRateLimit(
-    `advanced-audio-eval:user:${user.id}`,
-    4,
+  const rateLimitResponse = await enforcePolicy(
+    request,
+    'advanced-audio.evaluate',
     'Has alcanzado el límite de evaluaciones asistidas; vuelve a intentarlo más tarde.',
     PRIVATE_HEADERS,
+    user.id,
   )
   if (rateLimitResponse) return rateLimitResponse
 

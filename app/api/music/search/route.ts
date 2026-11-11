@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 
-import { enforceRateLimit, ipOf } from '@/lib/rate-limit'
+import { enforcePolicy } from '@/lib/rate-limit'
 
 type MusicResult = { id: string; title: string; creator: string; source: string; license?: string; url: string }
 
@@ -85,9 +85,9 @@ async function jamendoSearch(query: string, take: number, page: number): Promise
  * iniciales son todo lo que existe.
  */
 export async function GET(request: Request) {
-const rateLimitResponse = await enforceRateLimit(
-    `search:${ipOf(request)}`,
-    30,
+  const rateLimitResponse = await enforcePolicy(
+    request,
+    'music.search',
     'Demasiadas búsquedas. Espera un momento.',
   )
   if (rateLimitResponse) return rateLimitResponse

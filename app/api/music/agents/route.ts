@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 
 import { GENRES } from '@/lib/music/genres'
 import { MULTI_AGENT_LIMITS, planMultiAgent } from '@/lib/music/multiagent'
-import { enforceRateLimit, ipOf } from '@/lib/rate-limit'
+import { enforcePolicy } from '@/lib/rate-limit'
 
 export const runtime = 'nodejs'
 export const maxDuration = 30
@@ -39,9 +39,9 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-const rateLimitResponse = await enforceRateLimit(
-    `agents:${ipOf(request)}`,
-    20,
+  const rateLimitResponse = await enforcePolicy(
+    request,
+    'music.agents',
     'Demasiadas peticiones. Espera un momento.',
   )
   if (rateLimitResponse) return rateLimitResponse

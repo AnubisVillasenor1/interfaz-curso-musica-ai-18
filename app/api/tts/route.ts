@@ -2,7 +2,7 @@ import { generateSpeech } from 'ai'
 import { gateway } from '@ai-sdk/gateway'
 import { NextResponse } from 'next/server'
 
-import { enforceRateLimit, ipOf } from '@/lib/rate-limit'
+import { enforcePolicy } from '@/lib/rate-limit'
 
 export const runtime = 'nodejs'
 export const maxDuration = 30
@@ -15,9 +15,9 @@ export const maxDuration = 30
  * servidor para evitar abuso de costes.
  */
 export async function POST(request: Request) {
-const rateLimitResponse = await enforceRateLimit(
-    `tts:${ipOf(request)}`,
-    10,
+  const rateLimitResponse = await enforcePolicy(
+    request,
+    'tts',
     'Demasiadas peticiones de voz. Espera un momento.',
   )
   if (rateLimitResponse) return rateLimitResponse
