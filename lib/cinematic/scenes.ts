@@ -8,8 +8,8 @@ import type { ModeName } from '@/lib/music/theory'
  * así que el color visual y el color sonoro salen del mismo dato.
  *
  * Cinco actos de doce segundos exactos = 60 s, alineados con las cinco diapositivas Play & Go.
- * El arco narrativo es bienvenida → diagnóstico → dependencia → propuesta → declaración;
- * la cámara, la paleta y la densidad siguen el relato, no sustituyen el contenido.
+ * El arco narrativo es bienvenida → inspiración → producción → creación → compartir;
+ * la cámara, la paleta y la densidad acompañan la experiencia musical.
  */
 
 /** Trayectoria continua de la cámara dentro del acto (ver CameraRig). */
@@ -107,9 +107,9 @@ export interface CinematicAct {
 export const CINEMATIC_ACTS: CinematicAct[] = [
   {
     id: 'bienvenida',
-    kicker: 'SISTEMA NERVIOSO TECNOLÓGICO · REAL DEL MONTE',
-    title: ['PLAY & GO', 'by TAMV ONLINE NETWORK'],
-    body: 'Orgullosamente Realmontenses te da la bienvenida.',
+    kicker: 'TU ESTUDIO MUSICAL · PLAY & GO',
+    title: ['Tu sonido,', 'tu espacio.'],
+    body: 'Una idea basta para empezar. Aquí encuentras las herramientas para convertirla en música.',
     chip: 'Bienvenida',
     palette: { key: '#00E5FF', core: '#0052FF', fog: '#020408', ember: '#E05A47' },
     camera: {
@@ -134,10 +134,10 @@ export const CINEMATIC_ACTS: CinematicAct[] = [
   },
   {
     id: 'diagnostico',
-    kicker: 'DIAGNÓSTICO HISTÓRICO · EL GIRO ERRÓNEO',
-    title: ['El giro erróneo', 'de la industria'],
-    body: 'Durante años, la industria tecnológica afirmó que su misión era crear innovación para facilitar la vida humana. Sin embargo, en un punto crítico de la historia se dio un giro equivocado.',
-    chip: 'Diagnóstico',
+    kicker: 'CAPTURA LA PRIMERA IDEA',
+    title: ['Todo empieza', 'con un sonido.'],
+    body: 'Un ritmo que no se va. Una melodía a medio hacer. Encuentra el punto de partida y deja que la curiosidad marque el compás.',
+    chip: 'Inspírate',
     palette: { key: '#E05A47', core: '#0052FF', fog: '#030711', ember: '#00E5FF' },
     camera: {
       position: [-2.6, 0.6, 9.4],
@@ -160,11 +160,11 @@ export const CINEMATIC_ACTS: CinematicAct[] = [
     grade: { saturation: 1.05, contrast: 1.08, brightness: 0.97, hue: -8, veil: 0.32, bloom: 0.9, exposure: 1.1 },
   },
   {
-    id: 'dependencia',
-    kicker: 'PERSPECTIVA CRÍTICA · COGNITIVE OVERLOAD',
-    title: ['Desorientación', 'y dependencia'],
-    body: 'Se nos condicionó a vivir en un estado de actualización permanente y acelerada, obligándonos a medio aprender herramientas que cambian antes de dominar una sola de ellas. El resultado es la desorientación sistemática y la absoluta dependencia tecnológica del usuario.',
-    chip: 'Análisis',
+    id: 'produccion',
+    kicker: 'DA FORMA A TU SONIDO',
+    title: ['Encuentra', 'tu ritmo.'],
+    body: 'Explora instrumentos, capas y texturas. Ajusta, mezcla y descubre cómo cada decisión transforma lo que escuchas.',
+    chip: 'Produce',
     palette: { key: '#00E5FF', core: '#0052FF', fog: '#020408', ember: '#E05A47' },
     camera: {
       position: [3.1, -0.4, 8.4],
@@ -188,10 +188,10 @@ export const CINEMATIC_ACTS: CinematicAct[] = [
   },
   {
     id: 'propuesta',
-    kicker: 'LA PROPUESTA TRANSFORMADORA',
-    title: ['Más que una', 'aplicación'],
-    body: 'No entregamos solo una aplicación; integramos un curso de nivel máster diseñado para abrir las puertas al verdadero entendimiento de la tecnología que usamos día a día. Pasar de ser simples consumidores a poseedores del conocimiento técnico real.',
-    chip: 'Propuesta',
+    kicker: 'CREA CON HERRAMIENTAS INTELIGENTES',
+    title: ['De la idea', 'a la canción.'],
+    body: 'Experimenta con síntesis, producción e inteligencia artificial. Conserva el control creativo y haz que la tecnología trabaje para tu música.',
+    chip: 'Crea',
     palette: { key: '#00E5FF', core: '#0052FF', fog: '#01030A', ember: '#E5E4E2' },
     camera: {
       position: [1.9, -0.5, 7.8],
@@ -215,10 +215,10 @@ export const CINEMATIC_ACTS: CinematicAct[] = [
   },
   {
     id: 'declaracion',
-    kicker: 'DECLARACIÓN DE EXISTENCIA · TAMV ONLINE NETWORK & PLAY & GO',
-    title: ['TAMV ONLINE NETWORK', '& PLAY & GO'],
-    body: 'Orgullosamente Realmontenses. ESTO ES TECNOLOGÍA LATINOAMERICANA.',
-    chip: 'Declaración',
+    kicker: 'TU MÚSICA MERECE SER ESCUCHADA',
+    title: ['Hazlo tuyo.', 'Compártelo.'],
+    body: 'Tu siguiente track empieza aquí. Crea a tu manera, guarda tu sonido y llévalo más lejos con Play & Go.',
+    chip: 'Comparte',
     palette: { key: '#00E5FF', core: '#0052FF', fog: '#000000', ember: '#E05A47' },
     camera: {
       position: [0, 0.2, 8.2],
