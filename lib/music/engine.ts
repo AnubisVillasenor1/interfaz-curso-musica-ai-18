@@ -289,6 +289,7 @@ export class MusicEngine {
         case 'openhat': return { synth: metal, note: 'C5' }
         case 'ride': return { synth: metal, note: 'G4' }
         case 'rim': return { synth: snare }
+        case 'perc': return { synth: metal, note: 'C5' }
         case 'tom': return { synth: lowTom, note: 'A1' }
         default: return { synth: snare }
       }
@@ -471,7 +472,19 @@ export class MusicEngine {
     onProgress?.(0.05)
     const seconds = Math.ceil(arrangement.durationSeconds) + 3
     const offline = new Tone.OfflineContext(2, seconds, 44_100)
-    const destination = new Tone.Gain(0.9).connect(offline.destination as never)
+    const destination = new Tone.Gain(0.88)
+    const eq = new Tone.EQ3({ low: arrangement.mix.eqLow, mid: arrangement.mix.eqMid, high: arrangement.mix.eqHigh })
+    const compressor = new Tone.Compressor({ threshold: arrangement.mix.compression === 'aggressive' ? -22 : -18, ratio: arrangement.mix.compression === 'aggressive' ? 4 : 2.5, attack: 0.012, release: 0.18, knee: 8 })
+    const limiter = new Tone.Limiter(-1)
+    const reverb = new Tone.Reverb({ decay: 2.2, preDelay: 0.02, wet: 0.18 })
+    const delay = new Tone.FeedbackDelay('8n.', 0.16)
+    delay.wet.value = 0
+    reverb.connect(destination)
+    delay.connect(destination)
+    destination.chain(eq, compressor, limiter, offline.destination as never)
+    const offlineNodes: unknown[] = [destination, eq, compressor, limiter, reverb, delay]
+    const swing = arrangement.genre.swing
+    const swingOffset = (beat: number) => Math.abs((beat * 2) % 2 - 1) < 0.001 ? swing * 0.35 : 0
 
     let progress = 0.1
     for (const track of arrangement.tracks) {
@@ -481,21 +494,41 @@ export class MusicEngine {
         ? new Tone.Synth({ oscillator: recipe.oscillator, envelope: recipe.envelope })
         : new Tone.PolySynth(Tone.Synth, { oscillator: recipe.oscillator, envelope: recipe.envelope })
       const chain: unknown[] = [instrument]
-      if (recipe.filter) {
-        const f = new Tone.Filter(recipe.filter, 'lowpass')
-        chain.push(f)
+      const cutoff = track.cutoff || recipe.filter
+      if (cutoff) {
+        const filter = new Tone.Filter(cutoff, 'lowpass')
+        filter.Q.value = 0.7
+        chain.push(filter)
       }
-      const gain = new Tone.Gain(track.level)
-      chain.push(gain)
+      if (recipe.drive) chain.push(new Tone.WaveShaper((sample) => Math.tanh(sample * (1 + recipe.drive! * 3))))
+      if (recipe.detune) chain.push(new Tone.Chorus(1.6, 2.4, 0.28).start())
+      chain.push(new Tone.Gain(track.level))
       for (let i = 0; i < chain.length - 1; i += 1) {
         ;(chain[i] as { connect: (d: unknown) => void }).connect(chain[i + 1])
       }
-      ;(chain[chain.length - 1] as { connect: (d: unknown) => void }).connect(destination)
-      const target = instrument as { triggerAttack?: (n: string, t: number, v?: number) => void; triggerRelease?: (n: string, t: number) => void }
-      for (const n of track.notes) {
-        const when = (n.beat / arrangement.bpm) * 60
-        target.triggerAttack?.(Tone.Frequency(n.midi, 'midi').toNote(), when, n.velocity)
-        target.triggerRelease?.(Tone.Frequency(n.midi, 'midi').toNote(), when + Math.max(0.06, n.duration * (60 / arrangement.bpm) * 0.92))
+      const trackOutput = chain[chain.length - 1] as { connect: (d: unknown) => void }
+      const panner = new Tone.Panner(track.pan)
+      offlineNodes.push(...chain, panner)
+      trackOutput.connect(panner)
+      panner.connect(destination)
+      if (track.reverb > 0.02) {
+        const send = new Tone.Gain(track.reverb * 0.5)
+        offlineNodes.push(send)
+        trackOutput.connect(send)
+        send.connect(reverb)
+      }
+      if (track.delay > 0.02) {
+        const send = new Tone.Gain(track.delay * 0.45)
+        offlineNodes.push(send)
+        trackOutput.connect(send)
+        send.connect(delay)
+        delay.wet.value = Math.max(delay.wet.value, 0.22)
+      }
+      const target = instrument as { triggerAttackRelease?: (note: string, duration: number, time: number, velocity?: number) => void }
+      for (const note of track.notes) {
+        const when = ((note.beat + swingOffset(note.beat)) / arrangement.bpm) * 60
+        const duration = Math.max(0.06, note.duration * (60 / arrangement.bpm) * 0.92)
+        target.triggerAttackRelease?.(Tone.Frequency(note.midi, 'midi').toNote(), duration, when, note.velocity)
       }
       progress += 0.05
       onProgress?.(Math.min(0.8, progress))
@@ -505,17 +538,17 @@ export class MusicEngine {
     const snare = new Tone.NoiseSynth({ noise: { type: 'white' }, envelope: { attack: 0.001, decay: 0.16, sustain: 0 } }).connect(destination as never)
     const hats = new Tone.MetalSynth({ envelope: { attack: 0.001, decay: 0.09, release: 0.06 } }).connect(destination as never)
     for (const d of arrangement.drums) {
-      const when = (d.beat / arrangement.bpm) * 60
+      const when = ((d.beat + swingOffset(d.beat)) / arrangement.bpm) * 60
       if (d.voice === 'kick') kick.triggerAttackRelease('C1', '8n', when, d.velocity)
       else if (d.voice === 'snare' || d.voice === 'clap' || d.voice === 'rim') snare.triggerAttackRelease('8n', when, d.velocity)
-      else hats.triggerAttackRelease('C4', '16n', when, d.velocity * 0.6)
+      else hats.triggerAttackRelease(d.voice === 'perc' ? 'C5' : 'C4', '16n', when, d.velocity * 0.6)
     }
 
     onProgress?.(0.9)
     const buffer = await offline.render()
     onProgress?.(1)
     const wav = bufferToWav(buffer)
-    for (const node of [kick, snare, hats, destination]) {
+    for (const node of [kick, snare, hats, ...offlineNodes]) {
       const n = node as { dispose?: () => void }
       try { n.dispose?.() } catch { /* ignorar */ }
     }

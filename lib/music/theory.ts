@@ -337,6 +337,11 @@ export const DRUM_PATTERNS: Record<string, DrumPattern> = {
   drill: { id: 'drill', name: 'Drill slide', swing: 0.1, voices: { kick: P('O---O-----O-OO'), snare: P('----O---o---O-'), hat: P('OOoOOOoOOOoOOo'.slice(0, 16)) } },
   afrobeat: { id: 'afrobeat', name: 'Afrobeat', swing: 0.08, voices: { kick: P('O--O--O-O--O--'), perc: P('--O-o-O--O-o-O'), hat: P('o-o-o-o-o-o-o-o-'), rim: P('----o-------o-') } },
   orchestral: { id: 'orchestral', name: 'Orchestral hits', swing: 0, voices: { tom: P('O-------O-------'), perc: P('--------O-----O-') } },
+  sierreño: { id: 'sierreño', name: 'Sierreño acústico', swing: 0.04, voices: { kick: P('O---O-----O---O-'), rim: P('----O-------O---'), hat: P('o---o---o---o---'), perc: P('--o-----o---o---') } },
+  sonidera: { id: 'sonidera', name: 'Cumbia sonidera', swing: 0.08, voices: { kick: P('O-----O---O-----'), snare: P('----O-------O---'), hat: P('o-o-o-o-o-o-o-o-'), perc: P('--O---O---O---O-') } },
+  salsaClave: { id: 'salsaClave', name: 'Salsa con clave', swing: 0.02, voices: { kick: P('O-----O-----O---'), rim: P('O---O-----O--O--'), hat: P('o-o-o-o-o-o-o-o-'), perc: P('--o---O---o---O-') } },
+  guaracha: { id: 'guaracha', name: 'Guaracha', swing: 0.03, voices: { kick: P('O---O---O--O----'), snare: P('----O-------O---'), hat: P('o-o-o-o-o-o-o-o-'), perc: P('--O-o---O---o-O-') } },
+  industrialHipHop: { id: 'industrialHipHop', name: 'Hip hop industrial', swing: 0.08, voices: { kick: P('O-----O--O--O---'), snare: P('----O-------O---'), hat: P('O---o-o-O---o-o-'), perc: P('--O-----o-O-----') } },
 }
 
 /* -------------------------------------------------------------------------- */

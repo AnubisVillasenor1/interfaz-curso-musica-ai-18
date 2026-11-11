@@ -7,7 +7,7 @@
 
 import type { DrumPattern, StepPattern } from './theory'
 import type { ModeName } from './theory'
-import { DRUM_PATTERNS } from './theory'
+import { DRUM_PATTERNS, normalize } from './theory'
 
 export type LayerRole =
   | 'harmonic-pad' | 'harmonic-keyboard' | 'harmonic-pluck' | 'harmonic-guitar'
@@ -586,9 +586,9 @@ export const GENRES: GenreProfile[] = [
     tags: ['kpop', 'pop', 'hyperpop'],
   },
   {
-    id: 'corrido', name: 'Corrido tumbado / Regional mexicano', family: 'Música caribeña & africana',
+    id: 'corrido', name: 'Corrido tumbado / Regional mexicano', family: 'Regional mexicano',
     bpm: [100, 130], defaultBpm: 118, beatsPerBar: 3, swing: 0,
-    modes: ['aeolian', 'dorian', 'harmonic-minor'], drums: 'bossa',
+    modes: ['aeolian', 'dorian', 'harmonic-minor'], drums: 'sierreño',
     layers: [
       L('harmonic-guitar', 'guitar-clean', 0.8, 0, 0.6, 3600, 0.12, 0.1, -0.35),
       L('harmonic-guitar', 'pluck-world', 0.6, 1, 0.65, 4400, 0.12, 0.14, 0.35),
@@ -648,17 +648,62 @@ export const GENRES: GenreProfile[] = [
   },
 ]
 
+interface NativeGenreSpec {
+  id: string; name: string; family: string; bpm: [number, number]; defaultBpm: number; beatsPerBar: number
+  modes: ModeName[]; drums: string; instruments: string[]; moods: string[]; promptTokens: string[]
+  imagery: string[]; culturalNotes: string; tags: string[]; guitar?: VoiceKind; keyboard?: VoiceKind; bass?: VoiceKind; lead?: VoiceKind
+}
+
+function createNativeGenre(spec: NativeGenreSpec): GenreProfile {
+  const danceMix = spec.defaultBpm >= 115
+  return {
+    ...spec, swing: 0.04,
+    layers: [
+      L('harmonic-guitar', spec.guitar ?? 'guitar-clean', 0.76, 0, 0.58, 3600, 0.2, 0.1, -0.3),
+      L('harmonic-keyboard', spec.keyboard ?? 'organ', 0.42, 0, 0.35, 3000, 0.24, 0.12, 0.24),
+      L('bass-mid', spec.bass ?? 'bass-mid', 0.78, -1, 0.48, 300, 0.04, 0.02),
+      L('percussion', spec.lead ?? 'pluck-world', 0.5, 1, 0.7, 5200, 0.14, 0.08, 0.32),
+      L('lead', 'lead-soft', 0.58, 1, 0.42, 4200, 0.25, 0.14),
+      L('air', 'noise', 0.12, 2, 0.16, 7600, 0.38, 0.05, -0.2),
+    ],
+    mix: { loudness: danceMix ? -8 : -10, eqLow: 2.2, eqMid: 0.8, eqHigh: 1.8, compression: 'glue', width: 0.72, saturation: 0.16 },
+    audience: 'Creación musical y aprendizaje con contexto cultural editable',
+    placements: ['composición', 'producción independiente', 'biblioteca creativa'],
+  }
+}
+
+const NATIVE_GENRES: NativeGenreSpec[] = [
+  { id: 'sierreño', name: 'Sierreño acústico', family: 'Regional mexicano', bpm: [76,112], defaultBpm: 92, beatsPerBar: 3, modes: ['aeolian','dorian','harmonic-minor'], drums: 'sierreño', instruments: ['requinto acústico','guitarra de armonía','bajo acústico','palmas suaves'], moods: ['íntimo','campirano','nostálgico'], promptTokens: ['sierreño acústico','requinto melódico','guitarras de madera','compás ternario'], imagery: ['sala de ensayo','madera cálida','carretera serrana'], culturalNotes: 'Diálogo entre requinto y voz; el arreglo acústico debe respirar y dejar espacio a la interpretación.', tags: ['sierreño','sierreno','regional mexicano'] },
+  { id: 'banda', name: 'Banda sinaloense', family: 'Regional mexicano', bpm: [92,132], defaultBpm: 116, beatsPerBar: 2, modes: ['ionian','mixolydian','aeolian'], drums: 'rock', guitar: 'brass', lead: 'brass', instruments: ['tuba','trompetas','clarinetes','tarola','armonía de metales'], moods: ['festivo','potente','comunitario'], promptTokens: ['banda sinaloense','metales en respuesta','tuba con pulso','tarola de banda'], imagery: ['plaza abierta','fiesta de pueblo','metales al sol'], culturalNotes: 'Guía de arreglo, no definición universal: las bandas regionales y sus fraseos varían.', tags: ['banda','sinaloense','regional','mexicano'] },
+  { id: 'norteño', name: 'Norteño', family: 'Regional mexicano', bpm: [92,132], defaultBpm: 112, beatsPerBar: 2, modes: ['ionian','mixolydian','aeolian'], drums: 'sierreño', keyboard: 'organ', instruments: ['acordeón','bajo sexto','bajo eléctrico','tarola'], moods: ['fronterizo','bailable','nostálgico'], promptTokens: ['norteño mexicano','acordeón al frente','bajo sexto rítmico','pulso norteño'], imagery: ['baile de salón','frontera al amanecer','acordeón en primer plano'], culturalNotes: 'Deja espacio para la respuesta del acordeón; el fraseo y la instrumentación varían por región.', tags: ['norteño','norteno','acordeón','regional mexicano'] },
+  { id: 'cumbia-sonidera', name: 'Cumbia sonidera', family: 'Cumbia & Caribe', bpm: [88,108], defaultBpm: 96, beatsPerBar: 4, modes: ['aeolian','dorian','mixolydian'], drums: 'sonidera', guitar: 'pluck-world', keyboard: 'organ', instruments: ['güiro','congas','bajo eléctrico','órgano','metales de respuesta'], moods: ['barrial','festivo','hipnótico'], promptTokens: ['cumbia sonidera','güiro constante','órgano cumbiero','bajo sincopado'], imagery: ['pista de barrio','luces de sonidero','bocinas al aire libre'], culturalNotes: 'Conserva el vaivén y deja espacio a variantes y fraseos locales.', tags: ['cumbia sonidera','sonidera','cumbia','mexico'] },
+  { id: 'salsa-colombiana', name: 'Salsa colombiana', family: 'Salsa & música afrocaribeña', bpm: [88,112], defaultBpm: 102, beatsPerBar: 4, modes: ['mixolydian','ionian','dorian'], drums: 'salsaClave', guitar: 'pluck-world', keyboard: 'organ', lead: 'brass', instruments: ['congas','campana','timbal','bajo tumbao','piano montuno','metales'], moods: ['celebratorio','virtuoso','callejero'], promptTokens: ['salsa colombiana','clave y campana','tumbao de bajo','montuno de piano'], imagery: ['salón caleño','bailadores en rueda','metales en vivo'], culturalNotes: 'La clave orienta el arreglo; evita fijar una sola escuela o acento como universal.', tags: ['salsa colombiana','salsa caleña','salsa','colombia'] },
+  { id: 'guaracha', name: 'Guaracha', family: 'Cumbia & Caribe', bpm: [124,148], defaultBpm: 136, beatsPerBar: 4, modes: ['mixolydian','dorian','aeolian'], drums: 'guaracha', guitar: 'pluck-world', keyboard: 'organ', bass: 'bass-sub', lead: 'lead-sync', instruments: ['congas','timbales','campana','piano montuno','bajo percusivo'], moods: ['vertiginoso','festivo','luminoso'], promptTokens: ['guaracha latina','percusión rápida','campana al frente','montuno energético'], imagery: ['salón lleno','destellos cromáticos','rueda de baile'], culturalNotes: 'Tempo y arreglos varían entre escenas; usa el perfil como punto de partida, no como norma fija.', tags: ['guaracha','guaracha latina','latin dance'] },
+  { id: 'salsaton', name: 'Salsatón', family: 'Salsa & música urbana', bpm: [88,104], defaultBpm: 96, beatsPerBar: 4, modes: ['dorian','aeolian','mixolydian'], drums: 'dembow', guitar: 'pluck-world', keyboard: 'organ', bass: 'bass-sub', lead: 'lead-sync', instruments: ['dembow','congas','campana','piano montuno','sub bass','metales'], moods: ['urbano','bailable','atrevido'], promptTokens: ['salsatón original','fusión de clave y dembow','montuno con sub bass','percusión latina híbrida'], imagery: ['neón tropical','cabina de DJ','pista de baile contemporánea'], culturalNotes: 'Cruza los acentos de salsa y urbano sin borrar sus raíces; permite cambiar la proporción.', tags: ['salsatón','salsaton','salsa urbana','latin fusion'] },
+  { id: 'rap-barrio', name: 'Rap de barrio', family: 'Hip hop & rap', bpm: [76,100], defaultBpm: 88, beatsPerBar: 4, modes: ['aeolian','dorian','minor-pentatonic'], drums: 'boomBap', keyboard: 'epiano', instruments: ['batería boom bap','bajo seco','piano eléctrico','percusión de mano','textura de cinta'], moods: ['narrativo','crudo','reflexivo'], promptTokens: ['rap de barrio original','boom bap con swing','voz narrativa al frente','bajo firme y discreto'], imagery: ['esquina al atardecer','mural comunitario','libreta de rimas'], culturalNotes: 'La voz y el contexto pertenecen a quien crea; evita caricaturizar o glorificar violencia como atajo.', tags: ['rap de barrio','rap','hip hop latino','hip-hop'] },
+  { id: 'industrial-hiphop', name: 'Hip hop industrial', family: 'Hip hop & rap', bpm: [82,112], defaultBpm: 96, beatsPerBar: 4, modes: ['phrygian','aeolian','locrian'], drums: 'industrialHipHop', guitar: 'noise', keyboard: 'epiano', bass: 'bass-sub', lead: 'lead-sync', instruments: ['percusión metálica','808 saturado controlado','texturas mecánicas','sintes ásperos'], moods: ['mecánico','tenso','urbano'], promptTokens: ['hip hop industrial','percusión metálica','808 saturado controlado','textura mecánica con groove'], imagery: ['taller nocturno','acero cepillado','luces de fábrica'], culturalNotes: 'Construye aspereza con dinámica y textura, conserva espacio para la voz y controla el subgrave.', tags: ['industrial hip hop','hip hop industrial','hip-hop industrial','industrial'] },
+  { id: 'trova', name: 'Trova acústica', family: 'Canción de autor', bpm: [64,96], defaultBpm: 78, beatsPerBar: 4, modes: ['ionian','dorian','aeolian'], drums: 'bossa', keyboard: 'felt-piano', lead: 'wind', instruments: ['guitarra de nylon','voz cercana','contrabajo ligero','percusión con escobillas'], moods: ['íntimo','poético','contemplativo'], promptTokens: ['trova acústica','guitarra de nylon','letra narrativa al frente','arreglo con espacio'], imagery: ['café pequeño','cuaderno manuscrito','luz de ventana'], culturalNotes: 'La letra y la interpretación guían la canción; acompaña sin imponer un estilo vocal único.', tags: ['trova','canción de autor','cancion de autor','acústico'] },
+  { id: 'pop-ballad', name: 'Balada pop', family: 'Pop & canción', bpm: [66,94], defaultBpm: 78, beatsPerBar: 4, modes: ['ionian','aeolian','harmonic-minor'], drums: 'rnb', keyboard: 'felt-piano', lead: 'strings', instruments: ['piano','guitarra limpia','cuerdas suaves','batería contenida','coros'], moods: ['romántico','vulnerable','esperanzador'], promptTokens: ['balada pop contemporánea','piano íntimo','coro expansivo','crecimiento dinámico'], imagery: ['escenario en penumbra','lluvia en la ventana','última luz del día'], culturalNotes: 'Construye el clímax con dinámica y arreglo; protege el espacio de la voz y evita sobrecomprimir.', tags: ['balada pop','pop ballad','balada','romántico'] },
+  { id: 'remix-fusion', name: 'Remix fusión latina', family: 'Fusión & electrónica', bpm: [100,128], defaultBpm: 116, beatsPerBar: 4, modes: ['dorian','mixolydian','aeolian'], drums: 'dembow', guitar: 'pluck-world', keyboard: 'lead-sync', bass: 'bass-sub', lead: 'bell', instruments: ['percusión latina','sintes modulados','bajo electrónico','guitarra procesada','voces propias'], moods: ['experimental','bailable','cinemático'], promptTokens: ['remix fusión original','cambio de textura por secciones','percusión latina híbrida','transiciones limpias'], imagery: ['collage de luces','cabina híbrida','paisaje urbano tropical'], culturalNotes: 'Usa material propio o autorizado; una mezcla no sustituye licencias de samples o grabaciones ajenas.', tags: ['remix fusión','remix fusion','fusión latina','latin remix'] },
+  { id: 'mariachi', name: 'Mariachi contemporáneo', family: 'Regional mexicano', bpm: [76,124], defaultBpm: 96, beatsPerBar: 3, modes: ['ionian','mixolydian','harmonic-minor'], drums: 'sierreño', guitar: 'guitar-clean', keyboard: 'brass', lead: 'brass', instruments: ['violines','trompetas','vihuela','guitarrón','guitarra'], moods: ['solemne','festivo','apasionado'], promptTokens: ['mariachi contemporáneo','violines y trompetas','vihuela rítmica','guitarrón profundo'], imagery: ['plaza al anochecer','arco de violín','traje de gala'], culturalNotes: 'Respeta la instrumentación de conjunto; este perfil no sustituye arreglos hechos por músicos.', tags: ['mariachi','regional mexicano','mexicano'] },
+  { id: 'bolero', name: 'Bolero latino', family: 'Canción romántica', bpm: [60,88], defaultBpm: 72, beatsPerBar: 4, modes: ['ionian','aeolian','harmonic-minor'], drums: 'bossa', keyboard: 'felt-piano', lead: 'strings', instruments: ['guitarra de nylon','piano','contrabajo','cuerdas suaves','percusión ligera'], moods: ['íntimo','nostálgico','romántico'], promptTokens: ['bolero latino','guitarra de nylon expresiva','fraseo rubato','armonía romántica cálida'], imagery: ['club de escucha','micrófono antiguo','luz ámbar'], culturalNotes: 'Permite fraseo flexible y variantes regionales; la interpretación humana es central.', tags: ['bolero','bolero latino','romántico'] },
+  { id: 'bachata', name: 'Bachata moderna', family: 'Cumbia & Caribe', bpm: [112,136], defaultBpm: 124, beatsPerBar: 4, modes: ['aeolian','dorian','ionian'], drums: 'salsaClave', keyboard: 'epiano', instruments: ['guitarra líder','güira','bongó','bajo','requinto'], moods: ['romántico','bailable','nostálgico'], promptTokens: ['bachata moderna','requinto sincopado','güira y bongó','bajo con anticipaciones'], imagery: ['salón íntimo','cuerdas brillantes','pareja en movimiento'], culturalNotes: 'No reduzcas la bachata a un patrón; articula la guitarra y deja margen a cada artista.', tags: ['bachata','bachata moderna','caribe'] },
+  { id: 'merengue', name: 'Merengue', family: 'Cumbia & Caribe', bpm: [116,148], defaultBpm: 132, beatsPerBar: 4, modes: ['ionian','mixolydian','dorian'], drums: 'guaracha', guitar: 'pluck-world', keyboard: 'organ', lead: 'brass', instruments: ['tambora','güira','acordeón','metales','bajo'], moods: ['festivo','enérgico','comunitario'], promptTokens: ['merengue bailable','tambora y güira','acordeón protagonista','metales en llamada y respuesta'], imagery: ['baile de salón','banda en vivo','colores caribeños'], culturalNotes: 'Mantén el pulso y fraseo vivos sin asumir una sola variante de merengue.', tags: ['merengue','merengue típico','caribe'] },
+]
+
+GENRES.push(...NATIVE_GENRES.map(createNativeGenre))
+
 export const GENRE_BY_ID: Record<string, GenreProfile> = Object.fromEntries(GENRES.map((g) => [g.id, g]))
 
 export function findGenre(text: string): GenreProfile | null {
-  const t = text.toLowerCase()
+  const t = normalize(text)
   let best: { g: GenreProfile; score: number } | null = null
   for (const g of GENRES) {
     let score = 0
-    if (t.includes(g.id)) score += 6
-    if (t.includes(g.name.toLowerCase())) score += 5
-    for (const tag of g.tags) if (t.includes(tag)) score += 3
-    for (const inst of g.instruments) if (t.includes(inst.split(' ')[0])) score += 0.5
+    if (t.includes(normalize(g.id))) score += 6
+    if (t.includes(normalize(g.name))) score += 5
+    for (const tag of g.tags) if (t.includes(normalize(tag))) score += 3
+    for (const inst of g.instruments) if (t.includes(normalize(inst.split(' ')[0]))) score += 0.5
     if (score > 0 && (!best || score > best.score)) best = { g, score }
   }
   return best?.g ?? null
