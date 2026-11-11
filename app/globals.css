@@ -135,6 +135,11 @@
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar: var(--sidebar);
   --color-chart-5: var(--chart-5);
+  --color-tour-background: var(--tour-background);
+  --color-tour-foreground: var(--tour-foreground);
+  --color-tour-muted: var(--tour-muted);
+  --color-tour-accent: var(--tour-accent);
+  --color-tour-signal: var(--tour-signal);
   --color-chart-4: var(--chart-4);
   --color-chart-3: var(--chart-3);
   --color-chart-2: var(--chart-2);
@@ -210,6 +215,12 @@
   --shell-glow-c: oklch(0.74 0.17 331 / 0.2);
   --shell-hairline: oklch(0.4 0.03 255 / 0.12);
   --shell-noise: 0.02;
+  --tour-background: var(--color-carbon);
+  --tour-foreground: var(--color-ivory);
+  --tour-muted: var(--color-silver);
+  --tour-accent: var(--color-champagne);
+  --tour-signal: var(--color-ice);
+  --tour-hairline: color-mix(in srgb, var(--color-silver) 18%, transparent);
   --shimmer-base: oklch(0.212 0.032 264);
   --shimmer-highlight: oklch(0.556 0.128 240);
 }
@@ -337,6 +348,189 @@ html[data-theme='dark'] {
   }
   .hairline {
     border-color: var(--shell-hairline);
+  }
+
+  .pg-presentation {
+    isolation: isolate;
+    color: var(--tour-foreground);
+    background: var(--tour-background);
+  }
+  .pg-presentation > img { z-index: -2; }
+  .pg-presentation-shade {
+    z-index: -1;
+    background:
+      linear-gradient(90deg, rgba(5, 8, 10, 0.96) 0%, rgba(5, 8, 10, 0.86) 42%, rgba(5, 8, 10, 0.35) 100%),
+      linear-gradient(0deg, rgba(5, 8, 10, 0.68), transparent 56%);
+  }
+  .pg-presentation-grid {
+    z-index: -1;
+    opacity: 0.2;
+    background-image: linear-gradient(rgba(140, 232, 241, 0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(140, 232, 241, 0.08) 1px, transparent 1px);
+    background-size: 72px 72px;
+    mask-image: linear-gradient(90deg, black, transparent 78%);
+  }
+  .pg-presentation-eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: var(--tour-signal);
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+  }
+  .pg-presentation-status-dot {
+    width: 0.45rem;
+    height: 0.45rem;
+    flex: none;
+    border-radius: 50%;
+    background: var(--tour-accent);
+    box-shadow: 0 0 16px color-mix(in srgb, var(--tour-accent) 75%, transparent);
+  }
+  .pg-presentation-title-accent {
+    color: transparent;
+    background: linear-gradient(95deg, var(--tour-accent), #f2e6c7 64%, var(--tour-signal));
+    -webkit-background-clip: text;
+    background-clip: text;
+  }
+  .pg-presentation-primary,
+  .pg-presentation-secondary {
+    display: inline-flex;
+    min-height: 3.25rem;
+    align-items: center;
+    justify-content: center;
+    gap: 0.85rem;
+    border-radius: 9999px;
+    padding: 0.85rem 1.4rem;
+    font-size: 0.78rem;
+    font-weight: 650;
+    letter-spacing: 0.05em;
+    transition: transform 180ms ease, background 180ms ease, border-color 180ms ease;
+  }
+  .pg-presentation-primary {
+    color: var(--tour-background);
+    background: var(--tour-accent);
+  }
+  .pg-presentation-primary:hover { transform: translateY(-2px); background: var(--color-ivory); }
+  .pg-presentation-secondary {
+    color: var(--tour-foreground);
+    border: 1px solid color-mix(in srgb, var(--tour-foreground) 28%, transparent);
+    background: rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(14px);
+  }
+  .pg-presentation-secondary:hover { transform: translateY(-2px); border-color: color-mix(in srgb, var(--tour-signal) 65%, transparent); background: rgba(255, 255, 255, 0.1); }
+  .pg-presentation-progress {
+    height: 2px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.16);
+  }
+  .pg-presentation-progress span {
+    display: block;
+    height: 100%;
+    background: linear-gradient(90deg, var(--tour-accent), var(--tour-signal));
+    transition: width 220ms linear;
+  }
+
+  .pg-tutorial-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow-y: auto;
+    padding: clamp(0.75rem, 4vw, 2rem);
+    background: rgba(3, 6, 9, 0.76);
+    backdrop-filter: blur(14px) saturate(115%);
+  }
+  .pg-tutorial-card {
+    position: relative;
+    width: min(100%, 48rem);
+    max-height: min(92svh, 48rem);
+    overflow-y: auto;
+    border: 1px solid color-mix(in srgb, var(--tour-signal) 24%, transparent);
+    border-radius: 1.5rem;
+    padding: clamp(1.25rem, 4vw, 2.5rem);
+    color: var(--tour-foreground);
+    background: radial-gradient(100% 120% at 0% 0%, rgba(140, 232, 241, 0.1), transparent 56%), linear-gradient(145deg, rgba(27, 35, 42, 0.98), rgba(8, 11, 14, 0.98));
+    box-shadow: 0 32px 100px rgba(0, 0, 0, 0.58), inset 0 1px rgba(255, 255, 255, 0.09);
+  }
+  .pg-tutorial-eyebrow,
+  .pg-tutorial-step-label {
+    color: var(--tour-signal);
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+  .pg-tutorial-step-label { color: var(--tour-accent); }
+  .pg-tutorial-icon {
+    display: flex;
+    width: 3.5rem;
+    height: 3.5rem;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid color-mix(in srgb, var(--tour-signal) 34%, transparent);
+    border-radius: 1.1rem;
+    color: var(--tour-signal);
+    background: color-mix(in srgb, var(--tour-signal) 9%, transparent);
+  }
+  .pg-tutorial-icon-button,
+  .pg-tutorial-stepper {
+    display: inline-flex;
+    width: 2.5rem;
+    height: 2.5rem;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--tour-hairline);
+    border-radius: 9999px;
+    color: var(--tour-muted);
+    background: rgba(255, 255, 255, 0.04);
+    transition: color 160ms ease, border-color 160ms ease, background 160ms ease;
+  }
+  .pg-tutorial-icon-button:hover,
+  .pg-tutorial-stepper:not(:disabled):hover { color: var(--tour-foreground); border-color: var(--tour-signal); background: rgba(140, 232, 241, 0.08); }
+  .pg-tutorial-stepper:disabled { cursor: not-allowed; opacity: 0.35; }
+  .pg-tutorial-primary,
+  .pg-tutorial-secondary,
+  .pg-tutorial-next {
+    display: inline-flex;
+    min-height: 2.8rem;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    border-radius: 9999px;
+    padding: 0.7rem 1.1rem;
+    font-size: 0.75rem;
+    font-weight: 650;
+    transition: color 160ms ease, background 160ms ease, border-color 160ms ease, transform 160ms ease;
+  }
+  .pg-tutorial-primary { color: var(--tour-background); background: var(--tour-accent); }
+  .pg-tutorial-primary:hover { transform: translateY(-1px); background: var(--color-ivory); }
+  .pg-tutorial-secondary { border: 1px solid var(--tour-hairline); color: var(--tour-foreground); background: rgba(255, 255, 255, 0.04); }
+  .pg-tutorial-secondary:hover { border-color: color-mix(in srgb, var(--tour-signal) 42%, transparent); background: rgba(255, 255, 255, 0.08); }
+  .pg-tutorial-next { color: var(--tour-signal); background: transparent; }
+  .pg-tutorial-next:hover { color: var(--tour-foreground); background: rgba(255, 255, 255, 0.06); }
+  .pg-tutorial-progress-dot {
+    width: 0.4rem;
+    height: 0.4rem;
+    border-radius: 9999px;
+    background: color-mix(in srgb, var(--tour-muted) 38%, transparent);
+    transition: width 180ms ease, background 180ms ease;
+  }
+  .pg-tutorial-progress-dot.is-active { width: 1.25rem; background: var(--tour-signal); }
+  .pg-presentation :where(button):focus-visible,
+  .pg-tutorial-overlay :where(button, a):focus-visible {
+    outline: 2px solid var(--tour-signal);
+    outline-offset: 3px;
+  }
+  @media (max-width: 639px) {
+    .pg-presentation-primary,
+    .pg-presentation-secondary { width: 100%; }
+    .pg-tutorial-card { border-radius: 1.25rem; }
   }
 
   /* --- Fondo de marca ------------------------------------------------ */

@@ -386,7 +386,7 @@ export class SoundBed {
  * entrada (0.7 s) y el de salida (2.4 s desde 57.6 s) van quemados en el archivo,
  * así que la cadena Web Audio no necesita envelopear el principio ni el final.
  */
-export const INTRO_TRACK = '/audio/intro-bed-60s.mp3'
+export const INTRO_TRACK = '/audio/1110-audio.mp3'
 
 /** Duración del bed recortado, en segundos (coincide con la presentación). */
 export const INTRO_TRACK_SECONDS = 60

@@ -1,10 +1,10 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import dynamic from 'next/dynamic'
 import { Film } from 'lucide-react'
 
 import { CourseDashboard } from '@/components/course-dashboard'
+import { AudioPresentation } from './audio-presentation'
 import { PlatformTutorial } from '@/components/onboarding/platform-tutorial'
 import {
   markIntroSeen,
@@ -12,19 +12,16 @@ import {
   shouldRunIntro,
 } from '@/lib/cinematic/gate'
 
-const CinematicIntro = dynamic(() => import('./cinematic-intro'), {
-  ssr: false,
-  loading: () => null,
-})
-
 export function IntroGate() {
-  const [isIntroVisible, setIsIntroVisible] = useState(false)
+  const [isIntroVisible, setIsIntroVisible] = useState(true)
   const [tutorialReady, setTutorialReady] = useState(false)
+  const [gateReady, setGateReady] = useState(false)
 
   useEffect(() => {
     const shouldShowIntro = shouldRunIntro()
     setIsIntroVisible(shouldShowIntro)
     setTutorialReady(!shouldShowIntro)
+    setGateReady(true)
   }, [])
 
   const closeIntro = useCallback(() => {
@@ -56,19 +53,18 @@ export function IntroGate() {
 
   return (
     <>
-      <CourseDashboard />
-      {!isIntroVisible && <PlatformTutorial enabled={tutorialReady} />}
+      {gateReady && !isIntroVisible && <CourseDashboard />}
+      {gateReady && !isIntroVisible && <PlatformTutorial enabled={tutorialReady} />}
 
-      {isIntroVisible ? (
-        <CinematicIntro
-          onComplete={closeIntro}
-          onSkip={closeIntro}
-        />
-      ) : (
+      {isIntroVisible && (
+        <AudioPresentation enabled={gateReady} onComplete={closeIntro} />
+      )}
+
+      {gateReady && !isIntroVisible && (
         <button
           type="button"
           onClick={replayIntro}
-          aria-label="Volver a ver la presentación cinematográfica de Play & Go"
+          aria-label="Volver a escuchar la presentación de Play & Go"
           className="pg-shell pg-btn pg-btn-ghost fixed bottom-24 right-5 z-40 inline-flex max-sm:right-3 items-center gap-2 font-mono text-[9.5px] uppercase tracking-[0.2em] transition-opacity hover:opacity-80 active:scale-95"
           style={{ padding: '0.6rem 1.05rem' }}
         >
