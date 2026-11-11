@@ -133,7 +133,7 @@ export const CINEMATIC_ACTS: CinematicAct[] = [
     grade: { saturation: 0.98, contrast: 1.06, brightness: 0.98, hue: -2, veil: 0.32, bloom: 0.85, exposure: 1.08 },
   },
   {
-    id: 'diagnostico',
+    id: 'inspiracion',
     kicker: 'CAPTURA LA PRIMERA IDEA',
     title: ['Todo empieza', 'con un sonido.'],
     body: 'Un ritmo que no se va. Una melodía a medio hacer. Encuentra el punto de partida y deja que la curiosidad marque el compás.',
@@ -187,7 +187,7 @@ export const CINEMATIC_ACTS: CinematicAct[] = [
     grade: { saturation: 1.07, contrast: 1.07, brightness: 0.98, hue: -3, veil: 0.35, bloom: 0.92, exposure: 1.12 },
   },
   {
-    id: 'propuesta',
+    id: 'creacion',
     kicker: 'CREA CON HERRAMIENTAS INTELIGENTES',
     title: ['De la idea', 'a la canción.'],
     body: 'Experimenta con síntesis, producción e inteligencia artificial. Conserva el control creativo y haz que la tecnología trabaje para tu música.',
@@ -214,7 +214,7 @@ export const CINEMATIC_ACTS: CinematicAct[] = [
     grade: { saturation: 1.12, contrast: 1.08, brightness: 1.04, hue: 0, veil: 0.38, bloom: 1.05, exposure: 1.18 },
   },
   {
-    id: 'declaracion',
+    id: 'compartir',
     kicker: 'TU MÚSICA MERECE SER ESCUCHADA',
     title: ['Hazlo tuyo.', 'Compártelo.'],
     body: 'Tu siguiente track empieza aquí. Crea a tu manera, guarda tu sonido y llévalo más lejos con Play & Go.',
