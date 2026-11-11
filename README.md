@@ -165,8 +165,10 @@ ilimitado. Las respuestas rechazadas incluyen `X-RateLimit-Limit`,
 
 Los límites se separan por endpoint y por costo (`local`, `service`,
 `provider`, `external`): una composición determinista no consume el mismo cupo
-que una llamada a un proveedor de pago. `/api/health` publica el modo del
-limitador y la presencia de configuración, sin valores ni secretos.
+que una llamada a un proveedor de pago. Las rutas autenticadas de pago
+(`checkout`), examen, progreso y subida de audio también tienen cupo por
+`userId`. `/api/health` publica el modo del limitador y la presencia de
+configuración, sin valores ni secretos.
 
 ### Callbacks de generación
 

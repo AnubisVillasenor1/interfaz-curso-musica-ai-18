@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 
 import { AUDIO_HEADER_BYTES, verifyAudioHeader } from '@/lib/audio-file-signature.mjs'
+import { enforcePolicy } from '@/lib/rate-limit'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { SUPABASE_NOT_CONFIGURED } from '@/lib/supabase/config'
 import { createClient } from '@/lib/supabase/server'
@@ -57,6 +58,15 @@ export async function POST(request: Request) {
   if (!user) return NextResponse.json({ error: 'Inicia sesión para guardar tu canción.', code: 'unauthorized' }, { status: 401 })
   const admin = createAdminClient()
   if (!admin) return NextResponse.json({ error: SUPABASE_NOT_CONFIGURED, code: 'not_configured' }, { status: 503 })
+
+  const rateLimited = await enforcePolicy(
+    request,
+    'songs.complete',
+    'Demasiadas subidas seguidas. Espera un minuto antes de guardar otra canción.',
+    PRIVATE_HEADERS,
+    user.id,
+  )
+  if (rateLimited) return rateLimited
 
   const form = await request.formData().catch(() => null)
   if (!form) return NextResponse.json({ error: 'Envía el audio como multipart.', code: 'invalid_request' }, { status: 400 })

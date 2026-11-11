@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 
 import { COURSE_LESSONS } from '@/lib/course'
 import { readBoundedJson } from '@/lib/http/read-body'
+import { enforcePolicy } from '@/lib/rate-limit'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { SUPABASE_NOT_CONFIGURED } from '@/lib/supabase/config'
 import { createClient } from '@/lib/supabase/server'
@@ -39,6 +40,15 @@ export async function POST(request: Request) {
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Inicia sesión para guardar tu avance.', code: 'unauthorized' }, { status: 401 })
+
+  const rateLimited = await enforcePolicy(
+    request,
+    'progress.write',
+    'Demasiadas actualizaciones de progreso. Espera un momento.',
+    PRIVATE_HEADERS,
+    user.id,
+  )
+  if (rateLimited) return rateLimited
 
   const parsed = await readBoundedJson<{ lessonId?: unknown; checkpoint?: unknown } | null>(request, 4 * 1024)
   if (!parsed.ok) return NextResponse.json({ error: parsed.message, code: parsed.code }, { status: parsed.status, headers: PRIVATE_HEADERS })
@@ -81,6 +91,16 @@ export async function PATCH(request: Request) {
   if (!supabase) return NextResponse.json({ error: SUPABASE_NOT_CONFIGURED, code: 'not_configured' }, { status: 503 })
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Inicia sesión para guardar tu práctica.', code: 'unauthorized' }, { status: 401 })
+
+  const rateLimited = await enforcePolicy(
+    request,
+    'progress.write',
+    'Demasiadas actualizaciones de progreso. Espera un momento.',
+    PRIVATE_HEADERS,
+    user.id,
+  )
+  if (rateLimited) return rateLimited
+
   const parsed = await readBoundedJson<{ lessonId?: unknown; checkpoint?: unknown } | null>(request, 20 * 1024)
   if (!parsed.ok) return NextResponse.json({ error: parsed.message, code: parsed.code }, { status: parsed.status, headers: PRIVATE_HEADERS })
   const body = parsed.value

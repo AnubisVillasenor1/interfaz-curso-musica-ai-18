@@ -3,6 +3,7 @@ import Stripe from 'stripe'
 
 import { requireAppUrl } from '@/lib/app-url'
 import { findProduct, PRODUCTS, type ProductId } from '@/lib/products'
+import { enforcePolicy } from '@/lib/rate-limit'
 import { SUPABASE_NOT_CONFIGURED } from '@/lib/supabase/config'
 import { createClient } from '@/lib/supabase/server'
 
@@ -33,6 +34,17 @@ export async function POST(request: Request) {
   if (!user?.email) {
     return NextResponse.json({ error: 'Inicia sesión para inscribirte.', code: 'unauthorized' }, { status: 401 })
   }
+
+  // Crear sesiones de Stripe no es gratis: cada intento abre una Session real.
+  // El límite por usuario evita bucles de doble clic o scripts.
+  const rateLimited = await enforcePolicy(
+    request,
+    'checkout',
+    'Demasiados intentos de pago. Espera un minuto antes de volver a intentarlo.',
+    {},
+    user.id,
+  )
+  if (rateLimited) return rateLimited
 
   const body = (await request.json().catch(() => null)) as { productId?: unknown } | null
   const product = findProduct(body?.productId)

@@ -259,5 +259,30 @@ tamaño en el bucket y confirmar que Storage sirve el contenido con el
 `Content-Type` correcto. La duración sigue viniendo del cliente: validarla de
 verdad exige decodificar el audio en servidor.
 
+### P1-004 — Límites en rutas autenticadas de escritura y pago (corregido en código)
+
+Antes sólo estaban limitadas las rutas públicas. Un usuario autenticado podía
+crear sesiones de Stripe, enviar exámenes, escribir progreso o subir audio sin
+techo por cuenta.
+
+Nuevos ámbitos en `RATE_LIMIT_POLICIES`:
+
+| Ámbito | Límite | Costo | Ruta |
+|---|---|---|---|
+| `checkout` | 10/min | external | `POST /api/checkout` |
+| `exam.submit` | 10/min | local | `POST /api/exam` |
+| `progress.write` | 30/min | local | `POST`/`PATCH /api/progress` |
+| `songs.complete` | 12/min | service | `POST /api/songs/complete` |
+
+Todas identifican por `userId`, así que un aula con una IP compartida no se
+castiga como si fuera una sola persona. Siguen la misma regla de producción:
+sin Redis fallan cerrado con 503. **No desplegar a producción sin
+`KV_REST_API_URL`/`KV_REST_API_TOKEN`** o estas rutas dejarán de responder; el
+health check lo reporta como `degraded`.
+
+Pendiente: probar los límites con dos cuentas reales y confirmar que el cupo se
+comparte entre instancias sólo cuando Redis está configurado.
+
+
 
 

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { randomBytes } from 'crypto'
 
 import { EXAM_QUESTIONS, EXAM_PASS_PERCENT, examPublicQuestions, gradeExam } from '@/lib/exam'
+import { enforcePolicy } from '@/lib/rate-limit'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { SUPABASE_NOT_CONFIGURED } from '@/lib/supabase/config'
 import { createClient } from '@/lib/supabase/server'
@@ -44,6 +45,15 @@ export async function POST(request: Request) {
       { status: 401, headers: PRIVATE_HEADERS },
     )
   }
+
+  const rateLimited = await enforcePolicy(
+    request,
+    'exam.submit',
+    'Demasiados envíos de examen. Espera un minuto antes de reintentar.',
+    PRIVATE_HEADERS,
+    user.id,
+  )
+  if (rateLimited) return rateLimited
 
   const contentLengthHeader = request.headers.get('content-length')
   const declaredLength = contentLengthHeader ? Number(contentLengthHeader) : 0

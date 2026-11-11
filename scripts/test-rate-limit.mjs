@@ -83,6 +83,10 @@ test('las políticas separan costo local, proveedor y servicio', () => {
   assert.equal(RATE_LIMIT_POLICIES['agent.chat.anonymous'].cost, 'provider')
   assert.ok(RATE_LIMIT_POLICIES['agent.chat.anonymous'].limit < RATE_LIMIT_POLICIES['agent.chat.authenticated'].limit)
   assert.equal(RATE_LIMIT_POLICIES['advanced-audio.evaluate'].limit, 4)
+  assert.equal(RATE_LIMIT_POLICIES['checkout'].cost, 'external')
+  assert.equal(RATE_LIMIT_POLICIES['exam.submit'].cost, 'local')
+  assert.equal(RATE_LIMIT_POLICIES['songs.complete'].cost, 'service')
+  assert.ok(RATE_LIMIT_POLICIES['progress.write'].limit >= 10)
   for (const policy of Object.values(RATE_LIMIT_POLICIES)) {
     assert.ok(Number.isInteger(policy.limit) && policy.limit > 0)
     assert.ok(Number.isInteger(policy.windowMs) && policy.windowMs >= 1_000)

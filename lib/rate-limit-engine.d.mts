@@ -25,6 +25,10 @@ export type RateLimitScope =
   | 'advanced-audio.exam'
   | 'advanced-audio.evaluate'
   | 'tts'
+  | 'checkout'
+  | 'exam.submit'
+  | 'progress.write'
+  | 'songs.complete'
   | 'public'
 
 export const DEFAULT_WINDOW_MS: number
