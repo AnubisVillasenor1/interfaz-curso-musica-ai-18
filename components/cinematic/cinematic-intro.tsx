@@ -465,31 +465,49 @@ export default function CinematicIntro({
       className="intro-shell"
     >
       {!started && (
-        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/95 p-6 text-center backdrop-blur-xl">
-          <div className="relative flex size-28 items-center justify-center">
-            <span className="absolute inset-0 animate-ping rounded-full border border-cyan-300/40" />
-            <span className="absolute inset-3 animate-spin rounded-full border border-orange-300/40 [animation-duration:8s]" />
-            <span className="relative flex size-12 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-300 via-white to-orange-400 text-black shadow-2xl shadow-cyan-300/40">▶</span>
+        <section className="absolute inset-0 z-50 isolate flex items-center bg-[#080b0e] text-left">
+          <img
+            src="/visuals/mixing-console.png"
+            alt="Consola de mezcla iluminada en un estudio de producción musical"
+            className="absolute inset-0 -z-20 size-full object-cover object-center"
+          />
+          <div className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(5,8,10,.96)_0%,rgba(5,8,10,.83)_40%,rgba(5,8,10,.34)_76%,rgba(5,8,10,.56)_100%),linear-gradient(0deg,rgba(5,8,10,.7),transparent_58%)]" />
+          <div className="mx-auto flex w-full max-w-[1440px] flex-col items-start px-7 py-12 sm:px-12 lg:px-20">
+            <div className="flex items-center gap-3">
+              <img src="/brand/play-go-official.png" alt="" width={38} height={38} className="size-10 rounded-lg object-cover ring-1 ring-white/20" />
+              <span className="font-mono text-[10px] uppercase tracking-[.24em] text-white/75">PLAY &amp; GO <span className="text-[#d7c49a]">·</span> ESTUDIO MUSICAL</span>
+            </div>
+            <p className="mt-10 font-mono text-[10px] uppercase tracking-[.3em] text-[#8ce8f1] sm:mt-14">CREA · PRODUCE · DESCUBRE</p>
+            <h2 className="mt-5 max-w-4xl font-sans text-5xl font-semibold leading-[.98] tracking-[-.055em] text-white sm:text-6xl lg:text-7xl">
+              Tu próxima
+              <span className="block text-[#d7c49a]">canción empieza aquí.</span>
+            </h2>
+            <p className="mt-5 max-w-xl font-sans text-base leading-7 text-white/75 sm:text-lg">
+              Un espacio para explorar sonidos, producir ideas y crear música con herramientas hechas para ti.
+            </p>
+            <div className="mt-7 flex flex-col items-start gap-5 sm:flex-row sm:items-center">
+              <button type="button" onClick={startExperience} className="inline-flex min-h-14 items-center gap-4 rounded-full bg-[#d7c49a] px-7 text-[11px] font-bold uppercase tracking-[.16em] text-[#10151a] transition hover:bg-[#f2e6c7] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#8ce8f1]" data-first-control>
+                Escuchar la experiencia <span aria-hidden="true" className="text-lg">→</span>
+              </button>
+              <span className="font-mono text-[9px] uppercase tracking-[.15em] text-white/50">Una presentación sonora de Play &amp; Go</span>
+            </div>
+            <div className="mt-10 flex h-8 items-end gap-1.5 opacity-75" aria-hidden="true">
+              {[18, 28, 14, 24, 32, 17, 27, 12, 22, 30, 16, 25, 13, 20, 29, 15, 23, 11, 26, 18, 31, 14, 22, 28, 16, 24, 12, 19, 27, 15, 21, 30, 13, 25, 17, 23].map((height, index) => (
+                <span key={index} className="w-[3px] rounded-full bg-[#8ce8f1]" style={{ height: `${height}px`, opacity: 0.4 + (height / 55) }} />
+              ))}
+            </div>
           </div>
-          <p className="mt-8 font-mono text-[10px] uppercase tracking-[.3em] text-cyan-200">Experiencia inmersiva 3D AAA</p>
-          <h2 className="mt-4 max-w-2xl text-3xl font-black tracking-[.12em] text-white sm:text-5xl">PLAY &amp; GO <span className="bg-gradient-to-r from-cyan-300 via-white to-orange-400 bg-clip-text text-transparent">CINEMATIC</span></h2>
-          <p className="mt-5 max-w-xl text-sm leading-6 text-slate-300">Una experiencia audiovisual generativa sobre soberanía tecnológica latinoamericana. Activa el motor de audio y entra al recorrido.</p>
-          <button type="button" onClick={startExperience} className="mt-8 inline-flex items-center gap-3 rounded-2xl bg-gradient-to-r from-cyan-300 via-white to-orange-400 px-7 py-4 text-xs font-black tracking-[.14em] text-black shadow-2xl shadow-cyan-300/20 transition hover:scale-105" data-first-control>
-            ✦ INICIAR EXPERIENCIA CINEMÁTICA AAA <span aria-hidden="true">→</span>
-          </button>
-          <p className="mt-6 font-mono text-[9px] uppercase tracking-[.2em] text-slate-500">TAMV ONLINE NETWORK · MINERAL DEL MONTE, HGO.</p>
-        </div>
+        </section>
       )}
 
       {ended && (
-        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/95 p-6 text-center backdrop-blur-xl">
-          <div className="flex size-20 items-center justify-center rounded-3xl border border-cyan-300/40 bg-slate-950 text-3xl text-cyan-200 shadow-2xl shadow-cyan-300/20">✦</div>
-          <p className="mt-7 font-mono text-[10px] uppercase tracking-[.3em] text-cyan-200">Declaración de existencia</p>
-          <h2 className="mt-3 max-w-2xl text-2xl font-black tracking-[.08em] text-white sm:text-4xl">SOBERANÍA TECNOLÓGICA ACTIVA</h2>
-          <p className="mt-4 max-w-lg text-sm leading-6 text-slate-300">Has presenciado la introducción al ecosistema independiente de investigación y música con IA.</p>
-          <div className="mt-7 flex flex-col gap-3 sm:flex-row">
-            <button type="button" onClick={restartExperience} className="intro-pill justify-center">Repetir intro</button>
-            <button type="button" onClick={() => finish(false)} className="intro-cta justify-center">Entrar a Play &amp; Go <span aria-hidden="true">→</span></button>
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-[#080b0e]/95 p-6 text-center backdrop-blur-xl">
+          <p className="font-mono text-[10px] uppercase tracking-[.3em] text-[#8ce8f1]">El estudio está abierto</p>
+          <h2 className="mt-4 max-w-3xl text-4xl font-semibold tracking-[-.04em] text-white sm:text-6xl">Tu próxima canción empieza aquí.</h2>
+          <p className="mt-5 max-w-lg text-sm leading-6 text-white/65">Explora Play &amp; Go y convierte tus ideas en música.</p>
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            <button type="button" onClick={restartExperience} className="intro-pill justify-center">Volver a escuchar</button>
+            <button type="button" onClick={() => finish(false)} className="intro-cta justify-center">Entrar al estudio <span aria-hidden="true">→</span></button>
           </div>
         </div>
       )}

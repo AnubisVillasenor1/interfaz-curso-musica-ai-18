@@ -12,7 +12,6 @@ import {
 } from '@/lib/cinematic/scenes'
 import {
   ARC_SHADER,
-  CORE_SHADER,
   FIELD_SHADER,
   NEBULA_SHADER,
   PORTAL_SHADER,
@@ -34,12 +33,6 @@ const PARTICLE_COUNT: Record<QualityTier, number> = {
   low: 2_200,
   medium: 6_500,
   high: 13_000,
-}
-
-const GEOMETRY_DETAIL: Record<QualityTier, number> = {
-  low: 2,
-  medium: 3,
-  high: 4,
 }
 
 const ARC_RADIAL_SEGMENTS: Record<QualityTier, number> = {
@@ -576,182 +569,62 @@ function Nebula({
 }
 
 /* ------------------------------------------------------------------ */
-/* Núcleo holográfico                                                  */
+/* Espectro sonoro reactivo                                            */
 /* ------------------------------------------------------------------ */
 
-function HolographicCore({
-  actIndex,
-  quality,
-  reducedMotion,
-  env,
-}: SceneNodeProps) {
-  const groupRef = useRef<THREE.Group>(null)
-  const wireRef = useRef<THREE.Mesh>(null)
-  const ringRefs = useRef<Array<THREE.Mesh | null>>([])
+function ReactiveSpectrum({ actIndex, reducedMotion, env }: SceneNodeProps) {
+  const barsRef = useRef<THREE.InstancedMesh>(null)
   const focusRef = useRef(1)
-
-  const detail = GEOMETRY_DETAIL[quality]
-
-  const uniforms = useMemo(
-    () => ({
-      uTime: { value: 0 },
-      uLevel: { value: 0 },
-      uBass: { value: 0 },
-      uWarp: { value: 0 },
-      uKey: { value: paletteColor(actAt(0), 'key') },
-      uCore: { value: paletteColor(actAt(0), 'core') },
-      uWarm: { value: paletteColor(actAt(0), 'ember') },
+  const clockRef = useRef(0)
+  const helper = useMemo(() => new THREE.Object3D(), [])
+  const barCount = 84
+  const rows = 3
+  const count = barCount * rows
+  const material = useMemo(
+    () => new THREE.MeshBasicMaterial({
+      color: actAt(0).palette.key,
+      transparent: true,
+      opacity: 0.78,
+      toneMapped: false,
     }),
     [],
   )
 
-  const materialArgs = useMemo(
-    () => [{
-      ...CORE_SHADER,
-      uniforms,
-      transparent: true,
-      depthWrite: false,
-      blending: THREE.AdditiveBlending,
-    }] as [THREE.ShaderMaterialParameters],
-    [uniforms],
-  )
-
-  usePaletteSync(uniforms, actIndex, env, {
-    levelDamping: 7,
-    bassDamping: 14,
-    warpDamping: 5,
-  })
-
   useFrame((_, delta) => {
     const environment = env.current
-
-    if (!environment) {
-      return
-    }
+    const bars = barsRef.current
+    if (!environment || !bars) return
 
     const step = clampDelta(delta)
     const act = actAt(actIndex)
+    if (!reducedMotion) clockRef.current += step
+    focusRef.current = dampFocus(focusRef.current, act.focus.core, step)
+    material.color.lerp(linearColor(act.palette.key), step * 1.4)
 
-    if (!reducedMotion) {
-      uniforms.uTime.value += step
-    }
+    for (let row = 0; row < rows; row += 1) {
+      for (let index = 0; index < barCount; index += 1) {
+        const position = index / (barCount - 1)
+        const envelope = 0.16 + 0.84 * Math.pow(Math.sin(position * Math.PI), 0.55)
+        const beat = Math.abs(Math.sin(position * 18 + clockRef.current * (2.2 + row * 0.22)))
+        const overtone = 0.5 + 0.5 * Math.sin(position * 47 - clockRef.current * 1.35 + row)
+        const height = (0.2 + beat * 1.05 + overtone * 0.38 + environment.bass * 0.8) * envelope * (0.72 + focusRef.current * 0.28)
+        const x = (position - 0.5) * 10.6
 
-    focusRef.current = dampFocus(
-      focusRef.current,
-      act.focus.core,
-      step,
-    )
-
-    if (groupRef.current) {
-      const targetScale =
-        0.78 +
-        focusRef.current * 0.34 +
-        environment.level * 0.05 +
-        environment.bass * 0.08
-
-      groupRef.current.scale.setScalar(
-        THREE.MathUtils.damp(
-          groupRef.current.scale.x,
-          targetScale,
-          3.2,
-          step,
-        ),
-      )
-
-      if (!reducedMotion) {
-        groupRef.current.rotation.y +=
-          step * (0.12 + environment.level * 0.5)
-
-        groupRef.current.rotation.x =
-          Math.sin(uniforms.uTime.value * 0.18) * 0.22
-
-        groupRef.current.position.y =
-          Math.sin(uniforms.uTime.value * 0.31) * 0.09
+        helper.position.set(x, height * 0.5 - 2.3, (row - 1) * 0.55)
+        helper.scale.set(0.075, height, 0.055)
+        helper.updateMatrix()
+        bars.setMatrixAt(row * barCount + index, helper.matrix)
       }
     }
 
-    ringRefs.current.forEach((ring, index) => {
-      if (!ring) return
-      const ringPulse = 1 + environment.level * (0.08 + index * 0.025) + environment.bass * 0.04
-      ring.scale.setScalar(THREE.MathUtils.damp(ring.scale.x, ringPulse, 5 + index, step))
-      if (!reducedMotion) {
-        ring.rotation.x += step * (0.16 + index * 0.07)
-        ring.rotation.z -= step * (0.12 + index * 0.04)
-      }
-      const ringMaterial = ring.material as THREE.MeshBasicMaterial
-      ringMaterial.opacity = 0.18 - index * 0.035 + focusRef.current * 0.035
-      ringMaterial.color.lerp(linearColor(index % 2 === 0 ? act.palette.key : act.palette.ember), step * 1.4)
-    })
-
-    if (wireRef.current) {
-      const targetScale =
-        1.06 +
-        environment.level * 0.1 +
-        environment.bass * 0.22
-
-      wireRef.current.scale.setScalar(
-        THREE.MathUtils.damp(
-          wireRef.current.scale.x,
-          targetScale,
-          6,
-          step,
-        ),
-      )
-
-      if (!reducedMotion) {
-        wireRef.current.rotation.y -= step * 0.28
-      }
-
-      const material =
-        wireRef.current.material as THREE.MeshBasicMaterial
-
-      material.color.lerp(
-        linearColor(act.palette.key),
-        step * 1.2,
-      )
-
-      material.opacity =
-        0.03 + focusRef.current * 0.07
-    }
+    bars.instanceMatrix.needsUpdate = true
   })
 
   return (
-    <group ref={groupRef}>
-      <mesh>
-        <icosahedronGeometry args={[1.74, detail]} />
-        <shaderMaterial args={materialArgs} />
-      </mesh>
-
-      <mesh rotation={[Math.PI / 2, 0.2, 0.35]}>
-        <torusKnotGeometry args={[1.48, 0.12, 128, 18, 2, 3]} />
-        <meshBasicMaterial color={actAt(0).palette.core} transparent opacity={0.22} blending={THREE.AdditiveBlending} depthWrite={false} wireframe />
-      </mesh>
-
-      {[0, 1, 2].map((index) => (
-        <mesh
-          key={index}
-          ref={(node) => { ringRefs.current[index] = node }}
-          rotation={[index * 0.85, index * 0.55, index * 0.35]}
-        >
-          <torusGeometry args={[2.16 + index * 0.28, 0.018 + index * 0.009, 12, 128]} />
-          <meshBasicMaterial color={index % 2 === 0 ? actAt(0).palette.key : actAt(0).palette.ember} transparent opacity={0.14} blending={THREE.AdditiveBlending} depthWrite={false} />
-        </mesh>
-      ))}
-
-      <mesh ref={wireRef}>
-        <icosahedronGeometry
-          args={[1.82, Math.max(1, detail - 2)]}
-        />
-        <meshBasicMaterial
-          color={actAt(0).palette.key}
-          wireframe
-          transparent
-          opacity={0.075}
-          blending={THREE.AdditiveBlending}
-          depthWrite={false}
-        />
-      </mesh>
-    </group>
+    <instancedMesh ref={barsRef} args={[undefined, undefined, count]} frustumCulled={false}>
+      <boxGeometry args={[1, 1, 1]} />
+      <primitive object={material} attach="material" />
+    </instancedMesh>
   )
 }
 
@@ -1681,21 +1554,7 @@ export default function CinematicStage({
         env={env}
       />
 
-      <HolographicCore
-        actIndex={actIndex}
-        quality={quality}
-        reducedMotion={reducedMotion}
-        env={env}
-      />
-
-      <ArmillaryArcs
-        actIndex={actIndex}
-        quality={quality}
-        reducedMotion={reducedMotion}
-        env={env}
-      />
-
-      <EnergyRings
+      <ReactiveSpectrum
         actIndex={actIndex}
         quality={quality}
         reducedMotion={reducedMotion}
@@ -1705,12 +1564,6 @@ export default function CinematicStage({
       <ParticleField
         actIndex={actIndex}
         quality={quality}
-        reducedMotion={reducedMotion}
-        env={env}
-      />
-
-      <Portal
-        actIndex={actIndex}
         reducedMotion={reducedMotion}
         env={env}
       />

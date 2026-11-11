@@ -15,11 +15,11 @@ if (start < 0 || end < 0) throw new Error('No se encontró el catálogo de actos
 const acts = scenes.slice(start, end)
 const actIds = [...acts.matchAll(/id: '([^']+)'/g)].map((match) => match[1])
 const checks = [
-  ['exactly five story acts', actIds.length === 5 && actIds.join(',') === 'bienvenida,diagnostico,dependencia,propuesta,declaracion'],
+  ['exactly five music-first story acts', actIds.length === 5 && actIds.join(',') === 'bienvenida,inspiracion,produccion,creacion,compartir'],
   ['each story act lasts 12 seconds', (acts.match(/duration: 12,/g) || []).length === 5],
   ['sixty-second total remains derived from act durations', scenes.includes('CINEMATIC_ACTS.reduce((sum, act) => sum + act.duration, 0)')],
-  ['five source narrative beats are present', ['SISTEMA NERVIOSO TECNOLÓGICO', 'DIAGNÓSTICO HISTÓRICO', 'PERSPECTIVA CRÍTICA', 'LA PROPUESTA TRANSFORMADORA', 'DECLARACIÓN DE EXISTENCIA'].every((phrase) => acts.includes(phrase))],
-  ['PowerPoint copy is preserved in key beats', acts.includes('Orgullosamente Realmontenses te da la bienvenida.') && acts.includes('la absoluta dependencia tecnológica del usuario.') && acts.includes('ESTO ES TECNOLOGÍA LATINOAMERICANA.')],
+  ['five music-focused narrative beats are present', ['TU ESTUDIO MUSICAL', 'CAPTURA LA PRIMERA IDEA', 'DA FORMA A TU SONIDO', 'CREA CON HERRAMIENTAS INTELIGENTES', 'TU MÚSICA MERECE SER ESCUCHADA'].every((phrase) => acts.includes(phrase))],
+  ['copy describes a musical creation journey', ['convertirla en música.', 'curiosidad marque el compás.', 'Ajusta, mezcla y descubre', 'Conserva el control creativo', 'Tu siguiente track empieza aquí.'].every((phrase) => acts.includes(phrase))],
   ['transition timings preserve sixty-second narrative', timing.includes('const ACT_TRANSITION_MS = 520') && timing.includes('const ACT_SETTLE_MS = 320') && timing.includes('durationMs - leadInMs')],
   ['official palette colors are represented', ['#00E5FF', '#0052FF', '#E05A47', '#E5E4E2'].every((color) => acts.includes(color))],
   ['real WebGL renderer remains active', intro.includes('<Canvas') && intro.includes('<CinematicStage')],
