@@ -31,7 +31,7 @@ export async function GET(_request: Request, context: { params: Promise<{ taskId
     if (!result.url || !result.url.startsWith('https://') && !result.url.startsWith('http://')) {
       return NextResponse.json({ error: 'URL de audio inválida.' }, { status: 502 })
     }
-    return NextResponse.redirect(result.url, 302, { headers: { 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' } })
+    return new NextResponse(null, { status: 302, headers: { Location: result.url, 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' } })
   } catch {
     return NextResponse.json({ error: 'El almacenamiento no está disponible.' }, { status: 503 })
   }
