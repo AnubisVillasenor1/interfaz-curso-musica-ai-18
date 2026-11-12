@@ -64,6 +64,7 @@ for (const check of checks) {
         payload?.ok === true &&
         typeof payload?.degraded === 'boolean' &&
         typeof payload?.checks?.appUrlConfigured === 'boolean' &&
+        typeof payload?.checks?.canonicalAppUrlConfigured === 'boolean' &&
         typeof payload?.checks?.appUrlProductionSafe === 'boolean' &&
         typeof payload?.checks?.musicProviderUrlProductionSafe === 'boolean' &&
         typeof payload?.checks?.musicProviderConfigured === 'boolean' &&
