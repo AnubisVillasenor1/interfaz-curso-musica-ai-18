@@ -60,6 +60,17 @@ export async function GET() {
     }
   })()
   const providerNeedsCallback = ['suno', 'replicate', 'fal', 'local'].includes(musicProvider)
+  let musicProviderUrlProductionSafe = musicProvider !== 'local'
+  if (musicProvider === 'local') {
+    try {
+      const providerUrl = new URL(process.env.LOCAL_MUSIC_API_URL?.trim() || '')
+      musicProviderUrlProductionSafe =
+        providerUrl.protocol === 'https:' &&
+        !['localhost', '127.0.0.1', '0.0.0.0', '::1'].includes(providerUrl.hostname.toLowerCase())
+    } catch {
+      musicProviderUrlProductionSafe = false
+    }
+  }
 
   let appUrlConfigured = false
   let appUrlProductionSafe = false
@@ -82,6 +93,7 @@ export async function GET() {
     stripeWebhook: Boolean(process.env.STRIPE_WEBHOOK_SECRET?.trim()),
     generatorCallback: Boolean(process.env.GENERATOR_CALLBACK_SECRET?.trim()),
     musicProviderConfigured: providerConfigured,
+    musicProviderUrlProductionSafe: !production || musicProviderUrlProductionSafe,
     musicCallbackReady: !providerNeedsCallback || Boolean(process.env.GENERATOR_CALLBACK_SECRET?.trim()),
     aiAgent: Boolean(process.env.AI_AGENT_API_KEY?.trim()),
     audioCore: Boolean(process.env.TAMV_AUDIO_CORE_URL?.trim()),
@@ -92,10 +104,11 @@ export async function GET() {
     checks.musicProviderConfigured &&
     checks.musicCallbackReady &&
     checks.supabaseAdmin &&
-    appUrlConfigured
+    appUrlConfigured &&
+    (!production || (appUrlProductionSafe && musicProviderUrlProductionSafe))
   const degraded =
     !checks.appUrlConfigured ||
-    (production && !appUrlProductionSafe) ||
+    (production && (!appUrlProductionSafe || !musicProviderUrlProductionSafe)) ||
     !checks.supabaseAuth ||
     !checks.supabaseAdmin ||
     !checks.stripe ||
