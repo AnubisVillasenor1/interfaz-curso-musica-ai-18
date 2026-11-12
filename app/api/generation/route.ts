@@ -60,8 +60,12 @@ export async function POST(request: Request) {
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(idempotencyKey)) {
     return NextResponse.json({ error: 'Envía una clave Idempotency-Key UUID para evitar generaciones duplicadas.', code: 'idempotency_key_required' }, { status: 400 })
   }
-  const { data: existing } = await supabase.from('audio_generation_tasks')
+  const { data: existing, error: lookupError } = await supabase.from('audio_generation_tasks')
     .select('task_id,status,progress,prompt,mode,parameters').eq('user_id', user.id).eq('idempotency_key', idempotencyKey).maybeSingle()
+  if (lookupError) {
+    console.error('[generation] idempotency lookup failed', lookupError.message)
+    return NextResponse.json({ error: 'No se pudo verificar la clave de idempotencia. Comprueba la migración de AudioCore.', code: 'idempotency_lookup_failed' }, { status: 503 })
+  }
   if (existing) {
     if (existing.status === 'failed' || existing.status === 'cancelled') {
       return NextResponse.json({ error: 'La solicitud anterior terminó sin completarse. Genera una nueva clave para reintentar.', code: 'idempotency_key_used' }, { status: 409 })
