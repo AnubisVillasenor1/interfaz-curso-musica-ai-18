@@ -34,7 +34,7 @@ export function MusicGenQueueStudio() {
         const response = await fetch('/api/generation/' + task.taskId, { cache: 'no-store' })
         const body = await response.json() as TaskState & { error?: string }
         if (!response.ok) throw new Error(body.error ?? 'No se pudo consultar la tarea.')
-        if (!disposed) setTask(body)
+        if (!disposed) { setError(null); setTask(body) }
       } catch (cause) {
         if (!disposed) setError(cause instanceof Error ? cause.message : 'No se pudo consultar el estado.')
       } finally {
@@ -106,7 +106,7 @@ export function MusicGenQueueStudio() {
           <input type="range" min={5} max={30} step={5} value={duration} onChange={(event) => setDuration(Number(event.target.value))} className="w-full" />
           <span className="pg-note">Límite inicial de 30 segundos para controlar la memoria y el tiempo de GPU.</span>
         </label>
-        <button type="submit" disabled={busy || running || prompt.trim().length < 3} className="pg-button-primary inline-flex w-full items-center justify-center gap-2 disabled:cursor-not-allowed disabled:opacity-50">
+        <button type="submit" disabled={busy || running || prompt.trim().length < 3} className="pg-btn pg-btn-primary inline-flex w-full items-center justify-center gap-2 disabled:cursor-not-allowed disabled:opacity-50">
           {busy || running ? <LoaderCircle size={17} className="animate-spin" /> : <Play size={17} />}
           {busy ? 'Enviando trabajo…' : running ? 'Generación en proceso…' : 'Generar con MusicGen'}
         </button>
