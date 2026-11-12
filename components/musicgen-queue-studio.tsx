@@ -57,6 +57,7 @@ export function MusicGenQueueStudio() {
     setTask(null)
     idempotencyKey.current ??= crypto.randomUUID()
     let receivedResponse = false
+    let preserveKeyForRetry = false
     try {
       const response = await fetch('/api/generation', {
         method: 'POST',
@@ -68,12 +69,13 @@ export function MusicGenQueueStudio() {
         }),
       })
       receivedResponse = true
-      const body = await response.json() as { taskId?: string; status?: TaskStatus; progress?: number; error?: string }
+      const body = await response.json() as { taskId?: string; status?: TaskStatus; progress?: number; error?: string; code?: string }
+      preserveKeyForRetry = body.code === 'enqueue_uncertain'
       if (!response.ok || !body.taskId) throw new Error(body.error ?? 'No se pudo iniciar la generación.')
       setTask({ taskId: body.taskId, status: body.status ?? 'queued', progress: body.progress ?? 0, audioUrl: null, error: null, spectralMetadata: null })
       idempotencyKey.current = null
     } catch (cause) {
-      if (receivedResponse) idempotencyKey.current = null
+      if (receivedResponse && !preserveKeyForRetry) idempotencyKey.current = null
       setError(cause instanceof Error ? cause.message : 'Error inesperado al generar audio.')
     } finally {
       setBusy(false)
