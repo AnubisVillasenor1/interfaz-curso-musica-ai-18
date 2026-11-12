@@ -34,14 +34,7 @@ services:
       MUSICGEN_MAX_DURATION_SECONDS: ${MUSICGEN_MAX_DURATION_SECONDS:-30}
       HF_HOME: /models/huggingface
     volumes: ["model_cache:/models"]
-    expose: ["8001"]
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
+    expose: ["8001", "9102"]
     networks: [audio-internal]
 
   gateway-worker:
@@ -104,4 +97,4 @@ volumes:
 
 networks:
   audio-internal:
-    internal: true
+    driver: bridge
