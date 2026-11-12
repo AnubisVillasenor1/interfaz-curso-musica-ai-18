@@ -9,8 +9,8 @@ export const dynamic = 'force-dynamic'
  * Estado operativo mínimo, sin secretos.
  *
  * `ok` significa que el proceso responde. `degraded` indica que faltan
- * dependencias necesarias para las capacidades declaradas. El endpoint solo
- * expone presencia/configuración, nunca valores, IDs, correos ni credenciales.
+ * dependencias necesarias para las capacidades de producción declaradas.
+ * Solo se publica presencia/configuración, nunca valores, IDs, correos ni claves.
  */
 export async function GET() {
   const supabaseUrl = Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL?.trim())
@@ -22,8 +22,44 @@ export async function GET() {
   const production =
     process.env.VERCEL_ENV === 'production' ||
     process.env.PLAY_AND_GO_ENV === 'production'
-  const musicProvider = (process.env.MUSIC_PROVIDER?.trim() || 'local').toLowerCase()
-  const externalMusicGeneration = musicProvider !== 'local'
+
+  // Mantiene la misma precedencia que getMusicProviderId() para que el panel
+  // operativo no declare listo un proveedor distinto al que ejecutará la API.
+  const explicitProvider = process.env.MUSIC_PROVIDER?.trim().toLowerCase()
+  const musicProvider =
+    explicitProvider ||
+    (process.env.API_KEY
+      ? 'suno'
+      : process.env.LOCAL_MUSIC_API_URL
+        ? 'local'
+        : process.env.HUGGINGFACEHUB_API_TOKEN
+          ? 'huggingface'
+          : process.env.REPLICATE_API_TOKEN
+            ? 'replicate'
+            : process.env.FAL_KEY
+              ? 'fal'
+              : 'local')
+
+  const providerConfigured = (() => {
+    switch (musicProvider) {
+      case 'suno':
+        return Boolean(process.env.API_KEY?.trim())
+      case 'huggingface':
+        return Boolean(process.env.HUGGINGFACEHUB_API_TOKEN?.trim())
+      case 'replicate':
+        return Boolean(
+          process.env.REPLICATE_API_TOKEN?.trim() &&
+            process.env.REPLICATE_ACE_STEP_MODEL?.trim(),
+        )
+      case 'fal':
+        return Boolean(process.env.FAL_KEY?.trim() && process.env.FAL_ACE_STEP_MODEL?.trim())
+      case 'local':
+        return Boolean(process.env.LOCAL_MUSIC_API_URL?.trim())
+      default:
+        return false
+    }
+  })()
+  const providerNeedsCallback = ['suno', 'replicate', 'fal', 'local'].includes(musicProvider)
 
   let appUrlConfigured = false
   let appUrlProductionSafe = false
@@ -45,11 +81,18 @@ export async function GET() {
     stripe: Boolean(process.env.STRIPE_SECRET_KEY?.trim()),
     stripeWebhook: Boolean(process.env.STRIPE_WEBHOOK_SECRET?.trim()),
     generatorCallback: Boolean(process.env.GENERATOR_CALLBACK_SECRET?.trim()),
+    musicProviderConfigured: providerConfigured,
+    musicCallbackReady: !providerNeedsCallback || Boolean(process.env.GENERATOR_CALLBACK_SECRET?.trim()),
     aiAgent: Boolean(process.env.AI_AGENT_API_KEY?.trim()),
     audioCore: Boolean(process.env.TAMV_AUDIO_CORE_URL?.trim()),
     rateLimitDistributed: rateLimit.distributed,
   }
 
+  const serverMusicGenerationReady =
+    checks.musicProviderConfigured &&
+    checks.musicCallbackReady &&
+    checks.supabaseAdmin &&
+    appUrlConfigured
   const degraded =
     !checks.appUrlConfigured ||
     (production && !appUrlProductionSafe) ||
@@ -57,7 +100,7 @@ export async function GET() {
     !checks.supabaseAdmin ||
     !checks.stripe ||
     !checks.stripeWebhook ||
-    (externalMusicGeneration && !checks.generatorCallback) ||
+    !serverMusicGenerationReady ||
     !checks.rateLimitDistributed
 
   const response = NextResponse.json(
@@ -68,8 +111,8 @@ export async function GET() {
       checks,
       capabilities: {
         localMusic: true,
-        externalMusic: externalMusicGeneration,
-        externalMusicReady: !externalMusicGeneration || checks.generatorCallback,
+        externalMusic: true,
+        externalMusicReady: serverMusicGenerationReady,
         configuredMusicProvider: musicProvider,
       },
       rateLimit: {
