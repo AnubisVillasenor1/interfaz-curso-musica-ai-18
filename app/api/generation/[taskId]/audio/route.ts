@@ -28,7 +28,7 @@ export async function GET(_request: Request, context: { params: Promise<{ taskId
     })
     if (!response.ok) return NextResponse.json({ error: 'No se pudo preparar la descarga.' }, { status: 503 })
     const result = await response.json() as { url?: string }
-    if (!result.url || !result.url.startsWith('https://') && !result.url.startsWith('http://')) {
+    if (!result.url || (process.env.NODE_ENV === 'production' ? !result.url.startsWith('https://') : !result.url.startsWith('https://') && !result.url.startsWith('http://'))) {
       return NextResponse.json({ error: 'URL de audio inválida.' }, { status: 502 })
     }
     return new NextResponse(null, { status: 302, headers: { Location: result.url, 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' } })
