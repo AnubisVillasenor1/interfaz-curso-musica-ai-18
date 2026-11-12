@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 
+import { getAppUrl } from '@/lib/app-url'
 import { getRateLimitDiagnostics } from '@/lib/rate-limit'
 
 export const runtime = 'nodejs'
@@ -12,7 +13,7 @@ export const dynamic = 'force-dynamic'
  * dependencias necesarias para las capacidades de producción declaradas.
  * Solo se publica presencia/configuración, nunca valores, IDs, correos ni claves.
  */
-export async function GET() {
+export async function GET(request: Request) {
   const supabaseUrl = Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL?.trim())
   const supabaseKey = Boolean(
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim() ||
@@ -74,20 +75,23 @@ export async function GET() {
     }
   }
 
+  const effectiveAppUrl = getAppUrl(request)
+  const canonicalAppUrlConfigured = Boolean(process.env.NEXT_PUBLIC_APP_URL?.trim())
   let appUrlConfigured = false
   let appUrlProductionSafe = false
   try {
-    const appUrl = new URL(process.env.NEXT_PUBLIC_APP_URL?.trim() || '')
+    const appUrl = new URL(effectiveAppUrl)
     appUrlConfigured = appUrl.protocol === 'https:' || appUrl.protocol === 'http:'
     appUrlProductionSafe =
       appUrl.protocol === 'https:' &&
       !['localhost', '127.0.0.1', '0.0.0.0', '::1'].includes(appUrl.hostname.toLowerCase())
   } catch {
-    // Una URL vacía o inválida es configuración ausente, no una excepción de salud.
+    // Un origen efectivo vacío o inválido se reporta como configuración ausente.
   }
 
   const checks = {
     appUrlConfigured,
+    canonicalAppUrlConfigured,
     appUrlProductionSafe: !production || appUrlProductionSafe,
     supabaseAuth: supabaseUrl && supabaseKey,
     supabaseAdmin: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()),
@@ -110,6 +114,7 @@ export async function GET() {
     (!production || (appUrlProductionSafe && musicProviderUrlProductionSafe))
   const degraded =
     !checks.appUrlConfigured ||
+    !checks.canonicalAppUrlConfigured ||
     (production && (!appUrlProductionSafe || !musicProviderUrlProductionSafe)) ||
     !checks.supabaseAuth ||
     !checks.supabaseAdmin ||
