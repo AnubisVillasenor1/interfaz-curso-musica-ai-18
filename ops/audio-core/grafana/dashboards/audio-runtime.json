@@ -1,0 +1,25 @@
+{
+  "annotations": { "list": [] },
+  "editable": false,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    { "type": "stat", "title": "Jobs en cola", "gridPos": { "h": 5, "w": 6, "x": 0, "y": 0 }, "datasource": { "type": "prometheus", "uid": "Prometheus" }, "targets": [{ "expr": "tamv_queue_waiting_jobs", "refId": "A" }], "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "orange", "value": 25 }, { "color": "red", "value": 50 }] } }, "overrides": [] } },
+    { "type": "stat", "title": "Jobs activos", "gridPos": { "h": 5, "w": 6, "x": 6, "y": 0 }, "datasource": { "type": "prometheus", "uid": "Prometheus" }, "targets": [{ "expr": "tamv_audio_jobs_active", "refId": "A" }] },
+    { "type": "timeseries", "title": "Generaciones completadas por minuto", "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 }, "datasource": { "type": "prometheus", "uid": "Prometheus" }, "targets": [{ "expr": "sum(rate(tamv_audio_jobs_completed_total[5m])) * 60", "legendFormat": "Completadas/min", "refId": "A" }] },
+    { "type": "timeseries", "title": "Fallos por etapa", "gridPos": { "h": 8, "w": 12, "x": 0, "y": 5 }, "datasource": { "type": "prometheus", "uid": "Prometheus" }, "targets": [{ "expr": "sum by (stage) (rate(tamv_audio_jobs_failed_total[5m]))", "legendFormat": "{{stage}}", "refId": "A" }] },
+    { "type": "timeseries", "title": "Latencia p95 de generación", "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 }, "datasource": { "type": "prometheus", "uid": "Prometheus" }, "targets": [{ "expr": "histogram_quantile(0.95, sum by (le) (rate(tamv_audio_generation_duration_seconds_bucket[15m])))", "legendFormat": "p95", "refId": "A" }] }
+  ],
+  "refresh": "15s",
+  "schemaVersion": 40,
+  "style": "dark",
+  "tags": ["play-and-go", "audio", "musicgen"],
+  "templating": { "list": [] },
+  "time": { "from": "now-6h", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Play & Go — Audio Runtime",
+  "version": 1
+}
