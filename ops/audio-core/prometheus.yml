@@ -1,0 +1,16 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: gateway-worker
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["gateway-worker:9101"]
+  - job_name: musicgen
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["musicgen:9102"]
+  - job_name: redis
+    static_configs:
+      - targets: ["redis-exporter:9121"]
