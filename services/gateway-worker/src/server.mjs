@@ -8,7 +8,7 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import client from "prom-client";
 import { z } from "zod";
 
-const required = ["REDIS_URL", "SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "GATEWAY_INTERNAL_TOKEN", "AUDIOCORE_URL", "AUDIOCORE_INTERNAL_TOKEN", "S3_ENDPOINT", "S3_ACCESS_KEY", "S3_SECRET_KEY"];
+const required = ["REDIS_URL", "SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "GATEWAY_INTERNAL_TOKEN", "AUDIOCORE_URL", "AUDIOCORE_INTERNAL_TOKEN", "S3_ENDPOINT", "S3_PUBLIC_ENDPOINT", "S3_ACCESS_KEY", "S3_SECRET_KEY"];
 for (const key of required) if (!process.env[key]) throw new Error(`Missing required environment variable: ${key}`);
 const port = Number(process.env.GATEWAY_PORT ?? 8080);
 const metricsPort = Number(process.env.METRICS_PORT ?? 9101);
@@ -19,7 +19,9 @@ const queue = new Queue("tamv-audio-generation", { connection: redis, defaultJob
   removeOnComplete: { age: 86400, count: 500 }, removeOnFail: { age: 604800, count: 2000 }
 }});
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
-const s3 = new S3Client({ region: process.env.S3_REGION ?? "us-east-1", endpoint: process.env.S3_ENDPOINT, forcePathStyle: true, credentials: { accessKeyId: process.env.S3_ACCESS_KEY, secretAccessKey: process.env.S3_SECRET_KEY } });
+const s3Config = { region: process.env.S3_REGION ?? "us-east-1", forcePathStyle: true, credentials: { accessKeyId: process.env.S3_ACCESS_KEY, secretAccessKey: process.env.S3_SECRET_KEY } };
+const s3 = new S3Client({ ...s3Config, endpoint: process.env.S3_ENDPOINT });
+const s3Presign = new S3Client({ ...s3Config, endpoint: process.env.S3_PUBLIC_ENDPOINT });
 
 const register = new client.Registry();
 client.collectDefaultMetrics({ register, prefix: "play_and_go_worker_" });
@@ -143,7 +145,7 @@ const server = http.createServer(async (req, res) => {
         .select("status,audio_object_key,audio_bucket").eq("task_id", taskId).maybeSingle();
       if (error) throw error;
       if (!task || task.status !== "completed" || !task.audio_object_key || !task.audio_bucket) return json(res, 404, { error: "Completed audio not found" });
-      const signedUrl = await getSignedUrl(s3, new GetObjectCommand({ Bucket: task.audio_bucket, Key: task.audio_object_key }), { expiresIn: 300 });
+      const signedUrl = await getSignedUrl(s3Presign, new GetObjectCommand({ Bucket: task.audio_bucket, Key: task.audio_object_key }), { expiresIn: 300 });
       return json(res, 200, { url: signedUrl, expiresIn: 300 });
     } catch (error) {
       console.error("Could not sign audio URL", error);
