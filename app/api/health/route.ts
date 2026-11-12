@@ -59,7 +59,9 @@ export async function GET() {
         return false
     }
   })()
-  const providerNeedsCallback = ['suno', 'replicate', 'fal', 'local'].includes(musicProvider)
+  // /api/generate firma el retorno antes de instanciar cualquier proveedor,
+  // incluso el síncrono de Hugging Face; todos necesitan esta configuración.
+  const providerNeedsCallback = ['suno', 'huggingface', 'replicate', 'fal', 'local'].includes(musicProvider)
   let musicProviderUrlProductionSafe = musicProvider !== 'local'
   if (musicProvider === 'local') {
     try {
