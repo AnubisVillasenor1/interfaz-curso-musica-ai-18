@@ -51,7 +51,7 @@ services:
       MUSICGEN_MAX_DURATION_SECONDS: ${MUSICGEN_MAX_DURATION_SECONDS:-30}
       HF_HOME: /models/huggingface
     volumes: ["model_cache:/models"]
-    expose: ["8001", "9102"]
+    expose: ["8001"]
     networks: [audio-internal]
 
   gateway-worker:
