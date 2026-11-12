@@ -19,7 +19,7 @@ This directory contains the **self-hosted, asynchronous MusicGen runtime**. It i
 2. Copy `.env.example` to `.env` and replace every example value with unique secrets.
 3. Start MinIO, then run the one-time bootstrap with `docker compose --profile bootstrap --env-file .env -f docker-compose.yml run --rm minio-bootstrap`. It creates the private bucket and a worker identity scoped only to that bucket. Do not use MinIO root credentials for the worker.
 4. Set `AUDIO_QUEUE_GATEWAY_URL` and `GATEWAY_INTERNAL_TOKEN` in the Next.js deployment. The gateway URL must be reachable privately from the web runtime; never expose port 8080 publicly without a private network or authenticated reverse proxy.
-5. Build/start with `docker compose --env-file .env -f docker-compose.yml up --build -d` from this directory. GPU acceleration is recommended; CPU may be extremely slow. `S3_PUBLIC_ENDPOINT` must be an HTTPS endpoint that routes to the same MinIO bucket and preserves signed request paths/headers.
+5. Build/start with `docker compose --env-file .env -f docker-compose.yml up --build -d` from this directory. For an NVIDIA GPU host with the NVIDIA Container Toolkit installed, include `-f docker-compose.gpu.yml` in the Compose command. CPU may be extremely slow. `S3_PUBLIC_ENDPOINT` must be an HTTPS endpoint that routes to the same MinIO bucket and preserves signed request paths/headers.
 6. Verify `/healthz` on the gateway, `/healthz` on MusicGen from the internal network, worker metrics at port 9101 and Prometheus at localhost:9090.
 7. Smoke-test using a staging Supabase project and a test account. Confirm queue completion, private object, task owner isolation, signed URL expiry, hash and actual playback before enabling production traffic.
 
