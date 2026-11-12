@@ -101,6 +101,7 @@ const worker = new Worker("tamv-audio-generation", async (job) => {
     if (typeof generated.audioBase64 !== "string" || !generated.audioBase64.length) throw new Error("MusicGen returned no audio payload");
     const audio = Buffer.from(generated.audioBase64, "base64");
     if (audio.length < 44 || audio.length > Number(process.env.MAX_AUDIO_BYTES ?? 50000000)) throw new Error("Generated audio size is outside the permitted range");
+    if (audio.subarray(0, 4).toString("ascii") !== "RIFF" || audio.subarray(8, 12).toString("ascii") !== "WAVE") throw new Error("MusicGen payload is not a valid RIFF/WAVE file");
     await job.updateProgress({ stage: "audio_generated", progress: 65 });
     await updateTask(taskId, { progress: 65 });
     stage = "storage";
