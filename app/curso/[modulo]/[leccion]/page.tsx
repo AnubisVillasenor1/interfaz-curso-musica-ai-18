@@ -5,6 +5,7 @@ import { ArrowLeft } from 'lucide-react'
 
 import { LessonView, type LessonNavItem } from '@/components/course/lesson-view'
 import { COURSE_LESSONS, COURSE_MODULES, lessonById, type CourseModule } from '@/lib/course'
+import { getLessonMedia } from '@/lib/course-media'
 
 type Props = { params: Promise<{ modulo: string; leccion: string }> }
 
@@ -59,6 +60,7 @@ export default async function CursoLeccionPage({ params }: Props) {
   const { module, lesson } = found
   const ordered = [...COURSE_LESSONS].sort((a, b) => a.lessonNumber - b.lessonNumber)
   const position = ordered.findIndex((item) => item.id === lesson.id)
+  const media = await getLessonMedia(lesson)
 
   return (
     <main
@@ -79,6 +81,7 @@ export default async function CursoLeccionPage({ params }: Props) {
       <div className="mx-auto w-full max-w-4xl px-5 pb-20 pt-4 lg:px-8">
         <LessonView
           lesson={lesson}
+          media={media}
           courseModule={module}
           previous={position > 0 ? toNavItem(ordered[position - 1].id) : undefined}
           next={position >= 0 && position < ordered.length - 1 ? toNavItem(ordered[position + 1].id) : undefined}

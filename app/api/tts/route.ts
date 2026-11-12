@@ -28,6 +28,44 @@ export async function POST(request: Request) {
 
   const voice = typeof body?.voice === 'string' && /^[a-z_]{2,20}$/i.test(body.voice) ? body.voice : 'Rachel'
 
+  const voiceServiceUrl = process.env.VOICE_IDENTITY_URL?.trim()
+  const internalToken = process.env.AUDIOCORE_INTERNAL_TOKEN?.trim()
+  if (voiceServiceUrl && internalToken) {
+    try {
+      const endpoint = new URL('/v1/speak', voiceServiceUrl)
+      const localResponse = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-internal-token': internalToken,
+        },
+        body: JSON.stringify({
+          text,
+          language: 'es-MX',
+          voice: process.env.KOKORO_VOICE_ID?.trim(),
+          speed: 1,
+        }),
+        signal: AbortSignal.timeout(20_000),
+        cache: 'no-store',
+      })
+      const contentLength = Number(localResponse.headers.get('content-length') ?? 0)
+      if (localResponse.ok && contentLength <= 20_000_000) {
+        const audio = await localResponse.arrayBuffer()
+        if (audio.byteLength > 0 && audio.byteLength <= 20_000_000) {
+          return new NextResponse(audio, {
+            headers: {
+              'Content-Type': 'audio/wav',
+              'Cache-Control': 'private, no-store',
+              'X-Audio-Engine': 'kokoro-local',
+            },
+          })
+        }
+      }
+    } catch {
+      console.warn('[tts] Kokoro local no disponible; se usa el respaldo de Gateway')
+    }
+  }
+
   try {
     const { audio } = await generateSpeech({
       model: gateway.speech('elevenlabs/eleven-flash-v2.5'),

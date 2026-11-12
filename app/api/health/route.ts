@@ -89,6 +89,12 @@ export async function GET(request: Request) {
     // Un origen efectivo vacío o inválido se reporta como configuración ausente.
   }
 
+  const voiceLocalConfigured = Boolean(
+    process.env.VOICE_IDENTITY_URL?.trim() &&
+      process.env.AUDIOCORE_INTERNAL_TOKEN?.trim() &&
+      process.env.KOKORO_VOICE_ID?.trim(),
+  )
+
   const checks = {
     appUrlConfigured,
     canonicalAppUrlConfigured,
@@ -103,6 +109,8 @@ export async function GET(request: Request) {
     musicCallbackReady: !providerNeedsCallback || Boolean(process.env.GENERATOR_CALLBACK_SECRET?.trim()),
     aiAgent: Boolean(process.env.AI_AGENT_API_KEY?.trim()),
     audioCore: Boolean(process.env.TAMV_AUDIO_CORE_URL?.trim()),
+    voiceLocalConfigured,
+    voiceGatewayFallback: true,
     rateLimitDistributed: rateLimit.distributed,
   }
 

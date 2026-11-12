@@ -248,8 +248,8 @@ jobs:
       - name: Validate gateway JavaScript syntax
         run: node --check services/gateway-worker/src/server.mjs
 
-      - name: Validate MusicGen Python syntax
-        run: python -m py_compile services/audiocore/musicgen_service.py
+      - name: Validate Python service syntax
+        run: python -m py_compile services/audiocore/musicgen_service.py services/voice-identity/service.py
 
       - name: Validate Compose configuration
         working-directory: ops/audio-core

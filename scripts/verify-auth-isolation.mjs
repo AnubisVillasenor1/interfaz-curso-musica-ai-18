@@ -30,6 +30,11 @@ const paths = {
   webhook: 'app/api/stripe/webhook/route.ts',
   callback: 'app/api/generate/callback/route.ts',
   unifiedCallback: 'app/api/callback/route.ts',
+  voiceProfiles: 'app/api/voice/profiles/route.ts',
+  voiceGenerate: 'app/api/voice/generate/route.ts',
+  voiceStatus: 'app/api/voice/generate/[taskId]/route.ts',
+  voiceAudio: 'app/api/voice/generate/[taskId]/audio/route.ts',
+  voiceMigration: 'supabase/migrations/20261112170000_creator_operating_system.sql',
 }
 
 const files = Object.fromEntries(
@@ -118,6 +123,29 @@ const checks = [
     /'song-audio',\s*false,/.test(files.storage) &&
       files.storage.includes('(storage.foldername(name))[1] = (select auth.uid()::text)') &&
       (files.storage.match(/on storage\.objects/g) ?? []).length >= 4,
+  ],
+  [
+    'los perfiles de voz requieren sesión y consentimiento explícito',
+    files.voiceProfiles.includes('getUser()') &&
+      files.voiceProfiles.includes('consentAccepted !== true') &&
+      files.voiceProfiles.includes('is_consented: true') &&
+      files.voiceProfiles.includes(".eq('user_id', user.id)"),
+  ],
+  [
+    'la generación vocal es idempotente, limitada a la cuenta y privada',
+    files.voiceGenerate.includes("request.headers.get('Idempotency-Key')") &&
+      files.voiceGenerate.includes(".eq('user_id', user.id)") &&
+      files.voiceAudio.includes(".eq('user_id', user.id)") &&
+      files.voiceAudio.includes("'Cache-Control': 'private, no-store'"),
+  ],
+  [
+    'las tablas de voz usan RLS de lectura propia y escritura service_role',
+    files.voiceMigration.includes("'voice_profiles'") &&
+      files.voiceMigration.includes("'voice_generations'") &&
+      files.voiceMigration.includes('alter table public.%I enable row level security') &&
+      files.voiceMigration.includes('user_id = (select auth.uid())') &&
+      files.voiceMigration.includes("'voice_generations'") &&
+      files.voiceMigration.includes('grant all privileges on table public.%I to service_role'),
   ],
   [
     'las rutas con service_role no escriben por un user id del cuerpo',
