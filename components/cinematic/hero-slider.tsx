@@ -54,7 +54,7 @@ const SLIDES: Slide[] = [
       { icon: Music2, label: `${COURSE_MODULES.length} módulos · ${COURSE_TOTAL_LESSONS} sesiones` },
     ],
     actions: [
-      { href: '/onboarding', label: 'Comenzar gratis', primary: true },
+      { href: '/auth?mode=signup&next=/onboarding', label: 'Comenzar gratis', primary: true },
       { href: '/presentacion', label: 'Ver demostración' },
     ],
   },
