@@ -5,6 +5,7 @@ import { AccountTabs } from '@/components/account/account-tabs'
 import { LocalComposer } from '@/components/local-composer'
 import { MusicStudio } from '@/components/music-studio'
 import { RealAudioStudio } from '@/components/real-audio-studio'
+import { MusicGenQueueStudio } from '@/components/musicgen-queue-studio'
 import { FREE_TIER, PRODUCTS, formatPrice } from '@/lib/products'
 
 /**
@@ -101,6 +102,10 @@ export default async function StudioPage({
         )}
 
         <LocalComposer initialPrompt={initialPrompt} />
+
+        <div className="mt-8">
+          <MusicGenQueueStudio />
+        </div>
 
         <section className="mt-8 grid gap-4 md:grid-cols-2">
           <div className="pg-card p-5">
