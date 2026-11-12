@@ -274,13 +274,12 @@ export function CourseDashboard() {
   }
 
   const navLinks = [
-    ['Crear gratis', '/crear'],
-    ['Curso', '/curso'],
-    ['Estudio', '/studio'],
-    ['Mi música', '/biblioteca'],
-    ['Mi perfil', '/perfil'],
-    ['Comunidad', '/comunidad'],
-    ['Planes y pago', '/precios'],
+    ['Academy', '/academy'],
+    ['Studio', '/studio'],
+    ['AudioCore', '/audiocore'],
+    ['AI Lab', '/ai-lab'],
+    ['Community', '/community'],
+    ['Pricing', '/pricing'],
   ] as const
 
   /**
