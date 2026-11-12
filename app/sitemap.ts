@@ -49,6 +49,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   return [
     entry('/', 1),
+    entry('/onboarding', 0.8),
+    entry('/ai-lab', 0.7),
     entry('/precios', 0.9),
     entry('/comunidad', 0.7),
     entry('/curso/proyecto-final', 0.85, 'monthly'),
