@@ -67,6 +67,7 @@ for (const check of checks) {
         typeof payload?.checks?.appUrlProductionSafe === 'boolean' &&
         typeof payload?.checks?.musicProviderUrlProductionSafe === 'boolean' &&
         typeof payload?.checks?.musicProviderConfigured === 'boolean' &&
+        typeof payload?.checks?.musicCallbackReady === 'boolean' &&
         typeof payload?.capabilities?.localMusic === 'boolean' &&
         typeof payload?.capabilities?.externalMusicReady === 'boolean' &&
         typeof payload?.rateLimit?.mode === 'string' &&
