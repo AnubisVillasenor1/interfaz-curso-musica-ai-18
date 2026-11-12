@@ -54,12 +54,6 @@ export async function POST(request: Request) {
   const admin = createAdminClient()
   if (!admin) return NextResponse.json({ error: 'El servicio de generación no está configurado.', code: 'not_configured' }, { status: 503 })
 
-  // Use the existing atomic local-generation quota. Refund if persistence/enqueue fails.
-  const { data: quotaRows, error: quotaError } = await supabase.rpc('consume_generation_quota', { p_owner: user.id, p_engine: 'local' })
-  const quota = Array.isArray(quotaRows) ? quotaRows[0] as { allowed: boolean; reason: string | null } | undefined : undefined
-  if (quotaError) return NextResponse.json({ error: 'No fue posible comprobar el cupo.', code: 'quota_unavailable' }, { status: 503 })
-  if (!quota?.allowed) return NextResponse.json({ error: quota?.reason ?? 'Cupo diario agotado.', code: 'quota_exceeded' }, { status: 402 })
-
   const idempotencyKey = request.headers.get('idempotency-key') ?? ''
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(idempotencyKey)) {
     return NextResponse.json({ error: 'Envía una clave Idempotency-Key UUID para evitar generaciones duplicadas.', code: 'idempotency_key_required' }, { status: 400 })
@@ -72,6 +66,12 @@ export async function POST(request: Request) {
     }
     return NextResponse.json({ taskId: existing.task_id, status: existing.status, progress: existing.progress, statusUrl: '/api/generation/' + existing.task_id }, { status: 202, headers: { 'Cache-Control': 'no-store' } })
   }
+  // Use the existing atomic local-generation quota. Refund if persistence/enqueue fails.
+  const { data: quotaRows, error: quotaError } = await supabase.rpc('consume_generation_quota', { p_owner: user.id, p_engine: 'local' })
+  const quota = Array.isArray(quotaRows) ? quotaRows[0] as { allowed: boolean; reason: string | null } | undefined : undefined
+  if (quotaError) return NextResponse.json({ error: 'No fue posible comprobar el cupo.', code: 'quota_unavailable' }, { status: 503 })
+  if (!quota?.allowed) return NextResponse.json({ error: quota?.reason ?? 'Cupo diario agotado.', code: 'quota_exceeded' }, { status: 402 })
+
   const taskId = randomUUID()
   const { error: insertError } = await admin.from('audio_generation_tasks').insert({
     task_id: taskId, user_id: user.id, federation_id: 'FED-01', idempotency_key: idempotencyKey,
@@ -79,6 +79,11 @@ export async function POST(request: Request) {
   })
   if (insertError) {
     await supabase.rpc('refund_generation_quota', { p_owner: user.id, p_engine: 'local' })
+    const { data: raced } = await supabase.from('audio_generation_tasks')
+      .select('task_id,status,progress').eq('user_id', user.id).eq('idempotency_key', idempotencyKey).maybeSingle()
+    if (raced && raced.status !== 'failed' && raced.status !== 'cancelled') {
+      return NextResponse.json({ taskId: raced.task_id, status: raced.status, progress: raced.progress, statusUrl: '/api/generation/' + raced.task_id }, { status: 202, headers: { 'Cache-Control': 'no-store' } })
+    }
     console.error('[generation] task insert failed', insertError.message)
     return NextResponse.json({ error: 'No se pudo registrar la tarea.', code: 'persistence_error' }, { status: 500 })
   }
