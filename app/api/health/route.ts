@@ -114,8 +114,7 @@ export async function GET(request: Request) {
     (!production || (appUrlProductionSafe && musicProviderUrlProductionSafe))
   const degraded =
     !checks.appUrlConfigured ||
-    !checks.canonicalAppUrlConfigured ||
-    (production && (!appUrlProductionSafe || !musicProviderUrlProductionSafe)) ||
+    (production && (!checks.canonicalAppUrlConfigured || !appUrlProductionSafe || !musicProviderUrlProductionSafe)) ||
     !checks.supabaseAuth ||
     !checks.supabaseAdmin ||
     !checks.stripe ||
