@@ -127,7 +127,7 @@ const worker = new Worker("tamv-audio-generation", async (job) => {
     try {
       if (finalAttempt) {
         await updateTask(taskId, { status: "failed", error_message: message, completed_at: new Date().toISOString() });
-        const { error: refundError } = await supabase.rpc("refund_generation_quota", { p_owner: userId, p_engine: "local" });
+        const { error: refundError } = await supabase.rpc("refund_audio_generation_quota", { p_task_id: taskId });
         if (refundError) console.error("Failed to refund quota after terminal generation failure", refundError.message);
       } else {
         await updateTask(taskId, { status: "queued", progress: 0, error_message: null, started_at: null });
