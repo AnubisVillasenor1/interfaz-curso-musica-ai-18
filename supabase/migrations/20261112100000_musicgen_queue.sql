@@ -6,6 +6,7 @@ create table if not exists public.audio_generation_tasks (
   task_id uuid not null unique,
   user_id uuid not null references auth.users(id) on delete cascade,
   federation_id text not null default 'FED-01',
+  idempotency_key uuid not null,
   prompt text not null check (char_length(prompt) between 3 and 2000),
   mode text not null default 'instrumental' check (mode = 'instrumental'),
   status text not null default 'queued'
@@ -29,6 +30,8 @@ create table if not exists public.audio_generation_tasks (
   )
 );
 
+create unique index if not exists audio_generation_user_idempotency_idx
+  on public.audio_generation_tasks (user_id, idempotency_key);
 create index if not exists audio_generation_user_created_idx
   on public.audio_generation_tasks (user_id, created_at desc);
 create index if not exists audio_generation_queue_idx
