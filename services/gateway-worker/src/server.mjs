@@ -3,7 +3,8 @@ import { createHash, timingSafeEqual } from "node:crypto";
 import IORedis from "ioredis";
 import { Queue, Worker } from "bullmq";
 import { createClient } from "@supabase/supabase-js";
-import { S3Client, PutObjectCommand, HeadBucketCommand, CreateBucketCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, HeadBucketCommand, GetObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import client from "prom-client";
 import { z } from "zod";
 
@@ -69,12 +70,9 @@ async function updateTask(taskId, values) {
   if (error) throw new Error(`Task persistence failed: ${error.message}`);
 }
 async function ensureBucket() {
-  try { await s3.send(new HeadBucketCommand({ Bucket: bucket })); }
-  catch (error) {
-    if (error?.$metadata?.httpStatusCode === 404 || error?.name === "NotFound" || error?.name === "NoSuchBucket") {
-      await s3.send(new CreateBucketCommand({ Bucket: bucket }));
-    } else throw error;
-  }
+  // Bucket provisioning is an administrator/bootstrap operation. Worker credentials
+  // must not have bucket-creation or administrative permissions.
+  await s3.send(new HeadBucketCommand({ Bucket: bucket }));
 }
 const worker = new Worker("tamv-audio-generation", async (job) => {
   const started = Date.now(); const { taskId, userId, prompt, mode, parameters } = job.data;
@@ -135,6 +133,22 @@ const server = http.createServer(async (req, res) => {
     try { queueWaiting.set(await queue.getWaitingCount()); res.writeHead(200, { "content-type": register.contentType, "cache-control": "no-store" }); res.end(await register.metrics()); }
     catch (error) { json(res, 503, { error: "Metrics temporarily unavailable" }); }
     return;
+  }
+  if (url.pathname.startsWith("/v1/audio-url/") && req.method === "GET") {
+    if (!authorized(req)) return json(res, 401, { error: "Unauthorized" });
+    const taskId = url.pathname.slice("/v1/audio-url/".length);
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(taskId)) return json(res, 400, { error: "Invalid task id" });
+    try {
+      const { data: task, error } = await supabase.from("audio_generation_tasks")
+        .select("status,audio_object_key,audio_bucket").eq("task_id", taskId).maybeSingle();
+      if (error) throw error;
+      if (!task || task.status !== "completed" || !task.audio_object_key || !task.audio_bucket) return json(res, 404, { error: "Completed audio not found" });
+      const signedUrl = await getSignedUrl(s3, new GetObjectCommand({ Bucket: task.audio_bucket, Key: task.audio_object_key }), { expiresIn: 300 });
+      return json(res, 200, { url: signedUrl, expiresIn: 300 });
+    } catch (error) {
+      console.error("Could not sign audio URL", error);
+      return json(res, 503, { error: "Audio storage temporarily unavailable" });
+    }
   }
   if (url.pathname === "/v1/jobs" && req.method === "POST") {
     if (!authorized(req)) return json(res, 401, { error: "Unauthorized" });
