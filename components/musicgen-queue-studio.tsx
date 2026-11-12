@@ -20,13 +20,15 @@ export function MusicGenQueueStudio() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const polling = useRef(false)
+  const idempotencyKey = useRef<string | null>(null)
 
   useEffect(() => {
     if (!task || !['queued', 'processing'].includes(task.status)) return
     let disposed = false
     let timer: ReturnType<typeof setTimeout> | undefined
     const poll = async () => {
-      if (polling.current || disposed) return
+      if (disposed) return
+      if (polling.current) { timer = setTimeout(poll, 2000); return }
       polling.current = true
       try {
         const response = await fetch('/api/generation/' + task.taskId, { cache: 'no-store' })
@@ -53,20 +55,25 @@ export function MusicGenQueueStudio() {
     setBusy(true)
     setError(null)
     setTask(null)
+    idempotencyKey.current ??= crypto.randomUUID()
+    let receivedResponse = false
     try {
       const response = await fetch('/api/generation', {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
+        headers: { 'content-type': 'application/json', 'idempotency-key': idempotencyKey.current },
         body: JSON.stringify({
           prompt: prompt.trim(),
           mode: 'instrumental',
           parameters: { durationSeconds: duration, temperature: 1, guidanceScale: 3, sampleRate: 32000, spectralAnalysis: true },
         }),
       })
+      receivedResponse = true
       const body = await response.json() as { taskId?: string; status?: TaskStatus; progress?: number; error?: string }
       if (!response.ok || !body.taskId) throw new Error(body.error ?? 'No se pudo iniciar la generación.')
       setTask({ taskId: body.taskId, status: body.status ?? 'queued', progress: body.progress ?? 0, audioUrl: null, error: null, spectralMetadata: null })
+      idempotencyKey.current = null
     } catch (cause) {
+      if (receivedResponse) idempotencyKey.current = null
       setError(cause instanceof Error ? cause.message : 'Error inesperado al generar audio.')
     } finally {
       setBusy(false)
