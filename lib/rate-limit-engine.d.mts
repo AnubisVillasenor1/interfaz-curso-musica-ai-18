@@ -25,6 +25,8 @@ export type RateLimitScope =
   | 'advanced-audio.exam'
   | 'advanced-audio.evaluate'
   | 'tts'
+  | 'growth.plan.create'
+  | 'growth.step.update'
   | 'checkout'
   | 'exam.submit'
   | 'progress.write'

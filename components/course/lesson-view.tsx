@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 import {
   AlertTriangle,
@@ -18,6 +19,7 @@ import {
 } from 'lucide-react'
 
 import { COURSE_BADGES, type CourseModule, type Lesson, type PromptTemplate } from '@/lib/course'
+import type { LessonMediaCollection } from '@/lib/course-media'
 
 import { AudioSectionButton } from './audio-section-button'
 import { ProgressBar, useCourseProgress } from './progress-bar'
@@ -41,6 +43,14 @@ const badgeName = (code: string) => COURSE_BADGES.find((badge) => badge.code ===
 const sectionShell = 'pg-panel p-5 sm:p-7'
 const bodyText = 'pg-prose'
 const sectionTitle = 'pg-section-title'
+
+const moduleVisuals: Record<number, { src: string; alt: string }> = {
+  1: { src: '/visuals/neural-melody.png', alt: 'Sintetizador modular y ondas generativas en un estudio nocturno' },
+  2: { src: '/visuals/beat-lab.png', alt: 'Secuenciador de ritmos y pads de producción musical' },
+  3: { src: '/visuals/vocal-lab.png', alt: 'Micrófono de estudio y consola para trabajo vocal' },
+  4: { src: '/visuals/mixing-console.png', alt: 'Consola de mezcla con medidores y canales de audio' },
+  5: { src: '/visuals/playlist-night.png', alt: 'Portada de lanzamiento musical en un entorno nocturno' },
+}
 
 /**
  * Resalta las variables entre {llaves} de un prompt.
@@ -119,11 +129,13 @@ function PromptCard({ prompt }: { prompt: PromptTemplate }) {
  */
 export function LessonView({
   lesson,
+  media,
   courseModule,
   previous,
   next,
 }: {
   lesson: Lesson
+  media: LessonMediaCollection
   courseModule: CourseModule
   previous?: LessonNavItem
   next?: LessonNavItem
@@ -236,6 +248,18 @@ export function LessonView({
           <b>Objetivo: </b>
           {lesson.objective}
         </p>
+        <figure className="pg-inset relative mt-5 aspect-video overflow-hidden" aria-label={`Imagen de apoyo: ${lesson.title}`}>
+          <Image
+            src={moduleVisuals[courseModule.index]?.src ?? '/visuals/sonic-architecture.png'}
+            alt={moduleVisuals[courseModule.index]?.alt ?? 'Visualización de arquitectura sonora'}
+            fill
+            sizes="(max-width: 768px) 100vw, 768px"
+            className="object-cover"
+          />
+          <figcaption className="absolute inset-x-0 bottom-0 bg-black/65 px-4 py-2 text-xs text-white">
+            Recurso visual del módulo {String(courseModule.index).padStart(2, '0')} · Play &amp; Go
+          </figcaption>
+        </figure>
         <div className="mt-5">
           <AudioSectionButton text={`${lesson.title}. Objetivo: ${lesson.objective}. ${lesson.takeaway}`} label="Escuchar la lección" />
         </div>
@@ -387,19 +411,51 @@ export function LessonView({
                     {reference.search}
                   </code>
                   <a
-                    href={`https://www.google.com/search?q=${encodeURIComponent(reference.search)}`}
+                    href={`https://openverse.org/search/audio?q=${encodeURIComponent(reference.search)}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="pg-minilink"
                   >
-                    Buscar
+                    Buscar audio abierto
                   </a>
+                  <a
+                    href={`https://commons.wikimedia.org/w/index.php?search=${encodeURIComponent(`filetype:video ${reference.search}`)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="pg-minilink"
+                    aria-label={`Buscar video abierto sobre ${reference.title} en Wikimedia Commons; verificar la licencia antes de reutilizarlo`}
+                  >
+                    Buscar video abierto
+                  </a>
+                  <span className="pg-note">Verifica la licencia de cada recurso antes de reutilizarlo.</span>
                 </div>
               </li>
             ))}
           </ul>
         </section>
       )}
+
+      <section aria-labelledby="open-media-heading" className={sectionShell}>
+        <h2 id="open-media-heading" className={sectionTitle}>
+          <Headphones size={18} className="pg-accent-violet" aria-hidden="true" /> Medios audiovisuales abiertos
+        </h2>
+        <p className="pg-note mt-2">Se muestran recursos con licencias abiertas verificables (CC0, CC BY o CC BY-SA). Confirma la atribución y los subtítulos en la ficha original antes de reutilizar el material.</p>
+        <div className="mt-5 grid gap-5">
+          {media.video ? <figure className="pg-inset p-4">
+            <h3 className="pg-item-title">{media.video.title}</h3>
+            <video controls preload="none" playsInline className="mt-3 w-full rounded-xl" aria-label={`Video de apoyo para ${lesson.title}`}>
+              <source src={media.video.url} />
+              Tu navegador no puede reproducir este video. <a href={media.video.pageUrl} target="_blank" rel="noopener noreferrer">Abrir la ficha del recurso</a>.
+            </video>
+            <figcaption className="pg-note mt-3">{media.video.creator} · {media.video.provider} · {media.video.relevance === 'topic' ? 'Coincidencia temática' : 'Ejemplo general abierto'} · {media.video.licenseLabel} · <a href={media.video.licenseUrl} target="_blank" rel="noopener noreferrer" className="pg-minilink">Ver licencia</a> · <a href={media.video.pageUrl} target="_blank" rel="noopener noreferrer" className="pg-minilink">Ficha y subtítulos</a></figcaption>
+          </figure> : <p className="pg-inset pg-note p-4">No se encontró un video compatible con licencia abierta para esta sesión. Usa las búsquedas por tema y revisa la licencia de cada resultado.</p>}
+          {media.audio ? <figure className="pg-inset p-4">
+            <h3 className="pg-item-title">Escucha de referencia · {media.audio.title}</h3>
+            <audio controls preload="none" className="mt-3 w-full" aria-label={`Audio de referencia para ${lesson.title}`} src={media.audio.url}>Tu navegador no puede reproducir este audio.</audio>
+            <figcaption className="pg-note mt-3">{media.audio.creator} · {media.audio.provider} · {media.audio.relevance === 'topic' ? 'Coincidencia temática' : 'Ejemplo general abierto'} · {media.audio.licenseLabel} · <a href={media.audio.licenseUrl} target="_blank" rel="noopener noreferrer" className="pg-minilink">Ver licencia</a> · <a href={media.audio.pageUrl} target="_blank" rel="noopener noreferrer" className="pg-minilink">Ficha del recurso</a></figcaption>
+          </figure> : <p className="pg-inset pg-note p-4">No se encontró una pista compatible con licencia abierta para esta sesión. La guía de escucha y la narración de la lección siguen disponibles.</p>}
+        </div>
+      </section>
 
       {lesson.pitfalls.length > 0 && (
         <section aria-labelledby="errores-heading" className={sectionShell}>

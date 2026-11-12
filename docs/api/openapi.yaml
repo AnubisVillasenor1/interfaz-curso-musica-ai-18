@@ -27,7 +27,7 @@
 openapi: 3.1.0
 info:
   title: Play and Go — API interna del curso de música con IA
-  version: 0.3.0
+  version: 0.4.0
   description: |
     Capa HTTP interna de la app Next.js (App Router, runtime nodejs) que da
     servicio al curso "Play and Go by TAMV ONLINE": generación musical con dos
@@ -78,6 +78,249 @@ tags:
 security: [] # Casi todas las rutas son públicas o declaran su security propia.
 
 paths:
+  /api/course-media/{lessonId}:
+    get:
+      operationId: get_open_lesson_media
+      tags: [course]
+      summary: Busca audio en Openverse y video en Wikimedia Commons, filtrados por licencia abierta
+      description: |-
+        Ruta pública. Devuelve audio de Openverse y videos de Wikimedia Commons
+        con CC0, CC BY o CC BY-SA; si no encuentra una licencia permitida devuelve
+        null para ese medio. El navegador enlaza la ficha original y la licencia.
+        Los medios no se copian a la aplicación.
+      security: []
+      parameters:
+        - name: lessonId
+          in: path
+          required: true
+          schema: { type: string, pattern: '^[a-z0-9-]{5,20}$' }
+      responses:
+        '200':
+          description: Recursos filtrados por licencia abierta; cada medio puede ser null.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [lessonId, audio, video, licensePolicy]
+                properties:
+                  lessonId: { type: string }
+                  audio: { anyOf: [{ $ref: '#/components/schemas/CourseMediaAsset' }, { type: 'null' }] }
+                  video: { anyOf: [{ $ref: '#/components/schemas/CourseMediaAsset' }, { type: 'null' }] }
+                  licensePolicy: { type: array, items: { type: string } }
+        '400':
+          $ref: '#/components/responses/ErrorText'
+        '404':
+          $ref: '#/components/responses/ErrorText'
+        '429':
+          $ref: '#/components/responses/ErrorText'
+
+  /api/growth:
+    get:
+      operationId: get_creator_growth
+      tags: [account]
+      summary: Lee el perfil, las rutas y oportunidades de la cuenta autenticada
+      security:
+        - SupabaseSession: []
+      responses:
+        '200':
+          description: Datos de crecimiento limitados al usuario de la sesión.
+          content:
+            application/json:
+              schema: { type: object, required: [profile, plans, opportunities], properties: { profile: {}, plans: { type: array }, opportunities: { type: array } } }
+        '401':
+          $ref: '#/components/responses/ErrorText'
+        '503':
+          $ref: '#/components/responses/ErrorText'
+    post:
+      operationId: create_creator_growth_plan
+      tags: [account]
+      summary: Guarda el perfil y crea una ruta de crecimiento reproducible
+      security:
+        - SupabaseSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [stage, primaryGoal, genre, skills, availableHoursPerWeek, budgetLevel, horizonDays, focusArea]
+              properties:
+                stage: { type: string, enum: [explorer, developing, launching, professional] }
+                primaryGoal: { type: string, maxLength: 240 }
+                genre: { type: string, maxLength: 80 }
+                skills: { type: array, minItems: 1, maxItems: 8, items: { type: string, maxLength: 60 } }
+                availableHoursPerWeek: { type: integer, minimum: 1, maximum: 80 }
+                budgetLevel: { type: string, enum: [none, low, medium, high] }
+                horizonDays: { type: integer, enum: [30, 60, 90] }
+                focusArea: { type: string, enum: [audience, catalog, income, craft] }
+      responses:
+        '201': { description: Perfil, plan y oportunidades guardados. }
+        '400': { $ref: '#/components/responses/ErrorText' }
+        '401': { $ref: '#/components/responses/ErrorText' }
+        '429': { $ref: '#/components/responses/ErrorText' }
+        '503': { $ref: '#/components/responses/ErrorText' }
+    patch:
+      operationId: update_growth_step
+      tags: [account]
+      summary: Marca un paso de la ruta propia como completado o pendiente
+      security:
+        - SupabaseSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [planId, stepId, completed]
+              properties:
+                planId: { type: string, format: uuid }
+                stepId: { type: string, pattern: '^step-[1-8]$' }
+                completed: { type: boolean }
+      responses:
+        '200': { description: Plan actualizado. }
+        '400': { $ref: '#/components/responses/ErrorText' }
+        '401': { $ref: '#/components/responses/ErrorText' }
+        '404': { $ref: '#/components/responses/ErrorText' }
+        '429': { $ref: '#/components/responses/ErrorText' }
+        '503': { $ref: '#/components/responses/ErrorText' }
+
+  /api/voice/profiles:
+    get:
+      operationId: list_voice_profiles
+      tags: [account]
+      summary: Lista los perfiles de voz privados de la persona autenticada
+      security:
+        - SupabaseSession: []
+      responses:
+        '200': { description: Perfiles propios. }
+        '401': { $ref: '#/components/responses/ErrorText' }
+        '503': { $ref: '#/components/responses/ErrorText' }
+    post:
+      operationId: create_voice_profile
+      tags: [account]
+      summary: Crea un preset sintético Kokoro después del consentimiento explícito
+      description: Esta versión crea un preset TTS; no clona la voz de una persona.
+      security:
+        - SupabaseSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, language, consentAccepted]
+              properties:
+                name: { type: string, minLength: 2, maxLength: 80 }
+                description: { type: string, maxLength: 300 }
+                language: { type: string, enum: [es-MX, en-US] }
+                consentAccepted: { type: boolean, const: true }
+      responses:
+        '201': { description: Perfil sintético y consentimiento registrados. }
+        '400': { $ref: '#/components/responses/ErrorText' }
+        '401': { $ref: '#/components/responses/ErrorText' }
+        '409': { $ref: '#/components/responses/ErrorText' }
+        '429': { $ref: '#/components/responses/ErrorText' }
+        '503': { $ref: '#/components/responses/ErrorText' }
+    patch:
+      operationId: revoke_voice_profile
+      tags: [account]
+      summary: Revoca el consentimiento y retira el audio generado del perfil propio
+      security:
+        - SupabaseSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [profileId]
+              properties:
+                profileId: { type: string, format: uuid }
+      responses:
+        '200': { description: Consentimiento revocado. }
+        '400': { $ref: '#/components/responses/ErrorText' }
+        '401': { $ref: '#/components/responses/ErrorText' }
+        '404': { $ref: '#/components/responses/ErrorText' }
+        '429': { $ref: '#/components/responses/ErrorText' }
+        '503': { $ref: '#/components/responses/ErrorText' }
+
+  /api/voice/generate:
+    post:
+      operationId: create_voice_generation
+      tags: [generation]
+      summary: Genera voz consentida, guarda el audio privado y registra su SHA-256
+      description: Kokoro local es el motor primario; Vercel AI Gateway es el respaldo. La respuesta siempre identifica `engine`.
+      security:
+        - SupabaseSession: []
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [voiceProfileId, text, language]
+              properties:
+                voiceProfileId: { type: string, format: uuid }
+                text: { type: string, minLength: 3, maxLength: 900 }
+                language: { type: string, enum: [es-MX, en-US] }
+                speed: { type: number, minimum: 0.5, maximum: 2, default: 1 }
+      responses:
+        '201': { description: Audio generado y almacenado. }
+        '200': { description: Reintento idempotente de una generación completada. }
+        '202': { description: La generación anterior continúa en proceso; consulta statusUrl. }
+        '400': { $ref: '#/components/responses/ErrorText' }
+        '401': { $ref: '#/components/responses/ErrorText' }
+        '403': { $ref: '#/components/responses/ErrorText' }
+        '429': { $ref: '#/components/responses/ErrorText' }
+        '502': { $ref: '#/components/responses/ErrorText' }
+        '503': { $ref: '#/components/responses/ErrorText' }
+
+  /api/voice/generate/{taskId}:
+    get:
+      operationId: get_voice_generation_status
+      tags: [generation]
+      summary: Lee el estado de una generación propia
+      security:
+        - SupabaseSession: []
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: Estado y, si está lista, la ruta privada de audio. }
+        '400': { $ref: '#/components/responses/ErrorText' }
+        '401': { $ref: '#/components/responses/ErrorText' }
+        '404': { $ref: '#/components/responses/ErrorText' }
+        '503': { $ref: '#/components/responses/ErrorText' }
+
+  /api/voice/generate/{taskId}/audio:
+    get:
+      operationId: download_voice_generation_audio
+      tags: [generation]
+      summary: Reproduce el audio privado de una generación propia con consentimiento vigente
+      security:
+        - SupabaseSession: []
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Audio WAV o MP3 privado, sin almacenamiento público.
+          content:
+            audio/wav: { schema: { type: string, format: binary } }
+            audio/mpeg: { schema: { type: string, format: binary } }
+        '401': { $ref: '#/components/responses/ErrorText' }
+        '404': { $ref: '#/components/responses/ErrorText' }
+        '503': { $ref: '#/components/responses/ErrorText' }
+
   /api/music/compose:
     post:
       operationId: compose_midi
@@ -906,6 +1149,20 @@ components:
       x-no-verificado: true # El proveedor externo (sunoapi.org) no firma; esta firma es de la app hacia sí misma vía el proveedor.
 
   schemas:
+    CourseMediaAsset:
+      type: object
+      required: [title, creator, kind, url, pageUrl, licenseUrl, licenseLabel, provider, relevance]
+      properties:
+        title: { type: string, maxLength: 180 }
+        creator: { type: string, maxLength: 180 }
+        kind: { type: string, enum: [audio, video] }
+        url: { type: string, format: uri }
+        pageUrl: { type: string, format: uri }
+        licenseUrl: { type: string, format: uri }
+        licenseLabel: { type: string }
+        provider: { type: string }
+        relevance: { type: string, enum: [topic, general] }
+
     ErrorResponse:
       type: object
       description: |
