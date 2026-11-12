@@ -68,7 +68,7 @@ export function ActivationFlow() {
   const [experience, setExperience] = useState<Experience>('studio')
 
   const selectedExperience = useMemo(
-    () => experiences.find((item) => item.id === experience) ?? experiences[0],
+    () => experiences.find((item) => item.id === experience) ?? experiences[0]!,
     [experience],
   )
 
