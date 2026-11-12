@@ -1,0 +1,35 @@
+groups:
+  - name: play-and-go-audio
+    rules:
+      - alert: AudioQueueBacklogHigh
+        expr: tamv_queue_waiting_jobs > 50
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: Audio generation queue backlog is high
+          description: More than 50 audio jobs have been waiting for five minutes.
+      - alert: AudioGenerationFailureRateHigh
+        expr: rate(tamv_audio_jobs_failed_total[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: Audio generation failures are elevated
+          description: Inspect MusicGen, storage and database logs before increasing retries.
+      - alert: AudioWorkerUnavailable
+        expr: up{job="gateway-worker"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: Audio gateway worker metrics endpoint is unavailable
+          description: Check the worker process, Redis connectivity and container health.
+      - alert: MusicGenUnavailable
+        expr: up{job="musicgen"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: MusicGen metrics endpoint is unavailable
+          description: Check model loading, memory and service logs.
