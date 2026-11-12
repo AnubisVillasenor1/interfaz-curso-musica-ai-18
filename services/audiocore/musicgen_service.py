@@ -94,6 +94,11 @@ def generate(body: GenerationRequest, authorization: str | None = Header(default
         with torch.inference_mode():
             waveform = engine.generate([body.prompt])[0].detach().cpu().float().numpy()
         sample_rate = int(engine.sample_rate)
+        requested_rate = int(body.parameters.sampleRate)
+        if requested_rate != sample_rate:
+            import librosa
+            waveform = librosa.resample(waveform, orig_sr=sample_rate, target_sr=requested_rate, axis=-1)
+            sample_rate = requested_rate
         buffer = io.BytesIO()
         sf.write(buffer, waveform.T, sample_rate, format="WAV", subtype="PCM_16")
         audio = buffer.getvalue()
