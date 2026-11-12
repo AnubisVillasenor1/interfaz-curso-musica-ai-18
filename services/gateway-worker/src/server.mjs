@@ -10,6 +10,9 @@ import { z } from "zod";
 
 const required = ["REDIS_URL", "SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "GATEWAY_INTERNAL_TOKEN", "AUDIOCORE_URL", "AUDIOCORE_INTERNAL_TOKEN", "S3_ENDPOINT", "S3_PUBLIC_ENDPOINT", "S3_ACCESS_KEY", "S3_SECRET_KEY"];
 for (const key of required) if (!process.env[key]) throw new Error(`Missing required environment variable: ${key}`);
+const publicS3Endpoint = new URL(process.env.S3_PUBLIC_ENDPOINT);
+if (process.env.NODE_ENV === "production" && publicS3Endpoint.protocol !== "https:") throw new Error("S3_PUBLIC_ENDPOINT must use HTTPS in production");
+if (["localhost", "127.0.0.1", "minio"].includes(publicS3Endpoint.hostname) && process.env.NODE_ENV === "production") throw new Error("S3_PUBLIC_ENDPOINT must be reachable by authenticated users, not an internal hostname");
 const port = Number(process.env.GATEWAY_PORT ?? 8080);
 const metricsPort = Number(process.env.METRICS_PORT ?? 9101);
 const bucket = process.env.S3_BUCKET ?? "tamv-audio";
