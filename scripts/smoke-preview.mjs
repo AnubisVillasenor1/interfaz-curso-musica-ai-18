@@ -21,6 +21,7 @@ const checks = [
   { path: '/curso/laboratorio-audio/evaluacion/governance', label: 'governance exam page', method: 'GET', expected: [200] },
   { path: '/curso/laboratorio-audio/evaluacion/capstone', label: 'capstone exam page', method: 'GET', expected: [200] },
   { path: '/robots.txt', label: 'robots.txt metadata route', method: 'GET', expected: [200] },
+  { path: '/api/health', label: 'operational health endpoint', method: 'GET', expected: [200] },
   { path: '/sitemap.xml', label: 'sitemap metadata route', method: 'GET', expected: [200] },
   { path: '/api/checkout', label: 'checkout fails closed without Supabase', method: 'POST', body: { productId: 'play-and-go-course' }, expected: [503] },
   { path: '/api/generate', label: 'generation fails closed without Supabase', method: 'POST', body: { title: 'CI smoke test', prompt: 'instrumental piano', engine: 'local' }, expected: [503] },
@@ -54,6 +55,26 @@ for (const check of checks) {
     if (!ok) {
       failures += 1
       continue
+    }
+
+    if (check.path === '/api/health' && response.status === 200) {
+      const payload = await response.json().catch(() => null)
+      const healthContractOk =
+        payload?.service === 'play-and-go' &&
+        payload?.ok === true &&
+        typeof payload?.degraded === 'boolean' &&
+        typeof payload?.checks?.appUrlConfigured === 'boolean' &&
+        typeof payload?.checks?.appUrlProductionSafe === 'boolean' &&
+        typeof payload?.capabilities?.localMusic === 'boolean' &&
+        typeof payload?.capabilities?.externalMusicReady === 'boolean' &&
+        typeof payload?.rateLimit?.mode === 'string' &&
+        !JSON.stringify(payload).includes('SUPABASE_SERVICE_ROLE_KEY')
+      if (!healthContractOk) {
+        failures += 1
+        console.error('FAIL health contract: missing operational checks or unexpected sensitive output')
+      } else {
+        console.log('PASS health contract: configuration state only; no secrets')
+      }
     }
 
     if (check.path === '/presentacion') {
