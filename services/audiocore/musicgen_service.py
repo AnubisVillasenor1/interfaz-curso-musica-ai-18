@@ -44,27 +44,41 @@ def model():
 
 def analyse(audio: np.ndarray, sample_rate: int) -> dict:
     mono = audio.mean(axis=0) if audio.ndim == 2 else audio
-    peak = max(float(np.max(np.abs(mono))), 1e-12)
+    mono = mono.astype(np.float32, copy=False)
+    sample_peak = max(float(np.max(np.abs(mono))), 1e-12)
     rms = max(float(np.sqrt(np.mean(np.square(mono)))), 1e-12)
+    # Four-times oversampling approximates inter-sample true peak; sample peak is reported separately.
+    from scipy.signal import resample_poly
+    oversampled = resample_poly(mono, up=4, down=1)
+    true_peak = max(float(np.max(np.abs(oversampled))), 1e-12)
     result = {
-        "truePeakDb": round(20 * np.log10(peak), 5),
+        "samplePeakDb": round(20 * np.log10(sample_peak), 5),
+        "truePeakDb": round(20 * np.log10(true_peak), 5),
+        "truePeakOversampling": 4,
         "rmsDb": round(20 * np.log10(rms), 5),
         "sampleRate": sample_rate,
         "channels": int(audio.shape[0]) if audio.ndim > 1 else 1,
-        "analyzerEngine": "numpy",
+        "analyzerEngine": "numpy+scipy",
         "analyzerVersion": np.__version__,
         "cqtComputed": False,
+        "cqtBins": None,
+        "cqtFrames": None,
         "harmonicChroma": None
     }
     try:
         import librosa
-        chroma = librosa.feature.chroma_stft(y=mono.astype(np.float32), sr=sample_rate)
+        harmonic = librosa.effects.harmonic(mono)
+        cqt = librosa.cqt(y=harmonic, sr=sample_rate)
+        chroma = librosa.feature.chroma_cqt(C=np.abs(cqt), sr=sample_rate)
+        result["cqtComputed"] = True
+        result["cqtBins"] = int(cqt.shape[0])
+        result["cqtFrames"] = int(cqt.shape[1])
         result["harmonicChroma"] = [round(float(x), 7) for x in chroma.mean(axis=1)]
-        result["analyzerEngine"] = "librosa"
+        result["analyzerEngine"] = "librosa+scipy"
         result["analyzerVersion"] = librosa.__version__
     except Exception as exc:
-        log.warning("Optional chroma analysis unavailable: %s", type(exc).__name__)
-        result["analysisWarning"] = "chroma_unavailable"
+        log.warning("Optional CQT/chroma analysis unavailable: %s", type(exc).__name__)
+        result["analysisWarning"] = "cqt_chroma_unavailable"
     return result
 
 @app.get("/metrics")
