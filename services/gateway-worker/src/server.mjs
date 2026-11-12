@@ -109,6 +109,7 @@ const worker = new Worker("tamv-audio-generation", async (job) => {
     const sha256 = createHash("sha256").update(audio).digest("hex");
     await s3.send(new PutObjectCommand({ Bucket: bucket, Key: objectKey, Body: audio, ContentType: "audio/wav", Metadata: { "task-id": taskId, "content-sha256": sha256 } }));
     await job.updateProgress({ stage: "stored", progress: 85 });
+    await updateTask(taskId, { progress: 85 });
     stage = "persistence";
     await updateTask(taskId, {
       status: "completed", progress: 100, audio_object_key: objectKey, audio_bucket: bucket,
