@@ -43,19 +43,19 @@ type Slide = {
  */
 const SLIDES: Slide[] = [
   {
-    kicker: 'Play & Go · TAMV Online Network',
-    title: 'Tu próxima idea merece convertirse en música.',
-    body: 'Aprende, compón y desarrolla tu sonido con inteligencia artificial y decisiones propias. Una academia, un estudio y un portafolio real, de la primera idea al release.',
+    kicker: 'PLAY & GO · CREATOR OPERATING SYSTEM™',
+    title: 'El sistema operativo del creador musical.',
+    body: 'Aprende producción musical con inteligencia artificial, crea desde tu navegador y entiende el sonido con herramientas de análisis técnico. Una ruta clara: aprende, crea, analiza y evoluciona.',
     image: '/visuals/aurora-studio.png',
-    imageAlt: 'Estudio de ondas sonoras cristalinas al amanecer',
+    imageAlt: 'Ondas sonoras y núcleo digital de Play & Go',
     badges: [
-      { icon: Sparkles, label: 'Sin registro para empezar' },
-      { icon: ShieldCheck, label: 'Audio generado en tu navegador' },
+      { icon: Sparkles, label: 'Empieza con una idea' },
+      { icon: ShieldCheck, label: 'Sin tarjeta para crear cuenta' },
       { icon: Music2, label: `${COURSE_MODULES.length} módulos · ${COURSE_TOTAL_LESSONS} sesiones` },
     ],
     actions: [
-      { href: '/crear', label: 'Crear una pista en 10 s', primary: true },
-      { href: '#ruta', label: 'Ver el programa' },
+      { href: '/onboarding', label: 'Comenzar gratis', primary: true },
+      { href: '/presentacion', label: 'Ver demostración' },
     ],
   },
   {
