@@ -7,6 +7,12 @@ set -eu
 S3_BUCKET="${S3_BUCKET:-tamv-audio}"
 
 mc alias set local http://minio:9000 "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD"
+attempt=0
+until mc ready local >/dev/null 2>&1; do
+  attempt=$((attempt + 1))
+  if [ "$attempt" -ge 30 ]; then echo "MinIO did not become ready" >&2; exit 1; fi
+  sleep 2
+done
 mc mb --ignore-existing "local/$S3_BUCKET"
 sed "s/tamv-audio/$S3_BUCKET/g" /policy.json > /tmp/policy.json
 if ! mc admin policy info local tamv-audio-worker >/dev/null 2>&1; then
