@@ -5,7 +5,6 @@ import { Film } from 'lucide-react'
 
 import { CourseDashboard } from '@/components/course-dashboard'
 import { AudioPresentation } from './audio-presentation'
-import { PlatformTutorial } from '@/components/onboarding/platform-tutorial'
 import {
   markIntroSeen,
   replayIntro as clearIntroSeen,
@@ -14,13 +13,11 @@ import {
 
 export function IntroGate() {
   const [isIntroVisible, setIsIntroVisible] = useState(true)
-  const [tutorialReady, setTutorialReady] = useState(false)
   const [gateReady, setGateReady] = useState(false)
 
   useEffect(() => {
     const shouldShowIntro = shouldRunIntro()
     setIsIntroVisible(shouldShowIntro)
-    setTutorialReady(!shouldShowIntro)
     setGateReady(true)
   }, [])
 
@@ -43,7 +40,6 @@ export function IntroGate() {
     }
 
     setIsIntroVisible(false)
-    setTutorialReady(true)
   }, [])
 
   const replayIntro = useCallback(() => {
@@ -54,7 +50,6 @@ export function IntroGate() {
   return (
     <>
       {gateReady && !isIntroVisible && <CourseDashboard />}
-      {gateReady && !isIntroVisible && <PlatformTutorial enabled={tutorialReady} />}
 
       {isIntroVisible && (
         <AudioPresentation enabled={gateReady} onComplete={closeIntro} />
