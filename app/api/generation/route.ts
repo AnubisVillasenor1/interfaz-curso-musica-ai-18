@@ -53,16 +53,32 @@ export async function POST(request: Request) {
 
   const admin = createAdminClient()
   if (!admin) return NextResponse.json({ error: 'El servicio de generación no está configurado.', code: 'not_configured' }, { status: 503 })
+  const gatewayUrl = process.env.AUDIO_QUEUE_GATEWAY_URL
+  const token = process.env.GATEWAY_INTERNAL_TOKEN
 
   const idempotencyKey = request.headers.get('idempotency-key') ?? ''
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(idempotencyKey)) {
     return NextResponse.json({ error: 'Envía una clave Idempotency-Key UUID para evitar generaciones duplicadas.', code: 'idempotency_key_required' }, { status: 400 })
   }
   const { data: existing } = await supabase.from('audio_generation_tasks')
-    .select('task_id,status,progress').eq('user_id', user.id).eq('idempotency_key', idempotencyKey).maybeSingle()
+    .select('task_id,status,progress,prompt,mode,parameters').eq('user_id', user.id).eq('idempotency_key', idempotencyKey).maybeSingle()
   if (existing) {
     if (existing.status === 'failed' || existing.status === 'cancelled') {
       return NextResponse.json({ error: 'La solicitud anterior terminó sin completarse. Genera una nueva clave para reintentar.', code: 'idempotency_key_used' }, { status: 409 })
+    }
+    // A retry with the same key repairs an ambiguous enqueue timeout using the same BullMQ jobId.
+    if (existing.status === 'queued') {
+      if (!gatewayUrl || !token) return NextResponse.json({ error: 'El gateway de audio no está configurado.', code: 'gateway_not_configured' }, { status: 503 })
+      try {
+        const queued = await fetch(new URL('/v1/jobs', gatewayUrl), {
+          method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + token },
+          body: JSON.stringify({ taskId: existing.task_id, userId: user.id, prompt: existing.prompt, mode: existing.mode, parameters: existing.parameters }),
+          signal: AbortSignal.timeout(8000), cache: 'no-store',
+        })
+        if (!queued.ok) return NextResponse.json({ error: 'La tarea sigue registrada; el gateway aún no confirma la cola. Reintenta con la misma clave.', code: 'enqueue_uncertain' }, { status: 503 })
+      } catch {
+        return NextResponse.json({ error: 'La tarea sigue registrada; no pudimos confirmar la cola. Reintenta con la misma clave.', code: 'enqueue_uncertain' }, { status: 503 })
+      }
     }
     return NextResponse.json({ taskId: existing.task_id, status: existing.status, progress: existing.progress, statusUrl: '/api/generation/' + existing.task_id }, { status: 202, headers: { 'Cache-Control': 'no-store' } })
   }
@@ -88,8 +104,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'No se pudo registrar la tarea.', code: 'persistence_error' }, { status: 500 })
   }
 
-  const gatewayUrl = process.env.AUDIO_QUEUE_GATEWAY_URL
-  const token = process.env.GATEWAY_INTERNAL_TOKEN
   if (!gatewayUrl || !token) {
     await admin.from('audio_generation_tasks').update({ status: 'failed', error_message: 'Gateway de audio no configurado.', completed_at: new Date().toISOString() }).eq('task_id', taskId)
     await supabase.rpc('refund_generation_quota', { p_owner: user.id, p_engine: 'local' })
@@ -104,13 +118,18 @@ export async function POST(request: Request) {
       signal: AbortSignal.timeout(8000),
       cache: 'no-store',
     })
-    if (!response.ok) throw new Error(`Gateway respondió HTTP ${response.status}`)
+    if (!response.ok) {
+      if (response.status >= 500) throw new Error(`Gateway respondió HTTP ${response.status}`)
+      await admin.from('audio_generation_tasks').update({ status: 'failed', error_message: 'El gateway rechazó la solicitud.', completed_at: new Date().toISOString() }).eq('task_id', taskId)
+      await supabase.rpc('refund_generation_quota', { p_owner: user.id, p_engine: 'local' })
+      return NextResponse.json({ error: 'El gateway rechazó la solicitud. El cupo fue devuelto.', code: 'enqueue_rejected' }, { status: 502 })
+    }
   } catch (error) {
+    // A timeout may happen after BullMQ accepted the job. Keep the task and quota reservation;
+    // the client can retry with the same idempotency key and the same BullMQ jobId.
     const message = error instanceof Error ? error.message : 'Gateway unavailable'
-    await admin.from('audio_generation_tasks').update({ status: 'failed', error_message: 'No se pudo encolar la generación.', completed_at: new Date().toISOString() }).eq('task_id', taskId)
-    await supabase.rpc('refund_generation_quota', { p_owner: user.id, p_engine: 'local' })
-    console.error('[generation] enqueue failed', message)
-    return NextResponse.json({ error: 'No se pudo encolar el trabajo. El cupo fue devuelto.', code: 'enqueue_failed' }, { status: 503 })
+    console.error('[generation] enqueue outcome uncertain', message)
+    return NextResponse.json({ error: 'No pudimos confirmar la cola. Reintenta con la misma clave para evitar duplicados.', code: 'enqueue_uncertain' }, { status: 503 })
   }
 
   return NextResponse.json({ taskId, status: 'queued', progress: 0, statusUrl: `/api/generation/${taskId}` }, { status: 202, headers: { 'Cache-Control': 'no-store' } })
