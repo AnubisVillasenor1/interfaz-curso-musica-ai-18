@@ -22,6 +22,7 @@ create table if not exists public.audio_generation_tasks (
   content_hash text check (content_hash is null or content_hash ~ '^[a-f0-9]{64}$'),
   spectral_metadata jsonb check (spectral_metadata is null or jsonb_typeof(spectral_metadata) = 'object'),
   error_message text,
+  quota_refunded boolean not null default false,
   created_at timestamptz not null default now(),
   started_at timestamptz,
   completed_at timestamptz,
@@ -52,5 +53,35 @@ comment on table public.audio_generation_tasks is
   'Private asynchronous MusicGen jobs. Only service_role may enqueue or update; authenticated users can read their own rows.';
 comment on column public.audio_generation_tasks.content_hash is
   'SHA-256 of the final WAV bytes, computed by the worker after generation.';
+
+
+-- Idempotent refund for terminal worker failures: the same task can never refund twice.
+create or replace function public.refund_audio_generation_quota(p_task_id uuid)
+returns boolean
+language plpgsql
+security definer
+set search_path = ''
+as $
+declare
+  v_user_id uuid;
+  v_refunded boolean;
+begin
+  select user_id, quota_refunded into v_user_id, v_refunded
+    from public.audio_generation_tasks
+   where task_id = p_task_id
+   for update;
+  if not found or v_refunded then return false; end if;
+
+  update public.entitlements
+     set local_used_today = greatest(local_used_today - 1, 0)
+   where user_id = v_user_id;
+  update public.audio_generation_tasks
+     set quota_refunded = true
+   where task_id = p_task_id;
+  return true;
+end;
+$;
+revoke all on function public.refund_audio_generation_quota(uuid) from public, anon, authenticated;
+grant execute on function public.refund_audio_generation_quota(uuid) to service_role;
 
 commit;
