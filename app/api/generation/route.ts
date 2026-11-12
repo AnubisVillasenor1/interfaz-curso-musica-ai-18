@@ -60,9 +60,21 @@ export async function POST(request: Request) {
   if (quotaError) return NextResponse.json({ error: 'No fue posible comprobar el cupo.', code: 'quota_unavailable' }, { status: 503 })
   if (!quota?.allowed) return NextResponse.json({ error: quota?.reason ?? 'Cupo diario agotado.', code: 'quota_exceeded' }, { status: 402 })
 
+  const idempotencyKey = request.headers.get('idempotency-key') ?? ''
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(idempotencyKey)) {
+    return NextResponse.json({ error: 'Envía una clave Idempotency-Key UUID para evitar generaciones duplicadas.', code: 'idempotency_key_required' }, { status: 400 })
+  }
+  const { data: existing } = await supabase.from('audio_generation_tasks')
+    .select('task_id,status,progress').eq('user_id', user.id).eq('idempotency_key', idempotencyKey).maybeSingle()
+  if (existing) {
+    if (existing.status === 'failed' || existing.status === 'cancelled') {
+      return NextResponse.json({ error: 'La solicitud anterior terminó sin completarse. Genera una nueva clave para reintentar.', code: 'idempotency_key_used' }, { status: 409 })
+    }
+    return NextResponse.json({ taskId: existing.task_id, status: existing.status, progress: existing.progress, statusUrl: '/api/generation/' + existing.task_id }, { status: 202, headers: { 'Cache-Control': 'no-store' } })
+  }
   const taskId = randomUUID()
   const { error: insertError } = await admin.from('audio_generation_tasks').insert({
-    task_id: taskId, user_id: user.id, federation_id: 'FED-01',
+    task_id: taskId, user_id: user.id, federation_id: 'FED-01', idempotency_key: idempotencyKey,
     prompt, mode: 'instrumental', status: 'queued', progress: 0, parameters,
   })
   if (insertError) {
