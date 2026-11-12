@@ -123,8 +123,16 @@ const worker = new Worker("tamv-audio-generation", async (job) => {
   } catch (error) {
     jobsFailed.inc({ stage });
     const message = error instanceof Error ? error.message.slice(0, 1000) : "Unknown generation error";
-    try { await updateTask(taskId, { status: "failed", error_message: message, completed_at: new Date().toISOString() }); }
-    catch (persistError) { console.error("Failed to persist task failure", persistError); }
+    const finalAttempt = (job.attemptsMade ?? 0) + 1 >= Number(job.opts.attempts ?? 1);
+    try {
+      if (finalAttempt) {
+        await updateTask(taskId, { status: "failed", error_message: message, completed_at: new Date().toISOString() });
+        const { error: refundError } = await supabase.rpc("refund_generation_quota", { p_owner: userId, p_engine: "local" });
+        if (refundError) console.error("Failed to refund quota after terminal generation failure", refundError.message);
+      } else {
+        await updateTask(taskId, { status: "queued", progress: 0, error_message: null, started_at: null });
+      }
+    } catch (persistError) { console.error("Failed to persist generation retry/failure state", persistError); }
     throw error;
   } finally { jobsActive.dec(); }
 }, { connection: redis, concurrency: Math.max(1, Math.min(2, Number(process.env.WORKER_CONCURRENCY ?? 1))), limiter: { max: Number(process.env.WORKER_MAX_JOBS_PER_MINUTE ?? 6), duration: 60000 } });
