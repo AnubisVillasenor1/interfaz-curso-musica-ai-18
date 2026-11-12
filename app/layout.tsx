@@ -19,12 +19,12 @@ import './globals.css'
  */
 const metadataUrl = getSeoOrigin()
 const description =
-  'Play and Go de TAMV Online Network: creación musical con IA, 16 sesiones originales y un laboratorio técnico complementario de DSP, análisis espectral, mezcla y masterización con apoyo de IA declarado.'
+  'Play & Go, Creator Operating System de TAMV ONLINE: aprende producción musical, crea desde tu navegador y analiza el sonido con herramientas de audio y DSP. Aprende. Crea. Analiza. Evoluciona.'
 
 export const metadata: Metadata = {
   metadataBase: new URL(metadataUrl),
   title: {
-    default: 'Play and Go by TAMV ONLINE — Música con IA',
+    default: 'Play & Go — Creator Operating System™',
     template: '%s · Play and Go by TAMV ONLINE',
   },
   description,
@@ -34,9 +34,10 @@ export const metadata: Metadata = {
   creator: 'TAMV ONLINE',
   publisher: 'TAMV ONLINE',
   keywords: [
-    'curso de música con IA',
-    'producir música con inteligencia artificial',
-    'prompts musicales',
+    'producción musical con IA',
+    'creación musical',
+    'análisis de audio DSP',
+    'Academy Studio AudioCore',
     'Play and Go',
     'TAMV ONLINE',
   ],
@@ -46,7 +47,7 @@ export const metadata: Metadata = {
     locale: 'es_MX',
     url: metadataUrl,
     siteName: 'Play and Go by TAMV ONLINE',
-    title: 'Play and Go by TAMV ONLINE — Música con IA',
+    title: 'Play & Go — Creator Operating System™',
     description,
     images: [`${metadataUrl}/opengraph-image`],
   },
