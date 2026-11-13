@@ -27,6 +27,8 @@ export type RateLimitScope =
   | 'tts'
   | 'growth.plan.create'
   | 'growth.step.update'
+  | 'licensing.activate'
+  | 'licensing.revoke'
   | 'checkout'
   | 'exam.submit'
   | 'progress.write'

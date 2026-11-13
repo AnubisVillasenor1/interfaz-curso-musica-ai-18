@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { SUPABASE_NOT_CONFIGURED } from '@/lib/supabase/config'
 import { enforcePolicy } from '@/lib/rate-limit'
+import { authorizeFeatureForUser, featureGateMessage } from '@/lib/licensing/feature-gate'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -68,6 +69,8 @@ export async function POST(request: Request) {
   if (!Number.isInteger(hours) || hours < 1 || hours > 80 || !Number.isInteger(audience) || audience < 0 || audience > 100_000_000) {
     return NextResponse.json({ error: 'Revisa las horas semanales y el tamaño de audiencia.' }, { status: 400 })
   }
+  const authorization = await authorizeFeatureForUser(user.id, 'creator_growth')
+  if (!authorization.ok) return NextResponse.json({ error: featureGateMessage(authorization.code), code: authorization.code }, { status: authorization.status })
   const admin = createAdminClient()
   if (!admin) return NextResponse.json({ error: 'El servicio de crecimiento no está configurado.' }, { status: 503 })
   const profilePayload = {
