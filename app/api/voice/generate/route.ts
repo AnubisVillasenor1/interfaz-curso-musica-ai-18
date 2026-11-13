@@ -6,6 +6,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { enforcePolicy } from '@/lib/rate-limit'
 import { SUPABASE_NOT_CONFIGURED } from '@/lib/supabase/config'
+import { authorizeFeatureForUser, featureGateMessage } from '@/lib/licensing/feature-gate'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -70,6 +71,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'El perfil no está activo o el consentimiento fue revocado.' }, { status: 403 })
   }
   if (profile.language !== language) return NextResponse.json({ error: 'Elige el idioma configurado en el perfil de voz.' }, { status: 400 })
+
+  const authorization = await authorizeFeatureForUser(user.id, 'voice_identity', { consume: true, jobId: idempotencyKey })
+  if (!authorization.ok) return NextResponse.json({ error: featureGateMessage(authorization.code), code: authorization.code }, { status: authorization.status })
 
   const voiceServiceUrl = process.env.VOICE_IDENTITY_URL?.trim()
   const internalToken = process.env.AUDIOCORE_INTERNAL_TOKEN?.trim()

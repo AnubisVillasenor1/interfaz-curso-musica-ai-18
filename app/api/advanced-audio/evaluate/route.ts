@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { NextResponse } from 'next/server'
 
 import {
@@ -12,6 +13,7 @@ import {
 import { createClient } from '@/lib/supabase/server'
 import { readBoundedJson } from '@/lib/http/read-body'
 import { enforcePolicy } from '@/lib/rate-limit'
+import { authorizeFeatureForUser, featureGateMessage } from '@/lib/licensing/feature-gate'
 
 export const runtime = 'nodejs'
 export const maxDuration = 30
@@ -121,6 +123,9 @@ export async function POST(request: Request) {
   if (!apiKey) return NextResponse.json({ error: 'La evaluación asistida requiere AI_AGENT_API_KEY; no se generará una calificación ficticia.', code: 'not_configured' }, { status: 503, headers: PRIVATE_HEADERS })
   const module = getAdvancedAudioModule(moduleId)
   if (!module) return NextResponse.json({ error: 'Módulo no disponible.', code: 'not_found' }, { status: 404, headers: PRIVATE_HEADERS })
+
+  const authorization = await authorizeFeatureForUser(user.id, 'audiocore.advanced', { consume: true, jobId: randomUUID() })
+  if (!authorization.ok) return NextResponse.json({ error: featureGateMessage(authorization.code), code: authorization.code }, { status: authorization.status, headers: PRIVATE_HEADERS })
 
   const criteria = module.rubric.map((item) =>
     ({ id: item.id, name: item.name, weight: item.weight, evidenceExpected: item.evidence, excellence: item.excellence })

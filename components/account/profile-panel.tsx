@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { ArrowRight, LogOut, Music2, Sparkles } from 'lucide-react'
 
 import { PRODUCTS, PRODUCT_IDS, priceLabel, type ProductId } from '@/lib/products'
+import { LicenseManager } from '@/components/account/license-manager'
 
 /**
  * Espejo de lo que devuelve `GET /api/entitlement`. Las claves vienen en
@@ -283,6 +284,8 @@ export function ProfilePanel() {
           <p className="pg-figure mt-1">{entitlement.lessons_done}</p>
         </div>
       </section>
+
+      <LicenseManager />
 
       <section className="pg-card p-6">
         <h2 className="pg-card-title">
